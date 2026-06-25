@@ -6,9 +6,7 @@ This CLI tool automatically injects a sophisticated RTL engine into Antigravity,
 
 ## Demo
 
-<video src="https://github.com/mmnaderi/antigravity-rtl/raw/main/demo.mp4" controls="controls" style="max-width: 100%;">
-  Your browser does not support the video tag.
-</video>
+![Antigravity RTL Demo](demo.mp4)
 
 ## Features
 
