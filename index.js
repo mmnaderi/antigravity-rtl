@@ -14,17 +14,6 @@ const { blue, cyan, green, red, yellow, bold } = picocolors;
 
 console.log(bold(cyan('\n✨ Antigravity Smart RTL Patcher\n')));
 
-function checkPermissions() {
-    if (os.platform() !== 'win32') {
-        if (process.getuid && process.getuid() !== 0) {
-            console.error(red('✖ Permission Denied!'));
-            console.error(yellow('Please run this command with sudo:'));
-            console.error(bold('sudo npx antigravity-rtl\n'));
-            process.exit(1);
-        }
-    }
-}
-
 function getDefaultPath() {
     if (os.platform() === 'darwin') {
         return '/Applications/Antigravity.app/Contents/Resources/app.asar';
@@ -61,7 +50,6 @@ const args = process.argv.slice(2);
 const isRestore = args.includes('--restore');
 
 async function main() {
-    checkPermissions();
     const asarPath = await getAsarPath();
     const backupPath = asarPath + '.bak';
     
@@ -90,10 +78,13 @@ async function main() {
         }
     } catch (e) {
         spinner.fail('Permission Denied.');
+        console.error(red('\nSystem Error: ' + e.message));
         if (os.platform() === 'win32') {
             console.error(yellow('\nPlease run your terminal (PowerShell/CMD) as Administrator and try again.\n'));
         } else {
-            console.error(yellow('\nPlease run this command with sudo.\n'));
+            console.error(yellow('\nNote: "sudo npx" sometimes drops root privileges. If so, try this alternative:'));
+            console.error(bold('  sudo npm install -g antigravity-rtl'));
+            console.error(bold('  sudo antigravity-rtl\n'));
         }
         process.exit(1);
     }
