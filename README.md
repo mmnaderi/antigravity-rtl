@@ -4,8 +4,6 @@ A smart and beautiful RTL (Right-to-Left) patch for the [Antigravity](https://gi
 
 This CLI tool automatically injects a sophisticated RTL engine into Antigravity, adding support for Persian (Farsi), Arabic, Hebrew, and other RTL languages, along with a sleek UI to configure fonts and settings on the fly.
 
-## Demo
-
 https://github.com/user-attachments/assets/f2e8722d-3aeb-47d3-a37e-c33b6a89676e
 
 ## Features
