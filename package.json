@@ -1,0 +1,22 @@
+{
+  "name": "antigravity-rtl",
+  "version": "1.0.0",
+  "description": "A smart RTL (Right-to-Left) patcher with UI settings for the Antigravity application.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["antigravity", "rtl", "persian", "arabic", "hebrew", "patcher", "electron", "asar"],
+  "author": "mmnaderi",
+  "license": "MIT",
+  "dependencies": {
+    "@electron/asar": "^4.2.0",
+    "ora": "^9.4.1",
+    "picocolors": "^1.1.1",
+    "prompts": "^2.4.2"
+  },
+  "type": "module",
+  "bin": {
+    "antigravity-rtl": "./index.js"
+  }
+}
