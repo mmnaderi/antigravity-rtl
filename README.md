@@ -6,7 +6,7 @@ This CLI tool automatically injects a sophisticated RTL engine into Antigravity,
 
 ## Demo
 
-![Antigravity RTL Demo](demo.mp4)
+▶️ **[Watch the Demo Video](https://github.com/mmnaderi/antigravity-rtl/blob/main/demo.mp4)**
 
 ## Features
 
