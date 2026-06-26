@@ -98,7 +98,7 @@ win.webContents.on('console-message', (event, level, message) => {
                         [data-testid="user-input-step"] > *:not(pre):not(code) {
                             direction: rtl !important;
                             text-align: right !important;
-                            unicode-bidi: normal !important;
+                            unicode-bidi: isolate !important;
                         }
                     \` : '';
                     
@@ -145,14 +145,14 @@ win.webContents.on('console-message', (event, level, message) => {
                         .cursor-edit.text-secondary-foreground * {
                             direction: ltr !important;
                             text-align: left !important;
-                            unicode-bidi: normal !important;
+                            unicode-bidi: isolate !important;
                         }
                         
                         /* Custom CSS removed to rely on Tailwind completely */
                         
                         /* Code Blocks */
                         pre, code, pre *, code * {
-                            unicode-bidi: normal !important;
+                            unicode-bidi: isolate !important;
                             direction: ltr !important;
                             text-align: left !important;
                             font-family: \${codeFontStr} !important;
@@ -164,7 +164,7 @@ win.webContents.on('console-message', (event, level, message) => {
                         }
                         
                         [contenteditable="true"], [contenteditable="true"] * {
-                            unicode-bidi: normal !important;
+                            unicode-bidi: isolate !important;
                             text-align: start !important;
                         }
                         
