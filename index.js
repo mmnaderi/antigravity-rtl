@@ -12,7 +12,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { blue, cyan, green, red, yellow, bold } = picocolors;
 
-console.log(bold(cyan('\n✨ Antigravity Smart RTL Patcher\n')));
+const pkgPath = path.join(__dirname, 'package.json');
+const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+console.log(bold(cyan(`\n✨ Antigravity Smart RTL Patcher v${pkg.version}\n`)));
 
 function getDefaultPath() {
     if (os.platform() === 'darwin') {
