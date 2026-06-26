@@ -36,6 +36,9 @@ npx antigravity-rtl
 
 > **Note:** You must have [Node.js](https://nodejs.org) installed on your system to run this command.
 
+> [!WARNING]
+> **App Updates:** Since updating the Antigravity application overwrites its internal files, the RTL patch will be removed. You will need to run the installation command again after each update to re-apply the patch.
+
 ## Restoring to Original (Uninstall)
 
 If you ever want to revert Antigravity back to its original state (before the patch), simply run the command with the `--restore` flag:
@@ -52,6 +55,10 @@ This CLI tool:
 2. Creates a safe backup of the original `app.asar` file.
 3. Extracts the application and safely injects the Smart RTL Engine into the core logic (`utils.js`).
 4. Repacks the application so you can start using it immediately.
+
+## Future Plans (Roadmap)
+
+- Add Right-to-Left (RTL) support for **Antigravity IDE**.
 
 ## Contributing
 
@@ -97,6 +104,9 @@ npx antigravity-rtl
 
 > **نکته:** برای اجرای این دستور باید حتماً [Node.js](https://nodejs.org) روی سیستم شما نصب باشد.
 
+> [!WARNING]
+> **به‌روزرسانی برنامه:** از آنجا که آپدیت کردنِ برنامهٔ آنتی‌گرویتی کدهای آن را بازنویسی می‌کند، پچِ اعمال‌شده از بین خواهد رفت و لازم است پس از هر بار آپدیت، دستور نصب را مجدداً اجرا کنید.
+
 ## بازگردانی به حالت اولیه (Uninstall)
 
 اگر زمانی خواستید آنتی‌گرویتی را به حالتِ کارخانه (قبل از نصب این پچ) برگردانید، فقط کافیست دستور بالا را با فلگ `--restore` اجرا کنید:
@@ -112,6 +122,10 @@ sudo npx antigravity-rtl --restore
 2. یک نسخهٔ پشتیبانِ امن از فایل اوریجینالِ `app.asar` تهیه می‌کند.
 3. فایل را استخراج کرده و کدهای موتورِ RTL را به ایمن‌ترین شکل ممکن به هستهٔ برنامه تزریق می‌کند.
 4. در نهایت برنامه را مجدداً بسته‌بندی می‌کند تا بتوانید بلافاصله از آن لذت ببرید.
+
+## کارهای آینده (Roadmap)
+
+- اضافه کردن قابلیت حل مشکل راست‌به‌چپ برای **Antigravity IDE**.
 
 ## مشارکت در توسعه
 
