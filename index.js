@@ -130,6 +130,8 @@ async function main() {
         }
 
         utilsCode = utilsCode.replace(anchor, payload);
+        // Force-enable DevTools in packaged app
+        utilsCode = utilsCode.replace(/devTools:\s*!electron_1?\.app\.isPackaged/g, 'devTools: true');
         fs.writeFileSync(utilsPath, utilsCode);
 
         const fontSource = path.join(__dirname, 'Vazirmatn-Variable.woff2');

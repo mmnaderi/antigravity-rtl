@@ -1,6 +1,6 @@
 {
   "name": "antigravity-rtl",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A smart RTL (Right-to-Left) patcher with UI settings for the Antigravity application.",
   "main": "index.js",
   "scripts": {
