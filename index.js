@@ -81,10 +81,13 @@ async function main() {
         console.error(red('\nSystem Error: ' + e.message));
         if (os.platform() === 'win32') {
             console.error(yellow('\nPlease run your terminal (PowerShell/CMD) as Administrator and try again.\n'));
+        } else if (os.platform() === 'darwin') {
+            console.error(yellow('\nPlease ensure you run this command with sudo.'));
+            console.error(yellow('If you are using sudo, macOS requires your terminal to have "App Management" permission.'));
+            console.error(yellow('Go to: System Settings > Privacy & Security > App Management'));
+            console.error(yellow('And enable the toggle for your terminal (e.g. Terminal, iTerm2, VS Code), then try again.\n'));
         } else {
-            console.error(yellow('\nNote: "sudo npx" sometimes drops root privileges. If so, try this alternative:'));
-            console.error(bold('  sudo npm install -g antigravity-rtl'));
-            console.error(bold('  sudo antigravity-rtl\n'));
+            console.error(yellow('\nPlease run this command with sudo.\n'));
         }
         process.exit(1);
     }

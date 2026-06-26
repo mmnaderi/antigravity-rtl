@@ -25,6 +25,8 @@ Because the tool needs to modify the Antigravity application files, you must run
 ```bash
 sudo npx antigravity-rtl
 ```
+> **macOS Users:** If you get a "Permission Denied" error even with sudo, ensure your terminal (e.g. Terminal, iTerm2, VS Code) has **App Management** permissions enabled in `System Settings > Privacy & Security > App Management`.
+
 
 ### Windows
 Open **PowerShell** or **Command Prompt** as **Administrator** (Right-click -> Run as Administrator), then run:
@@ -84,6 +86,8 @@ Feel free to open issues or submit pull requests. Let's make Antigravity accessi
 ```bash
 sudo npx antigravity-rtl
 ```
+> **کاربران مک (macOS):** اگر با وجود استفاده از sudo باز هم خطای Permission Denied دریافت کردید، باید به ترمینال خود (مثل Terminal، iTerm2 یا VS Code) دسترسی **App Management** بدهید. برای این کار به مسیر `System Settings > Privacy & Security > App Management` بروید و دسترسی ترمینال خود را فعال کنید.
+
 
 ### در ویندوز
 برنامهٔ **PowerShell** یا **Command Prompt** را در حالت **Administrator** (راست‌کلیک -> Run as Administrator) باز کنید و دستور زیر را بنویسید:
