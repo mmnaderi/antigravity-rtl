@@ -7,6 +7,7 @@ import picocolors from 'picocolors';
 import ora from 'ora';
 import prompts from 'prompts';
 import * as asar from '@electron/asar';
+import figlet from 'figlet';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +15,72 @@ const { blue, cyan, green, red, yellow, bold } = picocolors;
 
 const pkgPath = path.join(__dirname, 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
-console.log(bold(cyan(`\n✨ Antigravity Smart RTL Patcher v${pkg.version}\n`)));
+
+function printBanner() {
+    try {
+        const fullArt = figlet.textSync('Antigravity RTL', { font: 'RubiFont' }).split('\n');
+
+        // Hex colors for the multi-color gradient
+        const hexColors = [
+            '#3387FF',
+            '#F25041',
+            '#DFAC2A',
+            '#91C45B'
+        ];
+
+        // Parse hex to RGB
+        const colors = hexColors.map(hex => {
+            const bigint = parseInt(hex.replace('#', ''), 16);
+            return {
+                r: (bigint >> 16) & 255,
+                g: (bigint >> 8) & 255,
+                b: bigint & 255
+            };
+        });
+
+        const applyGradient = (text) => {
+            let result = '';
+            const len = text.length;
+            for (let i = 0; i < len; i++) {
+                const char = text[i];
+                if (char === ' ' || char === '\n') {
+                    result += char;
+                    continue;
+                }
+                const factor = len > 1 ? i / (len - 1) : 0;
+                
+                // Find current segment in the multi-color transition
+                const segments = colors.length - 1;
+                const segmentFloat = factor * segments;
+                const segmentIdx = Math.min(Math.floor(segmentFloat), segments - 1);
+                const segmentFactor = segmentFloat - segmentIdx;
+
+                const cStart = colors[segmentIdx];
+                const cEnd = colors[segmentIdx + 1];
+
+                const r = Math.round(cStart.r + segmentFactor * (cEnd.r - cStart.r));
+                const g = Math.round(cStart.g + segmentFactor * (cEnd.g - cStart.g));
+                const b = Math.round(cStart.b + segmentFactor * (cEnd.b - cStart.b));
+
+                result += `\x1b[38;2;${r};${g};${b}m${char}\x1b[0m`;
+            }
+            return result;
+        };
+
+        console.log('');
+        for (const line of fullArt) {
+            if (!line.trim()) continue;
+            console.log(applyGradient(line));
+        }
+        console.log('');
+        console.log(`\x1b[2m  RTL & UI Patcher for Antigravity | v${pkg.version}\x1b[0m\n`);
+    } catch (err) {
+        // Fallback banner in case figlet has issues loading
+        console.log(bold(cyan(`\n✨ Antigravity Smart RTL Patcher v${pkg.version}\n`)));
+    }
+}
+
+printBanner();
 
 function getDefaultPath() {
     if (os.platform() === 'darwin') {

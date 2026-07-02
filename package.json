@@ -11,6 +11,7 @@
   "license": "MIT",
   "dependencies": {
     "@electron/asar": "^4.2.0",
+    "figlet": "^1.11.0",
     "ora": "^9.4.1",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2"
