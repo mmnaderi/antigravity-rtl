@@ -20,21 +20,27 @@ https://github.com/user-attachments/assets/f2e8722d-3aeb-47d3-a37e-c33b6a89676e
 
 You don't need to download any files. Just run the following command in your terminal:
 
-### macOS / Linux
+### macOS
 Because the tool needs to modify the Antigravity application files, you must run it with `sudo`:
 ```bash
+brew install node # Skip this line if Node.js is already installed.
 sudo npx antigravity-rtl
 ```
 > **macOS Users:** If you get a "Permission Denied" error even with sudo, ensure your terminal (e.g. Terminal, iTerm2, VS Code) has **App Management** permissions enabled in `System Settings > Privacy & Security > App Management`.
 
-
-### Windows
-Open **PowerShell** or **Command Prompt** as **Administrator** (Right-click -> Run as Administrator), then run:
+### Linux
+Because the tool needs to modify the Antigravity application files, you must run it with `sudo`:
 ```bash
-npx antigravity-rtl
+sudo apt install nodejs npm # Skip this line if Node.js is already installed.
+sudo npx antigravity-rtl
 ```
 
-> **Note:** You must have [Node.js](https://nodejs.org) installed on your system to run this command.
+### Windows
+Open **PowerShell** as **Administrator** (Right-click -> Run as Administrator), then run:
+```powershell
+winget install OpenJS.NodeJS.LTS # Skip this line if Node.js is already installed.
+npx antigravity-rtl
+```
 
 > [!WARNING]
 > **App Updates:** Since updating the Antigravity application overwrites its internal files, the RTL patch will be removed. You will need to run the installation command again after each update to re-apply the patch.
@@ -88,21 +94,27 @@ Feel free to open issues or submit pull requests. Let's make Antigravity accessi
 
 بدون نیاز به دانلود هیچ فایلی، فقط کافیست دستور زیر را در ترمینال سیستم خود اجرا کنید:
 
-### در مک (macOS) و لینوکس
+### در مک (macOS)
 از آنجایی که این ابزار قرار است فایل‌های سیستمی آنتی‌گرویتی را ویرایش کند، باید حتماً دسترسی `sudo` داشته باشد:
 ```bash
+brew install node # اگر Node.js از قبل نصب است، این خط را رد کنید.
 sudo npx antigravity-rtl
 ```
 > **کاربران مک (macOS):** اگر با وجود استفاده از sudo باز هم خطای Permission Denied دریافت کردید، باید به ترمینال خود (مثل Terminal، iTerm2 یا VS Code) دسترسی **App Management** بدهید. برای این کار به مسیر `System Settings > Privacy & Security > App Management` بروید و دسترسی ترمینال خود را فعال کنید.
 
-
-### در ویندوز
-برنامهٔ **PowerShell** یا **Command Prompt** را در حالت **Administrator** (راست‌کلیک -> Run as Administrator) باز کنید و دستور زیر را بنویسید:
+### در لینوکس
+از آنجایی که این ابزار قرار است فایل‌های سیستمی آنتی‌گرویتی را ویرایش کند، باید حتماً دسترسی `sudo` داشته باشد:
 ```bash
-npx antigravity-rtl
+sudo apt install nodejs npm # اگر Node.js از قبل نصب است، این خط را رد کنید.
+sudo npx antigravity-rtl
 ```
 
-> **نکته:** برای اجرای این دستور باید حتماً [Node.js](https://nodejs.org) روی سیستم شما نصب باشد.
+### در ویندوز
+برنامهٔ **PowerShell** را در حالت **Administrator** (راست‌کلیک -> Run as Administrator) باز کنید و دستور زیر را بنویسید:
+```powershell
+winget install OpenJS.NodeJS.LTS # اگر Node.js از قبل نصب است، این خط را رد کنید.
+npx antigravity-rtl
+```
 
 > [!WARNING]
 > **به‌روزرسانی برنامه:** از آنجا که آپدیت کردنِ برنامهٔ آنتی‌گرویتی کدهای آن را بازنویسی می‌کند، پچِ اعمال‌شده از بین خواهد رفت و لازم است پس از هر بار آپدیت، دستور نصب را مجدداً اجرا کنید.
