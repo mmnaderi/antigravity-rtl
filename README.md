@@ -1,4 +1,4 @@
-# Antigravity Smart RTL
+# Antigravity Smart RTL & UI Patcher
 
 A smart and beautiful RTL (Right-to-Left) patch for the [Antigravity](https://github.com/google/antigravity) application.
 
@@ -77,7 +77,7 @@ Feel free to open issues or submit pull requests. Let's make Antigravity accessi
 
 <div dir="rtl">
 
-# پروژه Antigravity Smart RTL
+# اصلاح‌کنندهٔ هوشمند راست‌به‌چپ در Antigravity
 
 یک پچِ هوشمند و زیبا برای پشتیبانی از زبان‌های راست‌به‌چپ (RTL) در نرم‌افزار [Antigravity](https://github.com/google/antigravity).
 
