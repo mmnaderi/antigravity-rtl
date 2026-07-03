@@ -21,9 +21,12 @@ https://github.com/user-attachments/assets/f2e8722d-3aeb-47d3-a37e-c33b6a89676e
 You don't need to download any files. Just run the following command in your terminal:
 
 ### macOS
+Before running the patcher, make sure [Node.js](https://nodejs.org) is installed. You can install it from the official website, or if you already use Homebrew:
+```bash
+brew install node
+```
 Because the tool needs to modify the Antigravity application files, you must run it with `sudo`:
 ```bash
-brew install node # Skip this line if Node.js is already installed.
 sudo npx antigravity-rtl
 ```
 > **macOS Users:** If you get a "Permission Denied" error even with sudo, ensure your terminal (e.g. Terminal, iTerm2, VS Code) has **App Management** permissions enabled in `System Settings > Privacy & Security > App Management`.
@@ -95,9 +98,12 @@ Feel free to open issues or submit pull requests. Let's make Antigravity accessi
 بدون نیاز به دانلود هیچ فایلی، فقط کافیست دستور زیر را در ترمینال سیستم خود اجرا کنید:
 
 ### در مک (macOS)
+قبل از اجرای پچر، مطمئن شوید [Node.js](https://nodejs.org) روی سیستم شما نصب است. می‌توانید آن را از سایت رسمی Node.js نصب کنید، یا اگر از Homebrew استفاده می‌کنید:
+```bash
+brew install node
+```
 از آنجایی که این ابزار قرار است فایل‌های سیستمی آنتی‌گرویتی را ویرایش کند، باید حتماً دسترسی `sudo` داشته باشد:
 ```bash
-brew install node # اگر Node.js از قبل نصب است، این خط را رد کنید.
 sudo npx antigravity-rtl
 ```
 > **کاربران مک (macOS):** اگر با وجود استفاده از sudo باز هم خطای Permission Denied دریافت کردید، باید به ترمینال خود (مثل Terminal، iTerm2 یا VS Code) دسترسی **App Management** بدهید. برای این کار به مسیر `System Settings > Privacy & Security > App Management` بروید و دسترسی ترمینال خود را فعال کنید.
