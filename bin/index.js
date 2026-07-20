@@ -217,7 +217,7 @@ async function main() {
 
     spinner.text = 'Repacking app.asar (almost done)...';
     try {
-        await asar.createPackage(extractDir, asarPath);
+        await asar.createPackageWithOptions(extractDir, asarPath, { unpack: '**/chrome-devtools-mcp/**' });
         fs.rmSync(extractDir, { recursive: true, force: true });
         spinner.succeed('Successfully patched Antigravity!');
         console.log(green('\n✨ RTL Features have been enabled. Please restart Antigravity to see the changes.\n'));
