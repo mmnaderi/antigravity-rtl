@@ -55,6 +55,82 @@ win.webContents.on('console-message', (event, ...args) => {
                             visibility: visible;
                             opacity: 1;
                         }
+                        .rtl-widget-panel {
+                            transform: scale(0);
+                            opacity: 0;
+                            pointer-events: none;
+                            transition: all 0.3s;
+                            transform-origin: bottom right;
+                        }
+                        .rtl-widget-container:hover .rtl-widget-trigger {
+                            opacity: 0 !important;
+                            transform: scale(0.5) !important;
+                            pointer-events: none !important;
+                        }
+                        .rtl-widget-container:hover .rtl-widget-panel {
+                            transform: scale(1) !important;
+                            opacity: 1 !important;
+                            pointer-events: auto !important;
+                        }
+                        /* Theme Colors */
+                        :root {
+                            --rtl-bg: #ffffff;
+                            --rtl-text: #111827;
+                            --rtl-border: #e5e7eb;
+                            --rtl-input-bg: #f3f4f6;
+                        }
+                        :root.dark, .dark {
+                            --rtl-bg: #1e293b;
+                            --rtl-text: #f3f4f6;
+                            --rtl-border: #334155;
+                            --rtl-input-bg: #334155;
+                        }
+                        @media (prefers-color-scheme: dark) {
+                            :root:not(.light) {
+                                --rtl-bg: #1e293b;
+                                --rtl-text: #f3f4f6;
+                                --rtl-border: #334155;
+                                --rtl-input-bg: #334155;
+                            }
+                        }
+                        .rtl-theme-panel {
+                            background-color: var(--rtl-bg) !important;
+                            color: var(--rtl-text) !important;
+                            border: 1px solid var(--rtl-border) !important;
+                        }
+                        .rtl-theme-input {
+                            background-color: var(--rtl-input-bg) !important;
+                            color: var(--rtl-text) !important;
+                            border: 1px solid var(--rtl-border) !important;
+                        }
+                        /* Missing Tailwind Utilities */
+                        .w-11 { width: 44px !important; }
+                        .h-6 { height: 24px !important; }
+                        .w-4 { width: 16px !important; }
+                        .h-4 { height: 16px !important; }
+                        .translate-x-6 { transform: translateX(20px) !important; }
+                        .translate-x-1 { transform: translateX(4px) !important; }
+                        .bg-accent { background-color: #4f46e5 !important; }
+                        
+                        /* Toggle Button CSS Reset */
+                        .rtl-toggle-btn-reset {
+                            padding: 0 !important;
+                            border: none !important;
+                            box-sizing: border-box !important;
+                            min-width: 44px !important;
+                            outline: none !important;
+                            display: inline-flex !important;
+                            align-items: center !important;
+                        }
+                        
+                        /* GitHub Link Hover */
+                        .rtl-github-link {
+                            transition: all 0.1s ease-in-out !important;
+                        }
+                        .rtl-github-link:hover {
+                            color: #eab308 !important; /* Tailwind yellow-500 */
+                            opacity: 1 !important;
+                        }
                     \`;
                     document.head.appendChild(widgetStyle);
                 }
@@ -264,15 +340,18 @@ win.webContents.on('console-message', (event, ...args) => {
                             document.execCommand('insertText', false, '@');
                         }
                     }
-                }, { capture: true });
-
-                // 3. Create Floating Widget
+                }, { capture: true });                // 3. Create Floating Widget
                 const widgetWrapper = document.createElement('div');
                 widgetWrapper.innerHTML = \`
-                    <div class="fixed bottom-4 right-4 z-50" style="direction: ltr;">
+                    <div class="rtl-widget-container group fixed bottom-4 right-4 w-10 h-10" style="direction: ltr; z-index: 999999; overflow: visible !important;">
+                      <!-- Trigger Icon -->
+                      <div class="rtl-widget-trigger relative w-10 h-10 flex items-center justify-center rounded-full bg-secondary text-secondary-foreground hover:text-foreground cursor-pointer opacity-80 transition-all duration-300">
+                        <svg height="20" width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                      </div>
+                      
                       <!-- Panel -->
-                      <div id="rtl-settings-panel" class="absolute bottom-12 right-0 flex flex-col p-px rounded-2xl bg-card-border transition-all duration-300 text-sm origin-bottom-right scale-0 opacity-0 pointer-events-none w-60 rtl-panel">
-                        <div class="flex flex-col gap-2 p-3 rounded-[15px] bg-transparent text-card-foreground w-full h-full">
+                      <div class="rtl-widget-panel rtl-theme-panel absolute bottom-0 right-0 flex flex-col p-px rounded-2xl text-sm w-60">
+                        <div class="flex flex-col gap-2 p-3 rounded-[15px] w-full h-full">
                         
                         <!-- Header -->
                         <div class="text-center px-1 pb-2 mb-1 border-b border-border border-opacity-50">
@@ -282,8 +361,8 @@ win.webContents.on('console-message', (event, ...args) => {
                         <!-- Toggle -->
                         <div class="flex items-center justify-between gap-4 px-1">
                           <span id="rtl-toggle-label" class="font-medium text-xs opacity-80">\${isRTL ? 'Enabled' : 'Disabled'}</span>
-                          <button id="rtl-toggle-btn" type="button" role="switch" aria-checked="true" class="relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 cursor-pointer">
-                            <span id="rtl-toggle-knob" class="inline-block transform rounded-full bg-white shadow-sm h-4 w-4 rtl-knob"></span>
+                          <button id="rtl-toggle-btn" type="button" role="switch" aria-checked="true" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 bg-accent cursor-pointer">
+                            <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
                           </button>
                         </div>
                         
@@ -305,8 +384,8 @@ win.webContents.on('console-message', (event, ...args) => {
                                   </div>
                                 </div>
                               </div>
-                              <button id="rtl-force-btn" type="button" role="switch" class="relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 cursor-pointer">
-                                <span id="rtl-force-knob" class="inline-block transform rounded-full bg-white shadow-sm h-4 w-4 rtl-knob"></span>
+                              <button id="rtl-force-btn" type="button" role="switch" aria-checked="\${forceRTL}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${forceRTL ? '24px' : '4px'});"></span>
                               </button>
                             </div>
                             
@@ -316,19 +395,19 @@ win.webContents.on('console-message', (event, ...args) => {
                             <!-- Persian Font -->
                             <div class="flex items-center justify-between gap-2 px-1">
                               <span class="font-medium text-xs opacity-80 whitespace-nowrap" title="Persian/Arabic Font (Fallback: Vazirmatn)">FA/AR Font</span>
-                              <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="text-[11px] bg-muted border border-border px-2 py-1 rounded-md w-28 focus:outline-none !text-foreground">
+                              <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input text-[11px] px-2 py-1 rounded-md w-28 focus:outline-none">
                             </div>
                             
                             <!-- English Font -->
                             <div class="flex items-center justify-between gap-2 px-1 mt-1">
                               <span class="font-medium text-xs opacity-80 whitespace-nowrap" title="English Font">EN Font</span>
-                              <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="text-[11px] bg-muted border border-border px-2 py-1 rounded-md w-28 focus:outline-none !text-foreground">
+                              <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input text-[11px] px-2 py-1 rounded-md w-28 focus:outline-none">
                             </div>
                             
                             <!-- Code Font -->
                             <div class="flex items-center justify-between gap-2 px-1 mt-1">
                               <span class="font-medium text-xs opacity-80 whitespace-nowrap" title="Code Font">Code Font</span>
-                              <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="text-[11px] bg-muted border border-border px-2 py-1 rounded-md w-28 focus:outline-none !text-foreground">
+                              <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input text-[11px] px-2 py-1 rounded-md w-28 focus:outline-none">
                             </div>
                             
                             <!-- Line Height -->
@@ -355,14 +434,14 @@ win.webContents.on('console-message', (event, ...args) => {
                             
                             <!-- Separator -->
                             <div class="h-px bg-border border-opacity-30 w-full my-1"></div>
- 
+
                             <!-- Fix @ Toggle -->
                             <div class="flex items-center justify-between gap-2 px-1 mb-1">
                               <div class="flex items-center">
                                 <span class="font-medium text-xs opacity-80 whitespace-nowrap">Type @ with Shift+2</span>
                                 <div class="relative flex items-center rtl-info-icon ml-1">
                                   <span class="cursor-pointer inline-flex items-center text-muted-foreground hover:text-foreground">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" class="w-3.5 h-3.5"><path d="M450-290h60V-520H450v230Zm52.92-307.75q9.38-9.29 9.38-23.02t-9.29-23.02T480-653.07t-23.02,9.29t-9.29,23.02t9.38,23.02T480-588.46t22.92-9.29ZM480.07-100q-78.84,0-148.2-29.92T211.18-211.13T129.93-331.76T100-479.93t29.92-148.2t81.21-120.68t120.63-81.25T479.93-860t148.2,29.92t120.68,81.21t81.25,120.63T860-480.07t-29.92,148.2T748.87-211.18T628.24-129.93T480.07-100ZM480-160q134,0 227-93t93-227T707-707T480-800T253-707T160-480t93,227t227,93Zm0-320Z"></path></svg>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="-0 -960 960 960" fill="currentColor" class="w-3.5 h-3.5"><path d="M450-290h60V-520H450v230Zm52.92-307.75q9.38-9.29 9.38-23.02t-9.29-23.02T480-653.07t-23.02,9.29t-9.29,23.02t9.38,23.02T480-588.46t22.92-9.29ZM480.07-100q-78.84,0-148.2-29.92T211.18-211.13T129.93-331.76T100-479.93t29.92-148.2t81.21-120.68t120.63-81.25T479.93-860t148.2,29.92t120.68,81.21t81.25,120.63T860-480.07t-29.92,148.2T748.87-211.18T628.24-129.93T480.07-100ZM480-160q134,0 227-93t93-227T707-707T480-800T253-707T160-480t93,227t227,93Zm0-320Z"></path></svg>
                                   </span>
                                   <div class="rtl-tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 rounded shadow-md z-50 whitespace-normal text-center bg-muted border border-border text-foreground text-[11px] leading-relaxed">
                                     Forces Shift+2 to type '@' instead of '٬' while using the Persian keyboard.
@@ -371,8 +450,8 @@ win.webContents.on('console-message', (event, ...args) => {
                                   </div>
                                 </div>
                               </div>
-                              <button id="rtl-at-btn" type="button" role="switch" class="relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 cursor-pointer">
-                                <span id="rtl-at-knob" class="inline-block transform rounded-full bg-white shadow-sm h-4 w-4 rtl-knob"></span>
+                              <button id="rtl-at-btn" type="button" role="switch" aria-checked="\${fixAtSign}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${fixAtSign ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                <span id="rtl-at-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${fixAtSign ? '24px' : '4px'});"></span>
                               </button>
                             </div>
                         </div>
@@ -380,48 +459,15 @@ win.webContents.on('console-message', (event, ...args) => {
                         <div class="h-px bg-card-border w-full"></div>
                         
                         <!-- GitHub -->
-                        <a href="https://github.com/AriaRazavi2005/antigravity-rtl" target="_blank" class="flex items-center justify-center gap-2 text-xs font-semibold hover:text-yellow-500 opacity-70 hover:opacity-100 transition-all duration-300 no-underline pt-1 pb-0.5">
+                        <a href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" class="rtl-github-link flex items-center justify-center gap-2 text-xs font-semibold opacity-70 no-underline pt-1 pb-0.5">
                           <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
                           Star on GitHub
                         </a>
                         </div>
                       </div>
-                      
-                      <!-- Trigger Icon -->
-                      <div id="rtl-trigger-btn" class="w-10 h-10 flex items-center justify-center rounded-full bg-secondary text-secondary-foreground hover:text-foreground cursor-pointer opacity-80 transition-all duration-300 shadow-md">
-                        <svg height="20" width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                      </div>
                     </div>
                 \`;
                 document.body.appendChild(widgetWrapper.firstElementChild);
-                
-                const triggerBtn = document.getElementById('rtl-trigger-btn');
-                const settingsPanel = document.getElementById('rtl-settings-panel');
-                
-                triggerBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const isOpen = settingsPanel.classList.contains('scale-100');
-                    if (isOpen) {
-                        settingsPanel.classList.remove('scale-100', 'opacity-100', 'pointer-events-auto');
-                        settingsPanel.classList.add('scale-0', 'opacity-0', 'pointer-events-none');
-                        triggerBtn.classList.remove('rtl-active');
-                    } else {
-                        settingsPanel.classList.remove('scale-0', 'opacity-0', 'pointer-events-none');
-                        settingsPanel.classList.add('scale-100', 'opacity-100', 'pointer-events-auto');
-                        triggerBtn.classList.add('rtl-active');
-                    }
-                });
-                
-                document.addEventListener('click', (e) => {
-                    if (settingsPanel.classList.contains('scale-100') && 
-                        !settingsPanel.contains(e.target) && 
-                        e.target !== triggerBtn && 
-                        !triggerBtn.contains(e.target)) {
-                        settingsPanel.classList.remove('scale-100', 'opacity-100', 'pointer-events-auto');
-                        settingsPanel.classList.add('scale-0', 'opacity-0', 'pointer-events-none');
-                        triggerBtn.classList.remove('rtl-active');
-                    }
-                });
                 
                 const toggleBtn = document.getElementById('rtl-toggle-btn');
                 const toggleKnob = document.getElementById('rtl-toggle-knob');
@@ -438,7 +484,18 @@ win.webContents.on('console-message', (event, ...args) => {
                 const forceKnob = document.getElementById('rtl-force-knob');
                 const atBtn = document.getElementById('rtl-at-btn');
                 const atKnob = document.getElementById('rtl-at-knob');
- 
+
+                // Initialize Toggle State
+                if (!isRTL) {
+                    toggleBtn.setAttribute('aria-checked', 'false');
+                    toggleBtn.classList.remove('bg-accent');
+                    toggleBtn.style.backgroundColor = 'rgba(156, 163, 175, 0.4)';
+                    toggleKnob.style.transform = 'translateX(4px)';
+                    if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
+                } else {
+                    updateDir();
+                }
+
                 const saveConfig = () => {
                     console.log("SAVE_RTL_CONFIG|" + JSON.stringify({
                         faFont: faFontInput.value.trim(),
@@ -451,31 +508,26 @@ win.webContents.on('console-message', (event, ...args) => {
                         fixAtSign: fixAtSign
                     }));
                 };
- 
-                const renderToggleState = (btn, knob, active) => {
-                    btn.setAttribute('aria-checked', active ? 'true' : 'false');
-                    if (active) {
-                        btn.style.backgroundColor = 'var(--vscode-button-background, #3c82f6)';
-                        knob.style.transform = 'translateX(24px)';
-                    } else {
-                        btn.style.backgroundColor = 'rgba(156, 163, 175, 0.4)';
-                        knob.style.transform = 'translateX(4px)';
-                    }
-                };
 
                 function setRTLActive(active) {
                     isRTL = active;
                     saveConfig();
-                    renderToggleState(toggleBtn, toggleKnob, isRTL);
+                    toggleBtn.setAttribute('aria-checked', isRTL);
                     
                     if (isRTL) {
                         toggleLabel.innerText = 'Enabled';
                         settingsWrapper.classList.remove('opacity-40', 'pointer-events-none');
+                        toggleBtn.classList.add('bg-accent');
+                        toggleBtn.style.backgroundColor = ''; 
+                        toggleKnob.style.transform = 'translateX(24px)';
                         document.head.appendChild(rtlStyle);
                         updateDir();
                         updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                     } else {
                         toggleLabel.innerText = 'Disabled';
+                        toggleBtn.classList.remove('bg-accent');
+                        toggleBtn.style.backgroundColor = 'rgba(156, 163, 175, 0.4)';
+                        toggleKnob.style.transform = 'translateX(4px)';
                         settingsWrapper.classList.add('opacity-40', 'pointer-events-none');
                         if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
                         
@@ -490,34 +542,43 @@ win.webContents.on('console-message', (event, ...args) => {
                         });
                     }
                 }
- 
-                // Initialize States
-                renderToggleState(toggleBtn, toggleKnob, isRTL);
-                renderToggleState(forceBtn, forceKnob, forceRTL);
-                renderToggleState(atBtn, atKnob, fixAtSign);
-                
-                if (isRTL) {
-                    updateDir();
-                } else {
-                    if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
-                }
- 
+
                 // Force RTL Event
                 forceBtn.addEventListener('click', () => {
                     forceRTL = !forceRTL;
                     saveConfig();
-                    renderToggleState(forceBtn, forceKnob, forceRTL);
+                    forceBtn.setAttribute('aria-checked', forceRTL);
+                    
+                    if (forceRTL) {
+                        forceBtn.classList.add('bg-accent');
+                        forceBtn.classList.remove('bg-gray-400', 'bg-opacity-40');
+                        forceKnob.style.transform = 'translateX(24px)';
+                    } else {
+                        forceBtn.classList.remove('bg-accent');
+                        forceBtn.classList.add('bg-gray-400', 'bg-opacity-40');
+                        forceKnob.style.transform = 'translateX(4px)';
+                    }
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                     updateDir();
                 });
- 
+
                 // At Sign Fix Event
                 atBtn.addEventListener('click', () => {
                     fixAtSign = !fixAtSign;
                     saveConfig();
-                    renderToggleState(atBtn, atKnob, fixAtSign);
+                    atBtn.setAttribute('aria-checked', fixAtSign);
+                    
+                    if (fixAtSign) {
+                        atBtn.classList.add('bg-accent');
+                        atBtn.classList.remove('bg-gray-400', 'bg-opacity-40');
+                        atKnob.style.transform = 'translateX(24px)';
+                    } else {
+                        atBtn.classList.remove('bg-accent');
+                        atBtn.classList.add('bg-gray-400', 'bg-opacity-40');
+                        atKnob.style.transform = 'translateX(4px)';
+                    }
                 });
- 
+
                 // Event Listeners
                 faFontInput.addEventListener('input', (e) => {
                     saveConfig();
