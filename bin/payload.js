@@ -360,7 +360,20 @@ win.webContents.on('console-message', (event, ...args) => {
                         
                         <!-- Toggle -->
                         <div class="flex items-center justify-between gap-4 px-1">
-                          <span id="rtl-toggle-label" class="font-medium text-xs opacity-80">\${isRTL ? 'Enabled' : 'Disabled'}</span>
+                          <div class="flex items-center">
+                            <span id="rtl-toggle-label" class="font-medium text-xs opacity-80">\${isRTL ? 'Enabled' : 'Disabled'}</span>
+                            <div class="relative flex items-center rtl-info-icon ml-1">
+                              <span class="cursor-pointer inline-flex items-center text-muted-foreground hover:text-foreground">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" class="w-3.5 h-3.5"><path d="M450-290h60V-520H450v230Zm52.92-307.75q9.38-9.29 9.38-23.02t-9.29-23.02T480-653.07t-23.02,9.29t-9.29,23.02t9.38,23.02T480-588.46t22.92-9.29ZM480.07-100q-78.84,0-148.2-29.92T211.18-211.13T129.93-331.76T100-479.93t29.92-148.2t81.21-120.68t120.63-81.25T479.93-860t148.2,29.92t120.68,81.21t81.25,120.63T860-480.07t-29.92,148.2T748.87-211.18T628.24-129.93T480.07-100ZM480-160q134,0 227-93t93-227T707-707T480-800T253-707T160-480t93,227t227,93Zm0-320Z"></path></svg>
+                              </span>
+                              <!-- Tooltip Popup -->
+                              <div class="rtl-tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-1.5 rounded shadow-md z-50 whitespace-normal text-center bg-muted border border-border text-foreground text-[11px] leading-relaxed">
+                                Shortcut: Alt + R
+                                <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0" style="border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid var(--border, #444);"></div>
+                                <div class="absolute top-[calc(100%-1px)] left-1/2 -translate-x-1/2 w-0 h-0" style="border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--muted, #333);"></div>
+                              </div>
+                            </div>
+                          </div>
                           <button id="rtl-toggle-btn" type="button" role="switch" aria-checked="true" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 bg-accent cursor-pointer">
                             <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
                           </button>
