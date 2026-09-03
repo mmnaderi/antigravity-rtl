@@ -178,7 +178,9 @@ win.webContents.on('console-message', (event, ...args) => {
                         .markdown-body > *:not(pre):not(code), 
                         .leading-relaxed > *:not(pre):not(code),
                         [data-testid="user-input-step"],
-                        [data-testid="user-input-step"] > *:not(pre):not(code) {
+                        [data-testid="user-input-step"] > *:not(pre):not(code),
+                        div:has(> [role="radiogroup"]),
+                        label[for^="ask-opt-"] {
                             direction: rtl !important;
                             text-align: right !important;
                             unicode-bidi: isolate !important;
@@ -204,6 +206,18 @@ win.webContents.on('console-message', (event, ...args) => {
                             text-align: start;
                         }
                         .prose > *, [data-testid="chat-message"] > *, .markdown-body > * {
+                            unicode-bidi: plaintext;
+                            text-align: start;
+                        }
+                        label[for^="ask-opt-"] {
+                            unicode-bidi: plaintext;
+                            text-align: start;
+                        }
+                        label[for^="ask-opt-"][dir="rtl"] {
+                            direction: rtl;
+                            text-align: right;
+                        }
+                        textarea[data-testid="ask-question-writein"] {
                             unicode-bidi: plaintext;
                             text-align: start;
                         }
@@ -260,7 +274,7 @@ win.webContents.on('console-message', (event, ...args) => {
                             text-align: start !important;
                         }
                         /* Apply line height exclusively to chat paragraphs and input area */
-                        .prose p, .prose li, .markdown-body p, [data-testid="chat-message"] p, [data-testid="chat-message"] .leading-relaxed, .leading-relaxed, [data-testid="user-input-step"], [data-testid="user-input-step"] div, [data-lexical-text="true"], [contenteditable="true"], [contenteditable="true"] p, .pointer-events-none.absolute.overflow-hidden {
+                        .prose p, .prose li, .markdown-body p, [data-testid="chat-message"] p, [data-testid="chat-message"] .leading-relaxed, .leading-relaxed, [data-testid="user-input-step"], [data-testid="user-input-step"] div, [data-lexical-text="true"], [contenteditable="true"], [contenteditable="true"] p, .pointer-events-none.absolute.overflow-hidden, label[for^="ask-opt-"] {
                             line-height: \${lh} !important;
                         }
                     \`;
@@ -274,8 +288,9 @@ win.webContents.on('console-message', (event, ...args) => {
                     if (!isRTL) return;
                     
                     // Inputs
-                    document.querySelectorAll('[contenteditable="true"] p, [contenteditable="true"]').forEach(el => {
-                        const text = el.textContent.replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
+                    document.querySelectorAll('[contenteditable="true"] p, [contenteditable="true"], textarea[data-testid="ask-question-writein"]').forEach(el => {
+                        const raw = el.tagName === 'TEXTAREA' ? el.value : el.textContent;
+                        const text = raw.replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
                         if (text.length > 0) {
                             const isRtlText = /^[^a-zA-Z]*[\\u0591-\\u07FF\\uFB1D-\\uFDFD\\uFE70-\\uFEFC]/.test(text);
                             const newDir = isRtlText ? 'rtl' : 'ltr';
@@ -292,7 +307,9 @@ win.webContents.on('console-message', (event, ...args) => {
                         .markdown-body > *, 
                         .leading-relaxed > *,
                         [data-testid="user-input-step"],
-                        [data-testid="user-input-step"] > *
+                        [data-testid="user-input-step"] > *,
+                        div:has(> [role="radiogroup"]),
+                        label[for^="ask-opt-"]
                     \`).forEach(el => {
                         // Skip code blocks
                         if (el.tagName === 'PRE' || el.tagName === 'CODE') return;
