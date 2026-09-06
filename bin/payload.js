@@ -195,8 +195,20 @@ win.webContents.on('console-message', (event, ...args) => {
                             font-weight: 100 900;
                             unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
                         }
+                        @font-face {
+                            font-family: 'Vazirmatn';
+                            src: url('data:font/woff2;base64,\${fontBase64}') format('woff2');
+                            font-weight: 100 900;
+                        }
                         :root, :host, html, body {
-                            font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+                            font-family: \${faFontName}, 'Vazirmatn', \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+                        }
+                        [dir="rtl"], [dir="rtl"] *:not(pre):not(code),
+                        .prose, .prose *, [data-testid="chat-message"], [data-testid="chat-message"] *,
+                        .markdown-body, .markdown-body *, .leading-relaxed, .leading-relaxed *,
+                        [contenteditable="true"], [contenteditable="true"] *, [data-lexical-text="true"],
+                        label[for^="ask-opt-"], textarea[data-testid="ask-question-writein"] {
+                            font-family: \${faFontName}, 'Vazirmatn', \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
                         }
                         .prose, [data-testid="chat-message"], .markdown-body, .leading-relaxed, [contenteditable="true"], [contenteditable="true"] p {
                             font-size: \${fs}px !important;

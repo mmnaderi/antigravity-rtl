@@ -1,7 +1,7 @@
 {
   "name": "antigravity-rtl",
-  "version": "1.0.10",
-  "description": "A smart RTL (Right-to-Left) patcher with UI settings for the Antigravity application.",
+  "version": "1.1.0",
+  "description": "A smart RTL (Right-to-Left) patcher with UI settings for Antigravity & Antigravity IDE.",
   "main": "./bin/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
