@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 import fs from 'fs';
 import path from 'path';
-import os from 'os';
 import { fileURLToPath } from 'url';
 import picocolors from 'picocolors';
-import ora from 'ora';
 import prompts from 'prompts';
-import * as asar from '@electron/asar';
 import figlet from 'figlet';
+
+import { patchApp, restoreApp, getAppAsarPath, getDefaultAppPath, getAppCandidatePaths } from './patch-app.js';
+import { patchIde, restoreIde, getIdeAppPath, getIdeCandidatePaths, resolveIdeAppDir } from './patch-ide.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const { blue, cyan, green, red, yellow, bold } = picocolors;
+const { cyan, bold } = picocolors;
 
 const pkgPath = path.join(__dirname, '..', 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
@@ -19,16 +19,7 @@ const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
 function printBanner() {
     try {
         const fullArt = figlet.textSync('Antigravity RTL', { font: 'RubiFont' }).split('\n');
-
-        // Hex colors for the multi-color gradient
-        const hexColors = [
-            '#3387FF',
-            '#F25041',
-            '#DFAC2A',
-            '#91C45B'
-        ];
-
-        // Parse hex to RGB
+        const hexColors = ['#3387FF', '#F25041', '#DFAC2A', '#91C45B'];
         const colors = hexColors.map(hex => {
             const bigint = parseInt(hex.replace('#', ''), 16);
             return {
@@ -48,8 +39,6 @@ function printBanner() {
                     continue;
                 }
                 const factor = len > 1 ? i / (len - 1) : 0;
-                
-                // Find current segment in the multi-color transition
                 const segments = colors.length - 1;
                 const segmentFloat = factor * segments;
                 const segmentIdx = Math.min(Math.floor(segmentFloat), segments - 1);
@@ -73,162 +62,112 @@ function printBanner() {
             console.log(applyGradient(line));
         }
         console.log('');
-        console.log(`\x1b[2m  RTL & UI Patcher for Antigravity | v${pkg.version}\x1b[0m\n`);
+        console.log(`\x1b[2m  RTL & UI Patcher for Antigravity & Antigravity IDE | v${pkg.version}\x1b[0m\n`);
     } catch (err) {
-        // Fallback banner in case figlet has issues loading
         console.log(bold(cyan(`\n✨ Antigravity Smart RTL Patcher v${pkg.version}\n`)));
     }
 }
 
 printBanner();
 
-function getDefaultPath() {
-    if (os.platform() === 'darwin') {
-        return '/Applications/Antigravity.app/Contents/Resources/app.asar';
-    } else if (os.platform() === 'win32') {
-        return path.join(process.env.LOCALAPPDATA || '', 'Programs', 'Antigravity', 'resources', 'app.asar');
-    } else {
-        return '/opt/Antigravity/resources/app.asar';
+const args = process.argv.slice(2);
+
+if (args.includes('--help') || args.includes('-h')) {
+    console.log(`Usage:
+  npx antigravity-rtl [options] [path]
+
+Options:
+  --ide              Patch or restore Antigravity IDE (VS Code Edition)
+  --app              Patch or restore Antigravity Standalone App
+  --restore          Revert changes and restore original backup files
+  --path <dir/file>  Specify custom path to IDE directory or app.asar
+  -h, --help         Show this help message
+
+Supported Platforms:
+  Windows, macOS, Linux
+`);
+    process.exit(0);
+}
+
+const isRestore = args.includes('--restore');
+const forceIde = args.includes('--ide');
+const forceApp = args.includes('--app');
+
+// Find custom path argument if provided e.g. --path /foo/bar or last positional argument
+let customPath = null;
+const pathArgIdx = args.indexOf('--path');
+if (pathArgIdx !== -1 && args[pathArgIdx + 1]) {
+    customPath = args[pathArgIdx + 1];
+} else {
+    const nonFlags = args.filter(a => !a.startsWith('--'));
+    if (nonFlags.length > 0) {
+        customPath = nonFlags[0];
     }
 }
 
-async function getAsarPath() {
-    let asarPath = getDefaultPath();
-    if (fs.existsSync(asarPath)) {
-        console.log(blue(`ℹ Found Antigravity installation at:`));
-        console.log(`  ${asarPath}\n`);
-        return asarPath;
+async function determineTarget() {
+    if (forceIde) return 'ide';
+    if (forceApp) return 'app';
+
+    if (customPath) {
+        if (resolveIdeAppDir(customPath)) return 'ide';
+        return 'app';
     }
 
-    console.log(yellow(`⚠ Could not find Antigravity at default location.`));
+    // Auto-detect installed apps
+    const ideCandidates = getIdeCandidatePaths();
+    let hasIde = ideCandidates.some(c => resolveIdeAppDir(c) !== null);
+
+    const defaultAppCandidates = getAppCandidatePaths();
+    let hasApp = defaultAppCandidates.some(c => fs.existsSync(c));
+
+    if (hasIde && !hasApp) {
+        return 'ide';
+    }
+    if (hasApp && !hasIde) {
+        return 'app';
+    }
+
+    // If both or neither found, ask the user
+    const actionLabel = isRestore ? 'restore' : 'patch';
     const response = await prompts({
-        type: 'text',
-        name: 'customPath',
-        message: 'Please enter the full path to app.asar:'
+        type: 'select',
+        name: 'target',
+        message: `Which application would you like to ${actionLabel}?`,
+        choices: [
+            { title: 'Antigravity IDE (VS Code Edition)', value: 'ide' },
+            { title: 'Antigravity (Standalone App)', value: 'app' }
+        ],
+        initial: 0
     });
 
-    if (!response.customPath || !fs.existsSync(response.customPath)) {
-        console.error(red('\n✖ Invalid path. Aborting.\n'));
-        process.exit(1);
+    if (!response.target) {
+        process.exit(0);
     }
-    return response.customPath;
+    return response.target;
 }
 
-const args = process.argv.slice(2);
-const isRestore = args.includes('--restore');
-
 async function main() {
-    const asarPath = await getAsarPath();
-    const backupPath = asarPath + '.bak';
-    
-    if (isRestore) {
-        if (!fs.existsSync(backupPath)) {
-            console.error(red('✖ No backup found to restore.\n'));
-            process.exit(1);
-        }
-        const spinner = ora('Restoring original app.asar...').start();
-        try {
-            fs.copyFileSync(backupPath, asarPath);
-            spinner.succeed('Successfully restored original Antigravity!\n');
-            process.exit(0);
-        } catch (e) {
-            spinner.fail('Failed to restore.');
-            console.error(red(e.message));
-            process.exit(1);
-        }
-    }
+    const target = await determineTarget();
 
-    const spinner = ora('Checking permissions and backing up...').start();
-    try {
-        fs.accessSync(path.dirname(asarPath), fs.constants.W_OK);
-        if (!fs.existsSync(backupPath)) {
-            fs.copyFileSync(asarPath, backupPath);
-        }
-    } catch (e) {
-        spinner.fail('Permission Denied.');
-        console.error(red('\nSystem Error: ' + e.message));
-        if (os.platform() === 'win32') {
-            console.error(yellow('\nPlease run your terminal (PowerShell/CMD) as Administrator and try again.\n'));
-        } else if (os.platform() === 'darwin') {
-            console.error(yellow('\nPlease ensure you run this command with sudo.'));
-            console.error(yellow('If you are using sudo, macOS requires your terminal to have "App Management" permission.'));
-            console.error(yellow('Go to: System Settings > Privacy & Security > App Management'));
-            console.error(yellow('And enable the toggle for your terminal (e.g. Terminal, iTerm2, VS Code), then try again.\n'));
+    if (target === 'ide') {
+        const ideAppDir = await getIdeAppPath(customPath);
+        if (isRestore) {
+            await restoreIde(ideAppDir);
         } else {
-            console.error(yellow('\nPlease run this command with sudo.\n'));
+            await patchIde(ideAppDir);
         }
-        process.exit(1);
-    }
-    
-    const extractDir = path.join(path.dirname(asarPath), 'app-extracted-rtl-temp');
-    spinner.text = 'Extracting app.asar (this may take a few seconds)...';
-    try {
-        if (fs.existsSync(extractDir)) {
-            fs.rmSync(extractDir, { recursive: true, force: true });
+    } else {
+        const appAsarPath = await getAppAsarPath(customPath);
+        if (isRestore) {
+            await restoreApp(appAsarPath);
+        } else {
+            await patchApp(appAsarPath);
         }
-        asar.extractAll(asarPath, extractDir);
-    } catch (e) {
-        spinner.fail('Failed to extract ASAR.');
-        console.error(red(e.message));
-        process.exit(1);
-    }
-
-    spinner.text = 'Injecting RTL features...';
-    try {
-        const utilsPath = path.join(extractDir, 'dist', 'utils.js');
-        if (!fs.existsSync(utilsPath)) {
-            throw new Error('dist/utils.js not found in ASAR. Unsupported Antigravity version.');
-        }
-
-        let utilsCode = fs.readFileSync(utilsPath, 'utf8');
-        
-        if (utilsCode.includes('/* ANTIGRAVITY RTL PATCH */')) {
-            spinner.succeed('Antigravity is already patched!');
-            fs.rmSync(extractDir, { recursive: true, force: true });
-            console.log(green('\n✨ Enjoy your RTL experience!\n'));
-            process.exit(0);
-        }
-
-        const payloadPath = path.join(__dirname, 'payload.js');
-        const payload = fs.readFileSync(payloadPath, 'utf8');
-
-        const anchor = 'void win.loadURL(url);';
-        if (!utilsCode.includes(anchor)) {
-            throw new Error('Injection anchor not found. The app version might be unsupported.');
-        }
-
-        utilsCode = utilsCode.replace(anchor, payload);
-        // Force-enable DevTools in packaged app
-        utilsCode = utilsCode.replace(/devTools:\s*!electron_1?\.app\.isPackaged/g, 'devTools: true');
-        fs.writeFileSync(utilsPath, utilsCode);
-
-        const fontSource = path.join(__dirname, 'Vazirmatn-Variable.woff2');
-        const fontDest = path.join(extractDir, 'dist', 'Vazirmatn-Variable.woff2');
-        if (fs.existsSync(fontSource)) {
-            fs.copyFileSync(fontSource, fontDest);
-        }
-
-    } catch (e) {
-        spinner.fail('Injection failed.');
-        console.error(red(e.message));
-        if (fs.existsSync(extractDir)) fs.rmSync(extractDir, { recursive: true, force: true });
-        process.exit(1);
-    }
-
-    spinner.text = 'Repacking app.asar (almost done)...';
-    try {
-        await asar.createPackage(extractDir, asarPath);
-        fs.rmSync(extractDir, { recursive: true, force: true });
-        spinner.succeed('Successfully patched Antigravity!');
-        console.log(green('\n✨ RTL Features have been enabled. Please restart Antigravity to see the changes.\n'));
-    } catch (e) {
-        spinner.fail('Failed to repack ASAR.');
-        console.error(red(e.message));
-        process.exit(1);
     }
 }
 
 main().catch(e => {
-    console.error(red('\n✖ An unexpected error occurred:'), e.message);
+    console.error('\n✖ An unexpected error occurred:', e.message);
     process.exit(1);
 });
