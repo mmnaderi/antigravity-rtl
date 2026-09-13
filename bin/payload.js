@@ -133,7 +133,7 @@ win.webContents.on('dom-ready', () => {
             }
 
             let activeTab = isAppDark() ? 'dark' : 'light';
-            let activeMainTab = rtlConfig.activeMainTab || 'rtl';
+            let activeMainTab = 'rtl';
 
             function getShadowCSS(type, borderCol, mode) {
                 if (type === 'none') return 'none';
@@ -207,7 +207,7 @@ win.webContents.on('dom-ready', () => {
                     }
 
                     .rtl-widget-panel {
-                        height: 540px !important;
+                        height: 520px !important;
                         max-height: 85vh !important;
                         transform: scale(0.95);
                         opacity: 0;
@@ -243,20 +243,51 @@ win.webContents.on('dom-ready', () => {
                         user-select: none !important;
                     }
 
-                    /* Custom Slim Scrollbar for Settings Panel (Vibe UI Spec) */
-                    .rtl-widget-panel *::-webkit-scrollbar {
-                        width: 4px !important;
-                        height: 4px !important;
+                    /* Reset Icon Button (Vibe UI Spec) */
+                    .rtl-reset-icon-btn {
+                        display: inline-flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        width: 24px !important;
+                        height: 24px !important;
+                        border-radius: 6px !important;
+                        color: var(--rtl-text-secondary) !important;
+                        background: transparent !important;
+                        border: 1px solid transparent !important;
+                        cursor: pointer !important;
+                        transition: all 0.15s ease !important;
+                        opacity: 0.75 !important;
                     }
-                    .rtl-widget-panel *::-webkit-scrollbar-track {
+                    .rtl-reset-icon-btn:hover {
+                        opacity: 1 !important;
+                        background-color: var(--rtl-surface) !important;
+                        border-color: var(--rtl-border) !important;
+                        color: var(--rtl-text) !important;
+                    }
+
+                    /* Custom Slim Scrollbar for Settings Panel (Vibe UI Spec) */
+                    .rtl-panel-body {
+                        scrollbar-width: thin !important;
+                        scrollbar-color: rgba(140, 150, 170, 0.35) transparent !important;
+                    }
+                    .rtl-panel-body::-webkit-scrollbar {
+                        width: 3px !important;
+                        height: 3px !important;
+                    }
+                    .rtl-panel-body::-webkit-scrollbar-track {
                         background: transparent !important;
                     }
-                    .rtl-widget-panel *::-webkit-scrollbar-thumb {
-                        background: rgba(140, 150, 170, 0.28) !important;
+                    .rtl-panel-body::-webkit-scrollbar-thumb {
+                        background: rgba(140, 150, 170, 0.35) !important;
                         border-radius: 9999px !important;
                     }
-                    .rtl-widget-panel *::-webkit-scrollbar-thumb:hover {
-                        background: rgba(140, 150, 170, 0.5) !important;
+                    .rtl-panel-body::-webkit-scrollbar-thumb:hover {
+                        background: rgba(140, 150, 170, 0.65) !important;
+                    }
+                    .rtl-panel-body::-webkit-scrollbar-button {
+                        display: none !important;
+                        width: 0 !important;
+                        height: 0 !important;
                     }
 
                     /* Main Navigation Tabs (RTL & Text vs UI & Styling) */
@@ -870,13 +901,14 @@ win.webContents.on('dom-ready', () => {
                 </div>
                 
                 <!-- Settings Panel -->
-                <div id="rtl-settings-panel" class="rtl-widget-panel rtl-theme-panel fixed p-px rounded-2xl text-sm w-80" style="bottom: \${placement === 'sidebar' ? '56px' : (floatingBottom + 45) + 'px'}; \${placement === 'sidebar' ? 'left: 16px;' : 'right: 16px;'}">
-                    <div class="flex flex-col gap-2 p-3.5 rounded-[15px] w-full h-full max-h-[85vh] overflow-y-auto">
-                        
+                <div id="rtl-settings-panel" class="rtl-widget-panel rtl-theme-panel fixed p-0 rounded-2xl text-sm w-80 flex flex-col overflow-hidden" style="bottom: \${placement === 'sidebar' ? '56px' : (floatingBottom + 45) + 'px'}; \${placement === 'sidebar' ? 'left: 16px;' : 'right: 16px;'}">
+                    
+                    <!-- Pinned Top Header & Main Navigation Tabs -->
+                    <div class="rtl-panel-header-pinned flex flex-col gap-2 p-2.5 pb-2 border-b border-border border-opacity-40 shrink-0">
                         <!-- Header with Close Button -->
-                        <div class="flex items-center justify-between px-1 pb-2 border-b border-border border-opacity-50">
+                        <div class="flex items-center justify-between px-0.5">
                             <div class="flex items-center gap-1.5 font-semibold text-sm">
-                                <svg height="16" width="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                <svg height="16" width="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                                 <span>Antigravity RTL & UI</span>
                             </div>
                             <button id="rtl-panel-close-btn" type="button" class="text-muted-foreground hover:text-foreground p-0.5 rounded-md hover:bg-muted transition-colors cursor-pointer" title="Close (Esc)">
@@ -895,7 +927,11 @@ win.webContents.on('dom-ready', () => {
                                 <span>UI & Styling</span>
                             </button>
                         </div>
+                    </div>
 
+                    <!-- Scrollable Content Body (Zero Scroll on 520px height) -->
+                    <div class="rtl-panel-body flex-1 overflow-y-auto p-2.5 flex flex-col gap-2">
+                        
                         <!-- TAB 1: RTL & Typography View -->
                         <div id="rtl-view-rtl" class="flex flex-col gap-2.5 \${activeMainTab === 'rtl' ? '' : 'hidden'}">
                             <!-- Main RTL Toggle -->
@@ -990,16 +1026,21 @@ win.webContents.on('dom-ready', () => {
                         <!-- TAB 2: UI & Styling View -->
                         <div id="rtl-view-ui" class="flex flex-col gap-2.5 \${activeMainTab === 'ui' ? '' : 'hidden'}">
                             <!-- User Message Box Customizer with Dual Dark/Light Mode Tabs -->
-                            <div class="flex flex-col gap-2 px-1">
-                                <!-- Toggle Header -->
+                            <div class="flex flex-col gap-2">
+                                <!-- Toggle Header with Reset Button -->
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center gap-1.5">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                                         <span class="font-medium text-xs opacity-90">User Message Box</span>
                                     </div>
-                                    <button id="rtl-usermsg-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${userMsgEnabled ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                        <span id="rtl-usermsg-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${userMsgEnabled ? '18px' : '3px'});"></span>
-                                    </button>
+                                    <div class="flex items-center gap-1.5">
+                                        <button id="rtl-usermsg-reset-btn" type="button" class="rtl-reset-icon-btn" title="Reset to Gentle Default">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        </button>
+                                        <button id="rtl-usermsg-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${userMsgEnabled ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                            <span id="rtl-usermsg-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${userMsgEnabled ? '18px' : '3px'});"></span>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <!-- Manual Controls Container (Vibe UI Card) -->
@@ -1053,22 +1094,16 @@ win.webContents.on('dom-ready', () => {
                                         </div>
                                     </div>
 
-                                    <!-- Shadow Segmented Control Row -->
-                                    <div class="flex flex-col gap-1.5 pt-0.5">
+                                    <!-- Shadow Segmented Control Row (Single line) -->
+                                    <div class="flex items-center justify-between gap-2">
                                         <span class="rtl-label">Shadow</span>
-                                        <div class="rtl-shadow-group">
+                                        <div class="rtl-shadow-group" style="width: 175px;">
                                             <button id="rtl-shadow-none" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'none' ? 'active' : ''}">None</button>
                                             <button id="rtl-shadow-soft" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'soft' ? 'active' : ''}">Soft</button>
                                             <button id="rtl-shadow-3d" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === '3d' || (activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'medium' ? 'active' : ''}">3D</button>
                                             <button id="rtl-shadow-glow" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'glow' ? 'active' : ''}">Glow</button>
                                         </div>
                                     </div>
-
-                                    <!-- Reset Button -->
-                                    <button id="rtl-usermsg-reset-btn" type="button" class="rtl-btn-ghost mt-1 w-full">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                        <span id="rtl-usermsg-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default</span>
-                                    </button>
                                 </div>
                             </div>
 
@@ -1082,9 +1117,14 @@ win.webContents.on('dom-ready', () => {
                                         </svg>
                                         <span class="font-medium text-xs">Chat Input Box Border</span>
                                     </div>
-                                    <button id="rtl-inputbox-toggle-btn" type="button" role="switch" aria-checked="\${inputBoxEnabled}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${inputBoxEnabled ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                        <span id="rtl-inputbox-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${inputBoxEnabled ? '24px' : '4px'});"></span>
-                                    </button>
+                                    <div class="flex items-center gap-1.5">
+                                        <button id="rtl-inputbox-reset-btn" type="button" class="rtl-reset-icon-btn" title="Reset Input Border">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        </button>
+                                        <button id="rtl-inputbox-toggle-btn" type="button" role="switch" aria-checked="\${inputBoxEnabled}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${inputBoxEnabled ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                            <span id="rtl-inputbox-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${inputBoxEnabled ? '24px' : '4px'});"></span>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div id="rtl-inputbox-controls" class="flex flex-col gap-2.5 pt-1.5 border-t border-border border-opacity-30 \${inputBoxEnabled ? '' : 'hidden'}">
@@ -1105,17 +1145,11 @@ win.webContents.on('dom-ready', () => {
                                             <span id="rtl-inputbox-bw-val" class="rtl-badge-val">\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).borderWidth}px</span>
                                         </div>
                                     </div>
-
-                                    <!-- Reset Button -->
-                                    <button id="rtl-inputbox-reset-btn" type="button" class="rtl-btn-ghost mt-1 w-full">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                        <span id="rtl-inputbox-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border</span>
-                                    </button>
                                 </div>
                             </div>
 
                             <!-- Sidebar Width Control (140px to 420px) -->
-                            <div class="flex flex-col gap-1 px-1">
+                            <div class="flex flex-col gap-1">
                                 <div class="rtl-card flex items-center justify-between p-2.5">
                                     <div class="flex items-center gap-1.5">
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-70"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
@@ -1124,8 +1158,8 @@ win.webContents.on('dom-ready', () => {
                                     <div class="flex items-center gap-2">
                                         <input id="rtl-sidebar-width-input" type="range" min="140" max="420" step="2" value="\${sidebarWidth}" class="rtl-range-slider" style="width: 80px;">
                                         <span id="rtl-sidebar-width-val" class="rtl-badge-val">\${sidebarWidth}px</span>
-                                        <button id="rtl-sidebar-width-reset" type="button" class="rtl-reset-btn" title="Reset (256px)">
-                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        <button id="rtl-sidebar-width-reset" type="button" class="rtl-reset-icon-btn" title="Reset (256px)">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                                         </button>
                                     </div>
                                 </div>
@@ -1262,6 +1296,7 @@ win.webContents.on('dom-ready', () => {
                 if (isPanelOpen) {
                     syncPanelTheme();
                     updatePanelPosition();
+                    switchMainTab('rtl');
                     panel.classList.add('rtl-panel-open');
                 } else {
                     panel.classList.remove('rtl-panel-open');
@@ -1338,8 +1373,7 @@ win.webContents.on('dom-ready', () => {
                     userMsgLight: userMsgLight,
                     inputBoxEnabled: inputBoxEnabled,
                     inputBoxDark: inputBoxDark,
-                    inputBoxLight: inputBoxLight,
-                    activeMainTab: activeMainTab
+                    inputBoxLight: inputBoxLight
                 };
                 console.log("SAVE_RTL_CONFIG|" + JSON.stringify(cfg));
             }
@@ -1457,6 +1491,9 @@ win.webContents.on('dom-ready', () => {
                 if (resetLabel) {
                     resetLabel.textContent = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default\`;
                 }
+                if (userMsgResetBtn) {
+                    userMsgResetBtn.title = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default\`;
+                }
 
                 // Sync Chat Input Box
                 const curInput = activeTab === 'dark' ? inputBoxDark : inputBoxLight;
@@ -1466,6 +1503,9 @@ win.webContents.on('dom-ready', () => {
                 if (inputBoxBwVal) inputBoxBwVal.textContent = curInput.borderWidth + 'px';
                 if (inputBoxResetLabel) {
                     inputBoxResetLabel.textContent = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border\`;
+                }
+                if (inputBoxResetBtn) {
+                    inputBoxResetBtn.title = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border\`;
                 }
 
                 if (activeTab === 'dark') {
