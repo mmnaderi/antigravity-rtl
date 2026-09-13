@@ -933,68 +933,78 @@ win.webContents.on('dom-ready', () => {
                     <div class="rtl-panel-body flex-1 overflow-y-auto p-2.5 flex flex-col gap-2">
                         
                         <!-- TAB 1: RTL & Typography View -->
-                        <div id="rtl-view-rtl" class="flex flex-col gap-2.5 \${activeMainTab === 'rtl' ? '' : 'hidden'}">
-                            <!-- Main RTL Toggle -->
-                            <div class="flex items-center justify-between gap-4 px-1 pt-0.5">
-                                <span id="rtl-toggle-label" class="font-medium text-xs opacity-90">\${isRTL ? 'RTL Engine Enabled' : 'RTL Engine Disabled'}</span>
-                                <button id="rtl-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${isRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                    <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
-                                </button>
-                            </div>
-                            
-                            <!-- Settings Body -->
-                            <div id="rtl-settings-wrapper" class="flex flex-col gap-2.5 transition-all duration-300 \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
-                                
-                                <!-- Force RTL -->
-                                <div class="flex items-center justify-between gap-2 px-1">
-                                    <span class="font-medium text-xs opacity-80">Force Full RTL</span>
-                                    <button id="rtl-force-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                        <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${forceRTL ? '18px' : '3px'});"></span>
+                        <div id="rtl-view-rtl" class="flex flex-col gap-2 \${activeMainTab === 'rtl' ? '' : 'hidden'}">
+                            <!-- Card 1: RTL Engine & Controls -->
+                            <div class="rtl-card flex flex-col gap-2 p-2.5">
+                                <div class="flex items-center justify-between gap-4">
+                                    <div class="flex items-center gap-1.5">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-70"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+                                        <span id="rtl-toggle-label" class="font-medium text-xs opacity-90">\${isRTL ? 'RTL Engine Enabled' : 'RTL Engine Disabled'}</span>
+                                    </div>
+                                    <button id="rtl-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${isRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                        <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
                                     </button>
                                 </div>
                                 
-                                <div class="h-px bg-border border-opacity-30 w-full"></div>
-                                
-                                <!-- Placement: Sidebar vs Floating -->
-                                <div class="flex flex-col gap-1 px-1">
-                                    <span class="font-medium text-xs opacity-80">Button Location</span>
-                                    <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-muted border border-border border-opacity-40">
-                                        <button id="rtl-loc-sidebar-btn" type="button" class="py-1 px-2 text-[11px] font-medium rounded-md transition-all \${placement === 'sidebar' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} cursor-pointer">
-                                            Sidebar Menu
-                                        </button>
-                                        <button id="rtl-loc-floating-btn" type="button" class="py-1 px-2 text-[11px] font-medium rounded-md transition-all \${placement === 'floating' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} cursor-pointer">
-                                            Floating Icon
+                                <div id="rtl-engine-controls" class="flex flex-col gap-2 pt-1.5 border-t border-border border-opacity-30 transition-all duration-300 \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
+                                    <!-- Force RTL -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="font-medium text-xs opacity-80">Force Full RTL</span>
+                                        <button id="rtl-force-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                            <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${forceRTL ? '18px' : '3px'});"></span>
                                         </button>
                                     </div>
-                                </div>
+                                    
+                                    <!-- Placement: Sidebar vs Floating -->
+                                    <div class="flex flex-col gap-1">
+                                        <span class="font-medium text-xs opacity-80">Button Location</span>
+                                        <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-muted border border-border border-opacity-40">
+                                            <button id="rtl-loc-sidebar-btn" type="button" class="py-1 px-2 text-[11px] font-medium rounded-md transition-all \${placement === 'sidebar' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} cursor-pointer">
+                                                Sidebar Menu
+                                            </button>
+                                            <button id="rtl-loc-floating-btn" type="button" class="py-1 px-2 text-[11px] font-medium rounded-md transition-all \${placement === 'floating' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} cursor-pointer">
+                                                Floating Icon
+                                            </button>
+                                        </div>
+                                    </div>
 
-                                <!-- Floating Height Slider -->
-                                <div id="rtl-float-height-row" class="flex items-center justify-between gap-2 px-1 \${placement === 'floating' ? '' : 'hidden'}">
-                                    <span class="font-medium text-xs opacity-80" title="Floating button bottom offset">Float Height</span>
-                                    <div class="flex items-center gap-1.5">
-                                        <input id="rtl-float-height-input" type="range" min="16" max="220" step="4" value="\${floatingBottom}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                        <span id="rtl-float-height-val" class="text-[10px] font-mono text-muted-foreground w-8 text-right">\${floatingBottom}px</span>
+                                    <!-- Floating Height Slider -->
+                                    <div id="rtl-float-height-row" class="flex items-center justify-between gap-2 \${placement === 'floating' ? '' : 'hidden'}">
+                                        <span class="font-medium text-xs opacity-80" title="Floating button bottom offset">Float Height</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input id="rtl-float-height-input" type="range" min="16" max="220" step="4" value="\${floatingBottom}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
+                                            <span id="rtl-float-height-val" class="text-[10px] font-mono text-muted-foreground w-8 text-right">\${floatingBottom}px</span>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div class="h-px bg-border border-opacity-30 w-full"></div>
+                            <!-- Card 2: Typography & Fonts -->
+                            <div id="rtl-typo-card" class="rtl-card flex flex-col gap-2 p-2.5 transition-all duration-300 \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
+                                <!-- Typography Header -->
+                                <div class="flex items-center gap-1.5 pb-1 border-b border-border border-opacity-30">
+                                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-70"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/></svg>
+                                    <span class="font-medium text-xs opacity-90">Typography & Fonts</span>
+                                </div>
 
-                                <!-- Typography -->
-                                <div class="flex items-center justify-between gap-2 px-1">
+                                <!-- FA/AR Font -->
+                                <div class="flex items-center justify-between gap-2">
                                     <span class="font-medium text-xs opacity-80">FA/AR Font</span>
                                     <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
                                 </div>
-                                <div class="flex items-center justify-between gap-2 px-1">
+                                <!-- EN Font -->
+                                <div class="flex items-center justify-between gap-2">
                                     <span class="font-medium text-xs opacity-80">EN Font</span>
                                     <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
                                 </div>
-                                <div class="flex items-center justify-between gap-2 px-1">
+                                <!-- Code Font -->
+                                <div class="flex items-center justify-between gap-2">
                                     <span class="font-medium text-xs opacity-80">Code Font</span>
                                     <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
                                 </div>
 
                                 <!-- Line Height & Font Size -->
-                                <div class="flex items-center justify-between gap-2 px-1">
+                                <div class="flex items-center justify-between gap-2">
                                     <span class="font-medium text-xs opacity-80">Line Height</span>
                                     <div class="flex items-center gap-1.5">
                                         <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
@@ -1003,7 +1013,7 @@ win.webContents.on('dom-ready', () => {
                                         </button>
                                     </div>
                                 </div>
-                                <div class="flex items-center justify-between gap-2 px-1">
+                                <div class="flex items-center justify-between gap-2">
                                     <span class="font-medium text-xs opacity-80">Font Size</span>
                                     <div class="flex items-center gap-1.5">
                                         <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
@@ -1014,7 +1024,7 @@ win.webContents.on('dom-ready', () => {
                                 </div>
 
                                 <!-- Shift+2 Fix -->
-                                <div class="flex items-center justify-between gap-2 px-1">
+                                <div class="flex items-center justify-between gap-2">
                                     <span class="font-medium text-xs opacity-80">Shift+2 for @</span>
                                     <button id="rtl-at-btn" type="button" role="switch" aria-checked="\${fixAtSign}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${fixAtSign ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
                                         <span id="rtl-at-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${fixAtSign ? '24px' : '4px'});"></span>
@@ -1184,7 +1194,8 @@ win.webContents.on('dom-ready', () => {
             const toggleBtn = document.getElementById('rtl-toggle-btn');
             const toggleKnob = document.getElementById('rtl-toggle-knob');
             const toggleLabel = document.getElementById('rtl-toggle-label');
-            const settingsWrapper = document.getElementById('rtl-settings-wrapper');
+            const engineControls = document.getElementById('rtl-engine-controls');
+            const typoCard = document.getElementById('rtl-typo-card');
             const forceBtn = document.getElementById('rtl-force-btn');
             const forceKnob = document.getElementById('rtl-force-knob');
             const locSidebarBtn = document.getElementById('rtl-loc-sidebar-btn');
@@ -1650,7 +1661,8 @@ win.webContents.on('dom-ready', () => {
                 toggleBtn.setAttribute('aria-checked', isRTL);
                 if (isRTL) {
                     toggleLabel.innerText = 'RTL Engine Enabled';
-                    settingsWrapper.classList.remove('opacity-40', 'pointer-events-none');
+                    if (engineControls) engineControls.classList.remove('opacity-40', 'pointer-events-none');
+                    if (typoCard) typoCard.classList.remove('opacity-40', 'pointer-events-none');
                     toggleBtn.classList.add('bg-accent');
                     toggleKnob.style.transform = 'translateX(24px)';
                     document.head.appendChild(rtlStyle);
@@ -1659,7 +1671,8 @@ win.webContents.on('dom-ready', () => {
                     toggleLabel.innerText = 'RTL Engine Disabled';
                     toggleBtn.classList.remove('bg-accent');
                     toggleKnob.style.transform = 'translateX(4px)';
-                    settingsWrapper.classList.add('opacity-40', 'pointer-events-none');
+                    if (engineControls) engineControls.classList.add('opacity-40', 'pointer-events-none');
+                    if (typoCard) typoCard.classList.add('opacity-40', 'pointer-events-none');
                     if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
                 }
             }
