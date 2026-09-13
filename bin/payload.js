@@ -54,7 +54,7 @@ win.webContents.on('dom-ready', () => {
                 borderWidth: '1.5'
             },
             inputBoxLight: {
-                border: '#6366f1',
+                border: '#cbd5e1',
                 borderWidth: '1.5'
             }
         };
@@ -119,7 +119,7 @@ win.webContents.on('dom-ready', () => {
                 ...(rtlConfig.inputBoxDark || {})
             };
             let inputBoxLight = {
-                border: '#6366f1',
+                border: '#cbd5e1',
                 borderWidth: '1.5',
                 ...(rtlConfig.inputBoxLight || {})
             };
@@ -1527,13 +1527,13 @@ win.webContents.on('dom-ready', () => {
                     userMsgDark.text = '#f1f5f9';
                     userMsgDark.border = '#384c6e';
                     userMsgDark.borderWidth = '1.5';
-                    userMsgDark.shadow = '3d';
+                    userMsgDark.shadow = 'soft';
                 } else {
                     userMsgLight.bg = '#f0f4ff';
                     userMsgLight.text = '#0f172a';
                     userMsgLight.border = '#cbd5e1';
                     userMsgLight.borderWidth = '1.5';
-                    userMsgLight.shadow = '3d';
+                    userMsgLight.shadow = 'soft';
                 }
                 syncInputsForActiveTab();
                 refreshStyles();
@@ -1583,7 +1583,7 @@ win.webContents.on('dom-ready', () => {
                         inputBoxDark.border = '#384c6e';
                         inputBoxDark.borderWidth = '1.5';
                     } else {
-                        inputBoxLight.border = '#6366f1';
+                        inputBoxLight.border = '#cbd5e1';
                         inputBoxLight.borderWidth = '1.5';
                     }
                     syncInputsForActiveTab();
