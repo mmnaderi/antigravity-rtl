@@ -53,7 +53,6 @@ win.webContents.on('dom-ready', () => {
             const configPath = require('path').join(require('os').homedir(), '.antigravity-rtl.json');
             if (require('fs').existsSync(configPath)) {
                 const cfg = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
-                // Backward compatibility if single colors were saved
                 if (cfg.userMsgBg && !cfg.userMsgDark) {
                     cfg.userMsgDark = {
                         bg: cfg.userMsgBg,
@@ -102,7 +101,15 @@ win.webContents.on('dom-ready', () => {
                 ...(rtlConfig.userMsgLight || {})
             };
 
-            let activeTab = (document.body.classList.contains('dark') || document.body.classList.contains('dark-theme')) ? 'dark' : 'light';
+            function isAppDark() {
+                const b = document.body;
+                const d = document.documentElement;
+                if (b && (b.classList.contains('dark') || b.classList.contains('theme-dark') || b.classList.contains('dark-theme') || b.classList.contains('vscode-dark'))) return true;
+                if (d && (d.classList.contains('dark') || d.classList.contains('theme-dark') || d.classList.contains('dark-theme') || d.classList.contains('vscode-dark'))) return true;
+                return false;
+            }
+
+            let activeTab = isAppDark() ? 'dark' : 'light';
 
             function getShadowCSS(type, borderCol, mode) {
                 if (type === 'none') return 'none';
@@ -123,11 +130,50 @@ win.webContents.on('dom-ready', () => {
                 }
             }
 
-            // 1. Permanent Widget Styles
+            // 1. Permanent Widget Styles (Vibe UI Spec & WCAG AAA Contrast)
             if (!document.getElementById('rtl-widget-style')) {
                 let widgetStyle = document.createElement('style');
                 widgetStyle.id = 'rtl-widget-style';
                 widgetStyle.innerHTML = \`
+                    /* Light Mode Tokens */
+                    :root, body, body.light, body.theme-light, body.vscode-light {
+                        --rtl-bg: #ffffff;
+                        --rtl-surface: #f1f5f9;
+                        --rtl-surface-hover: #e2e8f0;
+                        --rtl-card-bg: #f8fafc;
+                        --rtl-card-border: #e2e8f0;
+                        --rtl-text: #0f172a;
+                        --rtl-text-secondary: #334155;
+                        --rtl-text-muted: #64748b;
+                        --rtl-border: #e2e8f0;
+                        --rtl-border-subtle: #f1f5f9;
+                        --rtl-input-bg: #ffffff;
+                        --rtl-input-border: #cbd5e1;
+                        --rtl-accent: #4f46e5;
+                        --rtl-accent-hover: #4338ca;
+                        --rtl-shadow-panel: 0 16px 36px -6px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.08);
+                    }
+
+                    /* Dark Mode Tokens */
+                    body.dark, body.theme-dark, body.dark-theme, body.vscode-dark,
+                    :root.dark, .dark, .rtl-widget-panel.rtl-is-dark {
+                        --rtl-bg: #141824;
+                        --rtl-surface: #1e2638;
+                        --rtl-surface-hover: #273147;
+                        --rtl-card-bg: #181f30;
+                        --rtl-card-border: #2b364d;
+                        --rtl-text: #f8fafc;
+                        --rtl-text-secondary: #cbd5e1;
+                        --rtl-text-muted: #94a3b8;
+                        --rtl-border: #2a3449;
+                        --rtl-border-subtle: #1e2638;
+                        --rtl-input-bg: #111520;
+                        --rtl-input-border: #374461;
+                        --rtl-accent: #6366f1;
+                        --rtl-accent-hover: #4f46e5;
+                        --rtl-shadow-panel: 0 20px 40px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+                    }
+
                     .rtl-widget-panel {
                         transform: scale(0.95);
                         opacity: 0;
@@ -140,43 +186,227 @@ win.webContents.on('dom-ready', () => {
                         opacity: 1 !important;
                         pointer-events: auto !important;
                     }
-                    /* Theme Colors */
-                    :root {
-                        --rtl-bg: #ffffff;
-                        --rtl-text: #111827;
-                        --rtl-border: #e5e7eb;
-                        --rtl-input-bg: #f3f4f6;
-                    }
-                    :root.dark, .dark {
-                        --rtl-bg: #1e293b;
-                        --rtl-text: #f3f4f6;
-                        --rtl-border: #334155;
-                        --rtl-input-bg: #334155;
-                    }
-                    @media (prefers-color-scheme: dark) {
-                        :root:not(.light) {
-                            --rtl-bg: #1e293b;
-                            --rtl-text: #f3f4f6;
-                            --rtl-border: #334155;
-                            --rtl-input-bg: #334155;
-                        }
-                    }
+
                     .rtl-theme-panel {
                         background-color: var(--rtl-bg) !important;
                         color: var(--rtl-text) !important;
                         border: 1px solid var(--rtl-border) !important;
-                        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.15) !important;
+                        box-shadow: var(--rtl-shadow-panel) !important;
+                        backdrop-filter: blur(16px) !important;
                     }
+
+                    .rtl-card {
+                        background-color: var(--rtl-card-bg) !important;
+                        border: 1px solid var(--rtl-card-border) !important;
+                        border-radius: 12px !important;
+                    }
+
+                    .rtl-label {
+                        font-size: 11px !important;
+                        font-weight: 500 !important;
+                        color: var(--rtl-text-secondary) !important;
+                        line-height: 1.2 !important;
+                        user-select: none !important;
+                    }
+
+                    /* Tab Switcher (Dark / Light) */
+                    .rtl-tab-group {
+                        display: flex !important;
+                        flex-direction: row !important;
+                        align-items: center !important;
+                        gap: 4px !important;
+                        padding: 3px !important;
+                        background-color: var(--rtl-surface) !important;
+                        border: 1px solid var(--rtl-border) !important;
+                        border-radius: 8px !important;
+                        width: 100% !important;
+                        box-sizing: border-box !important;
+                    }
+                    .rtl-tab-btn {
+                        flex: 1 1 0 !important;
+                        min-width: 0 !important;
+                        padding: 5px 8px !important;
+                        font-size: 11px !important;
+                        font-weight: 500 !important;
+                        text-align: center !important;
+                        border: none !important;
+                        outline: none !important;
+                        border-radius: 6px !important;
+                        cursor: pointer !important;
+                        background: transparent !important;
+                        color: var(--rtl-text-secondary) !important;
+                        transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                        display: inline-flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        gap: 6px !important;
+                        white-space: nowrap !important;
+                        user-select: none !important;
+                    }
+                    .rtl-tab-btn:hover:not(.active) {
+                        background-color: var(--rtl-surface-hover) !important;
+                        color: var(--rtl-text) !important;
+                    }
+                    .rtl-tab-btn.active {
+                        background-color: var(--rtl-accent) !important;
+                        color: #ffffff !important;
+                        font-weight: 600 !important;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+                    }
+
+                    /* Shadow Segmented Buttons */
+                    .rtl-shadow-group {
+                        display: flex !important;
+                        flex-direction: row !important;
+                        align-items: center !important;
+                        gap: 4px !important;
+                        padding: 3px !important;
+                        background-color: var(--rtl-surface) !important;
+                        border: 1px solid var(--rtl-border) !important;
+                        border-radius: 8px !important;
+                        width: 100% !important;
+                        box-sizing: border-box !important;
+                    }
+                    .rtl-shadow-btn {
+                        flex: 1 1 0 !important;
+                        min-width: 0 !important;
+                        padding: 5px 2px !important;
+                        font-size: 10.5px !important;
+                        font-weight: 500 !important;
+                        text-align: center !important;
+                        border: none !important;
+                        outline: none !important;
+                        border-radius: 6px !important;
+                        cursor: pointer !important;
+                        background: transparent !important;
+                        color: var(--rtl-text-secondary) !important;
+                        transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                        display: inline-flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        white-space: nowrap !important;
+                        line-height: 1 !important;
+                        user-select: none !important;
+                    }
+                    .rtl-shadow-btn:hover:not(.active) {
+                        background-color: var(--rtl-surface-hover) !important;
+                        color: var(--rtl-text) !important;
+                    }
+                    .rtl-shadow-btn.active {
+                        background-color: var(--rtl-accent) !important;
+                        color: #ffffff !important;
+                        font-weight: 600 !important;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
+                    }
+
+                    /* Controls Styling */
+                    .rtl-color-input {
+                        -webkit-appearance: none !important;
+                        appearance: none !important;
+                        width: 22px !important;
+                        height: 22px !important;
+                        padding: 0 !important;
+                        border: 1px solid var(--rtl-border) !important;
+                        border-radius: 6px !important;
+                        cursor: pointer !important;
+                        background: transparent !important;
+                        overflow: hidden !important;
+                        flex-shrink: 0 !important;
+                        box-shadow: 0 1px 2px rgba(0,0,0,0.06) !important;
+                    }
+                    .rtl-color-input::-webkit-color-swatch-wrapper {
+                        padding: 0 !important;
+                    }
+                    .rtl-color-input::-webkit-color-swatch {
+                        border: none !important;
+                        border-radius: 5px !important;
+                    }
+                    .rtl-hex-input {
+                        width: 68px !important;
+                        height: 22px !important;
+                        padding: 0 6px !important;
+                        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+                        font-size: 11px !important;
+                        text-transform: uppercase !important;
+                        text-align: center !important;
+                        color: var(--rtl-text) !important;
+                        background-color: var(--rtl-input-bg) !important;
+                        border: 1px solid var(--rtl-input-border) !important;
+                        border-radius: 6px !important;
+                        box-sizing: border-box !important;
+                        outline: none !important;
+                        transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+                    }
+                    .rtl-hex-input:focus {
+                        border-color: var(--rtl-accent) !important;
+                        box-shadow: 0 0 0 1px var(--rtl-accent) !important;
+                    }
+                    .rtl-range-slider {
+                        -webkit-appearance: none !important;
+                        appearance: none !important;
+                        width: 80px !important;
+                        height: 4px !important;
+                        background: var(--rtl-surface-hover) !important;
+                        border-radius: 2px !important;
+                        outline: none !important;
+                        cursor: pointer !important;
+                    }
+                    .rtl-range-slider::-webkit-slider-thumb {
+                        -webkit-appearance: none !important;
+                        appearance: none !important;
+                        width: 14px !important;
+                        height: 14px !important;
+                        border-radius: 50% !important;
+                        background: var(--rtl-accent) !important;
+                        border: 2px solid var(--rtl-bg) !important;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25) !important;
+                        cursor: pointer !important;
+                        transition: transform 0.1s ease !important;
+                    }
+                    .rtl-range-slider::-webkit-slider-thumb:hover {
+                        transform: scale(1.15) !important;
+                    }
+                    .rtl-badge-val {
+                        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+                        font-size: 10.5px !important;
+                        color: var(--rtl-text-muted) !important;
+                        width: 34px !important;
+                        text-align: right !important;
+                        user-select: none !important;
+                    }
+
+                    .rtl-btn-ghost {
+                        font-size: 11px !important;
+                        font-weight: 500 !important;
+                        color: var(--rtl-text-secondary) !important;
+                        background: transparent !important;
+                        border: 1px solid var(--rtl-border) !important;
+                        border-radius: 6px !important;
+                        padding: 5px 8px !important;
+                        cursor: pointer !important;
+                        display: inline-flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        gap: 6px !important;
+                        transition: all 0.15s ease !important;
+                        user-select: none !important;
+                    }
+                    .rtl-btn-ghost:hover {
+                        background: var(--rtl-surface) !important;
+                        color: var(--rtl-text) !important;
+                        border-color: var(--rtl-border-subtle) !important;
+                    }
+
                     .rtl-theme-input {
                         background-color: var(--rtl-input-bg) !important;
                         color: var(--rtl-text) !important;
-                        border: 1px solid var(--rtl-border) !important;
+                        border: 1px solid var(--rtl-input-border) !important;
                     }
                     .w-11 { width: 44px !important; }
                     .h-6 { height: 24px !important; }
                     .w-4 { width: 16px !important; }
                     .h-4 { height: 16px !important; }
-                    .bg-accent { background-color: #4f46e5 !important; }
+                    .bg-accent { background-color: var(--rtl-accent) !important; }
                     
                     .rtl-toggle-btn-reset {
                         padding: 0 !important;
@@ -256,7 +486,7 @@ win.webContents.on('dom-ready', () => {
 
                 let msgBoxCSS = userMsgEnabled ? \`
                     /* Light Mode User Message */
-                    :root {
+                    :root, body, body.light, body.theme-light {
                         --user-msg-bg: \${userMsgLight.bg};
                         --user-msg-text: \${userMsgLight.text};
                         --user-msg-border-color: \${userMsgLight.border};
@@ -265,7 +495,7 @@ win.webContents.on('dom-ready', () => {
                     }
 
                     /* Dark Mode User Message */
-                    :root.dark, .dark, body.dark, body.dark-theme, body.theme-dark {
+                    body.dark, body.theme-dark, body.dark-theme, body.vscode-dark, :root.dark, .dark {
                         --user-msg-bg: \${userMsgDark.bg};
                         --user-msg-text: \${userMsgDark.text};
                         --user-msg-border-color: \${userMsgDark.border};
@@ -293,7 +523,7 @@ win.webContents.on('dom-ready', () => {
                         color: var(--user-msg-text) !important;
                     }
 
-                    /* Harmonized Action Buttons Pill (Edit / Copy) */
+                    /* Harmonized Floating Action Toolbar (Edit / Copy) */
                     [data-testid="user-input-step"] .user-input-buttons-container {
                         background-color: var(--user-msg-bg) !important;
                         border: 1px solid var(--user-msg-border-color) !important;
@@ -511,7 +741,7 @@ win.webContents.on('dom-ready', () => {
                         <!-- Header with Close Button -->
                         <div class="flex items-center justify-between px-1 pb-2 border-b border-border border-opacity-50">
                             <div class="flex items-center gap-1.5 font-semibold text-sm">
-                                <svg height="16" width="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                                <svg height="16" width="16" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path></svg>
                                 <span>Antigravity RTL & UI</span>
                             </div>
                             <button id="rtl-panel-close-btn" type="button" class="text-muted-foreground hover:text-foreground p-0.5 rounded-md hover:bg-muted transition-colors cursor-pointer" title="Close (Esc)">
@@ -580,76 +810,92 @@ win.webContents.on('dom-ready', () => {
                             <div class="flex flex-col gap-2 px-1">
                                 <!-- Toggle Header -->
                                 <div class="flex items-center justify-between">
-                                    <span class="font-medium text-xs opacity-90">User Message Box</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="opacity-70"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                                        <span class="font-medium text-xs opacity-90">User Message Box</span>
+                                    </div>
                                     <button id="rtl-usermsg-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${userMsgEnabled ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
                                         <span id="rtl-usermsg-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${userMsgEnabled ? '18px' : '3px'});"></span>
                                     </button>
                                 </div>
 
-                                <!-- Manual Controls Container -->
-                                <div id="rtl-usermsg-controls" class="flex flex-col gap-2 p-2 rounded-xl bg-muted bg-opacity-40 border border-border border-opacity-40 transition-all duration-200 \${userMsgEnabled ? '' : 'opacity-40 pointer-events-none'}">
+                                <!-- Manual Controls Container (Vibe UI Card) -->
+                                <div id="rtl-usermsg-controls" class="rtl-card flex flex-col gap-2.5 p-2.5 transition-all duration-200 \${userMsgEnabled ? '' : 'opacity-40 pointer-events-none'}">
                                     
-                                    <!-- Dark / Light Mode Tabs -->
-                                    <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-background border border-border border-opacity-40 text-xs">
-                                        <button id="rtl-tab-dark" type="button" class="py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer \${activeTab === 'dark' ? 'bg-accent text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}">
+                                    <!-- Dark / Light Mode Segmented Tabs -->
+                                    <div class="rtl-tab-group">
+                                        <button id="rtl-tab-dark" type="button" class="rtl-tab-btn \${activeTab === 'dark' ? 'active' : ''}">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
                                             <span>Dark Mode</span>
                                         </button>
-                                        <button id="rtl-tab-light" type="button" class="py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer \${activeTab === 'light' ? 'bg-accent text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}">
+                                        <button id="rtl-tab-light" type="button" class="rtl-tab-btn \${activeTab === 'light' ? 'active' : ''}">
                                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
                                             <span>Light Mode</span>
                                         </button>
                                     </div>
 
-                                    <!-- Background Color -->
-                                    <div class="flex items-center justify-between gap-2 pt-1">
-                                        <span class="text-[11px] font-medium opacity-80">Background</span>
-                                        <div class="flex items-center gap-1.5">
-                                            <input type="color" id="rtl-usermsg-bg-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).bg}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
-                                            <input type="text" id="rtl-usermsg-bg-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).bg}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                    <!-- Live Preview Bubble -->
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex items-center justify-between px-0.5">
+                                            <span class="rtl-label" style="font-size: 10px !important;">Live Preview</span>
+                                            <span class="text-[10px] font-mono text-muted-foreground opacity-75" id="rtl-preview-tag">\${activeTab === 'dark' ? 'Dark Preset' : 'Light Preset'}</span>
+                                        </div>
+                                        <div id="rtl-usermsg-preview" class="px-3 py-2 rounded-xl text-xs transition-all duration-200" style="direction: rtl; text-align: right;">
+                                            <span id="rtl-usermsg-preview-text">نمونه پیام کاربر / User prompt</span>
                                         </div>
                                     </div>
 
-                                    <!-- Text Color -->
+                                    <div class="h-px bg-border border-opacity-30 w-full my-0.5"></div>
+
+                                    <!-- Background Color Row -->
                                     <div class="flex items-center justify-between gap-2">
-                                        <span class="text-[11px] font-medium opacity-80">Text Color</span>
+                                        <span class="rtl-label">Background</span>
                                         <div class="flex items-center gap-1.5">
-                                            <input type="color" id="rtl-usermsg-text-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).text}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
-                                            <input type="text" id="rtl-usermsg-text-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).text}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                            <input type="color" id="rtl-usermsg-bg-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).bg}" class="rtl-color-input">
+                                            <input type="text" id="rtl-usermsg-bg-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).bg}" class="rtl-hex-input">
                                         </div>
                                     </div>
 
-                                    <!-- Border Color -->
+                                    <!-- Text Color Row -->
                                     <div class="flex items-center justify-between gap-2">
-                                        <span class="text-[11px] font-medium opacity-80">Border Color</span>
+                                        <span class="rtl-label">Text Color</span>
                                         <div class="flex items-center gap-1.5">
-                                            <input type="color" id="rtl-usermsg-border-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).border}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
-                                            <input type="text" id="rtl-usermsg-border-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).border}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                            <input type="color" id="rtl-usermsg-text-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).text}" class="rtl-color-input">
+                                            <input type="text" id="rtl-usermsg-text-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).text}" class="rtl-hex-input">
                                         </div>
                                     </div>
 
-                                    <!-- Border Width -->
+                                    <!-- Border Color Row -->
                                     <div class="flex items-center justify-between gap-2">
-                                        <span class="text-[11px] font-medium opacity-80">Border Width</span>
+                                        <span class="rtl-label">Border Color</span>
                                         <div class="flex items-center gap-1.5">
-                                            <input id="rtl-usermsg-bw-input" type="range" min="0" max="4" step="0.5" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).borderWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                            <span id="rtl-usermsg-bw-val" class="text-[10px] font-mono text-muted-foreground w-10 text-right">\${(activeTab === 'dark' ? userMsgDark : userMsgLight).borderWidth}px</span>
+                                            <input type="color" id="rtl-usermsg-border-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).border}" class="rtl-color-input">
+                                            <input type="text" id="rtl-usermsg-border-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).border}" class="rtl-hex-input">
                                         </div>
                                     </div>
 
-                                    <!-- Shadow Selector -->
-                                    <div class="flex flex-col gap-1 pt-0.5">
-                                        <span class="text-[11px] font-medium opacity-80">Shadow</span>
-                                        <div class="grid grid-cols-4 gap-1 p-0.5 rounded-lg bg-background border border-border border-opacity-40 text-[10px]">
-                                            <button id="rtl-shadow-none" type="button" class="py-0.5 rounded transition-all \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'none' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">None</button>
-                                            <button id="rtl-shadow-soft" type="button" class="py-0.5 rounded transition-all \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'soft' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Soft</button>
-                                            <button id="rtl-shadow-medium" type="button" class="py-0.5 rounded transition-all \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'medium' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Medium</button>
-                                            <button id="rtl-shadow-glow" type="button" class="py-0.5 rounded transition-all \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'glow' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Glow</button>
+                                    <!-- Border Width Row -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="rtl-label">Border Width</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input id="rtl-usermsg-bw-input" type="range" min="0" max="4" step="0.5" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).borderWidth}" class="rtl-range-slider">
+                                            <span id="rtl-usermsg-bw-val" class="rtl-badge-val">\${(activeTab === 'dark' ? userMsgDark : userMsgLight).borderWidth}px</span>
                                         </div>
                                     </div>
 
-                                    <!-- Reset to Default Button -->
-                                    <button id="rtl-usermsg-reset-btn" type="button" class="mt-1 text-[11px] text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 py-1 px-2 rounded-md hover:bg-background border border-border border-opacity-40 transition-all cursor-pointer">
+                                    <!-- Shadow Segmented Control Row -->
+                                    <div class="flex flex-col gap-1.5 pt-0.5">
+                                        <span class="rtl-label">Shadow</span>
+                                        <div class="rtl-shadow-group">
+                                            <button id="rtl-shadow-none" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'none' ? 'active' : ''}">None</button>
+                                            <button id="rtl-shadow-soft" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'soft' ? 'active' : ''}">Soft</button>
+                                            <button id="rtl-shadow-medium" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'medium' ? 'active' : ''}">Medium</button>
+                                            <button id="rtl-shadow-glow" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'glow' ? 'active' : ''}">Glow</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Reset Button -->
+                                    <button id="rtl-usermsg-reset-btn" type="button" class="rtl-btn-ghost mt-1 w-full">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
                                         <span id="rtl-usermsg-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default</span>
                                     </button>
@@ -740,6 +986,10 @@ win.webContents.on('dom-ready', () => {
             const tabLight = document.getElementById('rtl-tab-light');
             const resetLabel = document.getElementById('rtl-usermsg-reset-label');
 
+            const previewBox = document.getElementById('rtl-usermsg-preview');
+            const previewText = document.getElementById('rtl-usermsg-preview-text');
+            const previewTag = document.getElementById('rtl-preview-tag');
+
             const userMsgBgColor = document.getElementById('rtl-usermsg-bg-color');
             const userMsgBgHex = document.getElementById('rtl-usermsg-bg-hex');
             const userMsgTextColor = document.getElementById('rtl-usermsg-text-color');
@@ -767,6 +1017,15 @@ win.webContents.on('dom-ready', () => {
             const atBtn = document.getElementById('rtl-at-btn');
             const atKnob = document.getElementById('rtl-at-knob');
 
+            // Synchronize panel theme with body class
+            function syncPanelTheme() {
+                if (!panel) return;
+                panel.classList.toggle('rtl-is-dark', isAppDark());
+            }
+            syncPanelTheme();
+            const themeObserver = new MutationObserver(syncPanelTheme);
+            themeObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+
             let isPanelOpen = false;
             function updatePanelPosition() {
                 if (placement === 'sidebar') {
@@ -782,6 +1041,7 @@ win.webContents.on('dom-ready', () => {
             function setPanelOpen(open) {
                 isPanelOpen = open;
                 if (isPanelOpen) {
+                    syncPanelTheme();
                     updatePanelPosition();
                     panel.classList.add('rtl-panel-open');
                 } else {
@@ -930,17 +1190,27 @@ win.webContents.on('dom-ready', () => {
                 saveConfig();
             });
 
+            function updatePreview() {
+                if (!previewBox) return;
+                const cur = activeTab === 'dark' ? userMsgDark : userMsgLight;
+                previewBox.style.backgroundColor = cur.bg;
+                previewBox.style.borderColor = cur.border;
+                previewBox.style.borderWidth = (cur.borderWidth || 0) + 'px';
+                previewBox.style.borderStyle = 'solid';
+                previewBox.style.boxShadow = getShadowCSS(cur.shadow, cur.border, activeTab);
+                previewBox.style.color = cur.text;
+                if (previewText) previewText.style.color = cur.text;
+                if (previewTag) previewTag.textContent = activeTab === 'dark' ? 'Dark Preset' : 'Light Preset';
+            }
+
             function updateShadowUI(selected) {
                 const cur = activeTab === 'dark' ? userMsgDark : userMsgLight;
                 cur.shadow = selected;
                 Object.keys(shadowBtns).forEach(key => {
                     const b = shadowBtns[key];
-                    if (key === selected) {
-                        b.className = 'py-0.5 rounded transition-all bg-accent text-white font-semibold';
-                    } else {
-                        b.className = 'py-0.5 rounded transition-all text-muted-foreground hover:text-foreground';
-                    }
+                    if (b) b.classList.toggle('active', key === selected);
                 });
+                updatePreview();
                 refreshStyles();
                 saveConfig();
             }
@@ -956,25 +1226,24 @@ win.webContents.on('dom-ready', () => {
                 userMsgBwInput.value = cur.borderWidth;
                 userMsgBwVal.textContent = cur.borderWidth + 'px';
                 
-                // Update shadow buttons
                 Object.keys(shadowBtns).forEach(key => {
                     const b = shadowBtns[key];
-                    if (key === cur.shadow) {
-                        b.className = 'py-0.5 rounded transition-all bg-accent text-white font-semibold';
-                    } else {
-                        b.className = 'py-0.5 rounded transition-all text-muted-foreground hover:text-foreground';
-                    }
+                    if (b) b.classList.toggle('active', key === cur.shadow);
                 });
 
-                resetLabel.textContent = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default\`;
+                if (resetLabel) {
+                    resetLabel.textContent = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default\`;
+                }
 
                 if (activeTab === 'dark') {
-                    tabDark.className = 'py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer bg-accent text-white shadow-sm';
-                    tabLight.className = 'py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer text-muted-foreground hover:text-foreground';
+                    tabDark.classList.add('active');
+                    tabLight.classList.remove('active');
                 } else {
-                    tabLight.className = 'py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer bg-accent text-white shadow-sm';
-                    tabDark.className = 'py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer text-muted-foreground hover:text-foreground';
+                    tabLight.classList.add('active');
+                    tabDark.classList.remove('active');
                 }
+
+                updatePreview();
             }
 
             tabDark.addEventListener('click', () => {
@@ -991,6 +1260,7 @@ win.webContents.on('dom-ready', () => {
                 colorInput.addEventListener('input', (e) => {
                     setter(e.target.value);
                     hexInput.value = e.target.value;
+                    updatePreview();
                     refreshStyles();
                     saveConfig();
                 });
@@ -1000,6 +1270,7 @@ win.webContents.on('dom-ready', () => {
                     if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
                         setter(val);
                         colorInput.value = val;
+                        updatePreview();
                         refreshStyles();
                         saveConfig();
                     }
@@ -1014,6 +1285,7 @@ win.webContents.on('dom-ready', () => {
                 const cur = activeTab === 'dark' ? userMsgDark : userMsgLight;
                 cur.borderWidth = e.target.value;
                 userMsgBwVal.textContent = cur.borderWidth + 'px';
+                updatePreview();
                 refreshStyles();
                 saveConfig();
             });
@@ -1042,6 +1314,9 @@ win.webContents.on('dom-ready', () => {
                 refreshStyles();
                 saveConfig();
             });
+
+            // Initial Sync
+            syncInputsForActiveTab();
 
             // Main RTL Toggle
             function setRTLActive(active) {
