@@ -866,15 +866,15 @@ win.webContents.on('dom-ready', () => {
                             </button>
                         </div>
 
-                        <!-- Main 2-Tab Navigation Switcher (RTL & Text vs UI & Styling) -->
+                        <!-- Main 2-Tab Navigation Switcher (RTL & Typography vs UI & Styling) -->
                         <div class="rtl-main-nav">
                             <button id="rtl-main-nav-rtl" type="button" class="rtl-main-nav-btn \${activeMainTab === 'rtl' ? 'active' : ''}">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
-                                <span>قلم و جهت (RTL)</span>
+                                <span>RTL & Typography</span>
                             </button>
                             <button id="rtl-main-nav-ui" type="button" class="rtl-main-nav-btn \${activeMainTab === 'ui' ? 'active' : ''}">
                                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"/></svg>
-                                <span>طراحی و استایل (UI)</span>
+                                <span>UI & Styling</span>
                             </button>
                         </div>
 
@@ -920,18 +920,6 @@ win.webContents.on('dom-ready', () => {
                                     <div class="flex items-center gap-1.5">
                                         <input id="rtl-float-height-input" type="range" min="16" max="220" step="4" value="\${floatingBottom}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
                                         <span id="rtl-float-height-val" class="text-[10px] font-mono text-muted-foreground w-8 text-right">\${floatingBottom}px</span>
-                                    </div>
-                                </div>
-
-                                <!-- Sidebar Width Control (140px to 420px) -->
-                                <div class="flex items-center justify-between gap-2 px-1">
-                                    <span class="font-medium text-xs opacity-80" title="Custom Sidebar Width (140px - 420px)">Sidebar Width</span>
-                                    <div class="flex items-center gap-1.5">
-                                        <input id="rtl-sidebar-width-input" type="range" min="140" max="420" step="2" value="\${sidebarWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                        <span id="rtl-sidebar-width-val" class="text-[10px] font-mono text-muted-foreground w-10 text-right">\${sidebarWidth}px</span>
-                                        <button id="rtl-sidebar-width-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" title="Reset (256px)">
-                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                        </button>
                                     </div>
                                 </div>
 
@@ -1120,6 +1108,23 @@ win.webContents.on('dom-ready', () => {
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                                         <span id="rtl-inputbox-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border</span>
                                     </button>
+                                </div>
+                            </div>
+
+                            <!-- Sidebar Width Control (140px to 420px) -->
+                            <div class="flex flex-col gap-1 px-1">
+                                <div class="rtl-card flex items-center justify-between p-2.5">
+                                    <div class="flex items-center gap-1.5">
+                                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-70"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
+                                        <span class="rtl-label">Sidebar Width</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <input id="rtl-sidebar-width-input" type="range" min="140" max="420" step="2" value="\${sidebarWidth}" class="rtl-range-slider" style="width: 80px;">
+                                        <span id="rtl-sidebar-width-val" class="rtl-badge-val">\${sidebarWidth}px</span>
+                                        <button id="rtl-sidebar-width-reset" type="button" class="rtl-reset-btn" title="Reset (256px)">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
