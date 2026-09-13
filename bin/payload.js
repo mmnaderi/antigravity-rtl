@@ -133,29 +133,30 @@ win.webContents.on('dom-ready', () => {
             }
 
             let activeTab = isAppDark() ? 'dark' : 'light';
+            let activeMainTab = rtlConfig.activeMainTab || 'rtl';
 
             function getShadowCSS(type, borderCol, mode) {
                 if (type === 'none') return 'none';
                 if (mode === 'light') {
                     switch (type) {
                         case 'soft': 
-                            return '0 3px 10px -1px rgba(0, 0, 0, 0.09)';
+                            return '0 4px 14px -1px rgba(15, 23, 42, 0.12), 0 2px 6px -1px rgba(15, 23, 42, 0.08)';
                         case '3d': 
                         case 'medium':
-                            return '0 4px 0 0 rgba(0, 0, 0, 0.06), 0 10px 22px -3px rgba(0, 0, 0, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.7)';
+                            return '0 5px 0 0 rgba(0, 0, 0, 0.18), 0 12px 24px -2px rgba(15, 23, 42, 0.22)';
                         case 'glow': 
-                            return \`0 4px 18px 2px \${borderCol}38, 0 1px 4px \${borderCol}25\`;
+                            return \`0 0 0 1.5px \${borderCol}, 0 6px 22px 3px \${borderCol}66, 0 2px 6px \${borderCol}40\`;
                         default: return 'none';
                     }
                 } else {
                     switch (type) {
                         case 'soft': 
-                            return '0 4px 14px -2px rgba(0, 0, 0, 0.38)';
+                            return '0 6px 18px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3)';
                         case '3d': 
                         case 'medium':
-                            return '0 4px 0 0 rgba(0, 0, 0, 0.5), 0 10px 24px -3px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08)';
+                            return '0 5px 0 0 rgba(0, 0, 0, 0.8), 0 14px 28px -3px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.15)';
                         case 'glow': 
-                            return \`0 0 18px 2px \${borderCol}55, 0 0 36px 4px \${borderCol}25\`;
+                            return \`0 0 0 1.5px \${borderCol}, 0 0 25px 4px \${borderCol}88, 0 0 50px 10px \${borderCol}44\`;
                         default: return 'none';
                     }
                 }
@@ -238,6 +239,52 @@ win.webContents.on('dom-ready', () => {
                         color: var(--rtl-text-secondary) !important;
                         line-height: 1.2 !important;
                         user-select: none !important;
+                    }
+
+                    /* Main Navigation Tabs (RTL & Text vs UI & Styling) */
+                    .rtl-main-nav {
+                        display: flex !important;
+                        flex-direction: row !important;
+                        align-items: center !important;
+                        gap: 4px !important;
+                        padding: 3px !important;
+                        background-color: var(--rtl-surface) !important;
+                        border: 1px solid var(--rtl-border) !important;
+                        border-radius: 9px !important;
+                        margin-bottom: 2px !important;
+                        box-sizing: border-box !important;
+                        width: 100% !important;
+                    }
+                    .rtl-main-nav-btn {
+                        flex: 1 1 0 !important;
+                        min-width: 0 !important;
+                        display: inline-flex !important;
+                        align-items: center !important;
+                        justify-content: center !important;
+                        gap: 6px !important;
+                        padding: 6px 8px !important;
+                        border: none !important;
+                        outline: none !important;
+                        border-radius: 7px !important;
+                        background: transparent !important;
+                        color: var(--rtl-text-secondary) !important;
+                        font-size: 11.5px !important;
+                        font-weight: 500 !important;
+                        cursor: pointer !important;
+                        transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1) !important;
+                        user-select: none !important;
+                        line-height: 1 !important;
+                        white-space: nowrap !important;
+                    }
+                    .rtl-main-nav-btn:hover:not(.active) {
+                        background-color: var(--rtl-surface-hover) !important;
+                        color: var(--rtl-text) !important;
+                    }
+                    .rtl-main-nav-btn.active {
+                        background-color: var(--rtl-accent) !important;
+                        color: #ffffff !important;
+                        font-weight: 600 !important;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15) !important;
                     }
 
                     /* Tab Switcher (Dark / Light) */
@@ -801,64 +848,124 @@ win.webContents.on('dom-ready', () => {
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
                             </button>
                         </div>
-                        
-                        <!-- Main RTL Toggle -->
-                        <div class="flex items-center justify-between gap-4 px-1 pt-0.5">
-                            <span id="rtl-toggle-label" class="font-medium text-xs opacity-90">\${isRTL ? 'RTL Engine Enabled' : 'RTL Engine Disabled'}</span>
-                            <button id="rtl-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${isRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
+
+                        <!-- Main 2-Tab Navigation Switcher (RTL & Text vs UI & Styling) -->
+                        <div class="rtl-main-nav">
+                            <button id="rtl-main-nav-rtl" type="button" class="rtl-main-nav-btn \${activeMainTab === 'rtl' ? 'active' : ''}">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
+                                <span>قلم و جهت (RTL)</span>
+                            </button>
+                            <button id="rtl-main-nav-ui" type="button" class="rtl-main-nav-btn \${activeMainTab === 'ui' ? 'active' : ''}">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m4.93 4.93 4.24 4.24M14.83 9.17l4.24-4.24M14.83 14.83l4.24 4.24M9.17 14.83l-4.24 4.24"/></svg>
+                                <span>طراحی و استایل (UI)</span>
                             </button>
                         </div>
-                        
-                        <!-- Settings Body -->
-                        <div id="rtl-settings-wrapper" class="flex flex-col gap-2.5 transition-all duration-300 \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
-                            
-                            <!-- Force RTL -->
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80">Force Full RTL</span>
-                                <button id="rtl-force-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                    <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${forceRTL ? '18px' : '3px'});"></span>
+
+                        <!-- TAB 1: RTL & Typography View -->
+                        <div id="rtl-view-rtl" class="flex flex-col gap-2.5 \${activeMainTab === 'rtl' ? '' : 'hidden'}">
+                            <!-- Main RTL Toggle -->
+                            <div class="flex items-center justify-between gap-4 px-1 pt-0.5">
+                                <span id="rtl-toggle-label" class="font-medium text-xs opacity-90">\${isRTL ? 'RTL Engine Enabled' : 'RTL Engine Disabled'}</span>
+                                <button id="rtl-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${isRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                    <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
                                 </button>
                             </div>
                             
-                            <div class="h-px bg-border border-opacity-30 w-full"></div>
-                            
-                            <!-- Placement: Sidebar vs Floating -->
-                            <div class="flex flex-col gap-1 px-1">
-                                <span class="font-medium text-xs opacity-80">Button Location</span>
-                                <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-muted border border-border border-opacity-40">
-                                    <button id="rtl-loc-sidebar-btn" type="button" class="py-1 px-2 text-[11px] font-medium rounded-md transition-all \${placement === 'sidebar' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} cursor-pointer">
-                                        Sidebar Menu
+                            <!-- Settings Body -->
+                            <div id="rtl-settings-wrapper" class="flex flex-col gap-2.5 transition-all duration-300 \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
+                                
+                                <!-- Force RTL -->
+                                <div class="flex items-center justify-between gap-2 px-1">
+                                    <span class="font-medium text-xs opacity-80">Force Full RTL</span>
+                                    <button id="rtl-force-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                        <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${forceRTL ? '18px' : '3px'});"></span>
                                     </button>
-                                    <button id="rtl-loc-floating-btn" type="button" class="py-1 px-2 text-[11px] font-medium rounded-md transition-all \${placement === 'floating' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} cursor-pointer">
-                                        Floating Icon
+                                </div>
+                                
+                                <div class="h-px bg-border border-opacity-30 w-full"></div>
+                                
+                                <!-- Placement: Sidebar vs Floating -->
+                                <div class="flex flex-col gap-1 px-1">
+                                    <span class="font-medium text-xs opacity-80">Button Location</span>
+                                    <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-muted border border-border border-opacity-40">
+                                        <button id="rtl-loc-sidebar-btn" type="button" class="py-1 px-2 text-[11px] font-medium rounded-md transition-all \${placement === 'sidebar' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} cursor-pointer">
+                                            Sidebar Menu
+                                        </button>
+                                        <button id="rtl-loc-floating-btn" type="button" class="py-1 px-2 text-[11px] font-medium rounded-md transition-all \${placement === 'floating' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'} cursor-pointer">
+                                            Floating Icon
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Floating Height Slider -->
+                                <div id="rtl-float-height-row" class="flex items-center justify-between gap-2 px-1 \${placement === 'floating' ? '' : 'hidden'}">
+                                    <span class="font-medium text-xs opacity-80" title="Floating button bottom offset">Float Height</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <input id="rtl-float-height-input" type="range" min="16" max="220" step="4" value="\${floatingBottom}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
+                                        <span id="rtl-float-height-val" class="text-[10px] font-mono text-muted-foreground w-8 text-right">\${floatingBottom}px</span>
+                                    </div>
+                                </div>
+
+                                <!-- Sidebar Width Control (140px to 420px) -->
+                                <div class="flex items-center justify-between gap-2 px-1">
+                                    <span class="font-medium text-xs opacity-80" title="Custom Sidebar Width (140px - 420px)">Sidebar Width</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <input id="rtl-sidebar-width-input" type="range" min="140" max="420" step="2" value="\${sidebarWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
+                                        <span id="rtl-sidebar-width-val" class="text-[10px] font-mono text-muted-foreground w-10 text-right">\${sidebarWidth}px</span>
+                                        <button id="rtl-sidebar-width-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" title="Reset (256px)">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="h-px bg-border border-opacity-30 w-full"></div>
+
+                                <!-- Typography -->
+                                <div class="flex items-center justify-between gap-2 px-1">
+                                    <span class="font-medium text-xs opacity-80">FA/AR Font</span>
+                                    <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
+                                </div>
+                                <div class="flex items-center justify-between gap-2 px-1">
+                                    <span class="font-medium text-xs opacity-80">EN Font</span>
+                                    <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
+                                </div>
+                                <div class="flex items-center justify-between gap-2 px-1">
+                                    <span class="font-medium text-xs opacity-80">Code Font</span>
+                                    <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
+                                </div>
+
+                                <!-- Line Height & Font Size -->
+                                <div class="flex items-center justify-between gap-2 px-1">
+                                    <span class="font-medium text-xs opacity-80">Line Height</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
+                                        <button id="rtl-lh-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset (1.6)">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="flex items-center justify-between gap-2 px-1">
+                                    <span class="font-medium text-xs opacity-80">Font Size</span>
+                                    <div class="flex items-center gap-1.5">
+                                        <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
+                                        <button id="rtl-fs-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset (16px)">
+                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Shift+2 Fix -->
+                                <div class="flex items-center justify-between gap-2 px-1">
+                                    <span class="font-medium text-xs opacity-80">Shift+2 for @</span>
+                                    <button id="rtl-at-btn" type="button" role="switch" aria-checked="\${fixAtSign}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${fixAtSign ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                        <span id="rtl-at-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${fixAtSign ? '24px' : '4px'});"></span>
                                     </button>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- Floating Height Slider -->
-                            <div id="rtl-float-height-row" class="flex items-center justify-between gap-2 px-1 \${placement === 'floating' ? '' : 'hidden'}">
-                                <span class="font-medium text-xs opacity-80" title="Floating button bottom offset">Float Height</span>
-                                <div class="flex items-center gap-1.5">
-                                    <input id="rtl-float-height-input" type="range" min="16" max="220" step="4" value="\${floatingBottom}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                    <span id="rtl-float-height-val" class="text-[10px] font-mono text-muted-foreground w-8 text-right">\${floatingBottom}px</span>
-                                </div>
-                            </div>
-
-                            <!-- Sidebar Width Control (140px to 420px) -->
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80" title="Custom Sidebar Width (140px - 420px)">Sidebar Width</span>
-                                <div class="flex items-center gap-1.5">
-                                    <input id="rtl-sidebar-width-input" type="range" min="140" max="420" step="2" value="\${sidebarWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                    <span id="rtl-sidebar-width-val" class="text-[10px] font-mono text-muted-foreground w-10 text-right">\${sidebarWidth}px</span>
-                                    <button id="rtl-sidebar-width-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" title="Reset (256px)">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="h-px bg-border border-opacity-30 w-full"></div>
-
+                        <!-- TAB 2: UI & Styling View -->
+                        <div id="rtl-view-ui" class="flex flex-col gap-2.5 \${activeMainTab === 'ui' ? '' : 'hidden'}">
                             <!-- User Message Box Customizer with Dual Dark/Light Mode Tabs -->
                             <div class="flex flex-col gap-2 px-1">
                                 <!-- Toggle Header -->
@@ -887,14 +994,16 @@ win.webContents.on('dom-ready', () => {
                                         </button>
                                     </div>
 
-                                    <!-- Live Preview Bubble -->
+                                    <!-- Live Preview Bubble with breath margin -->
                                     <div class="flex flex-col gap-1">
                                         <div class="flex items-center justify-between px-0.5">
                                             <span class="rtl-label" style="font-size: 10px !important;">Live Preview</span>
                                             <span class="text-[10px] font-mono text-muted-foreground opacity-75" id="rtl-preview-tag">\${activeTab === 'dark' ? 'Dark Preset' : 'Light Preset'}</span>
                                         </div>
-                                        <div id="rtl-usermsg-preview" class="px-3 py-2 rounded-xl text-xs transition-all duration-200" style="direction: rtl; text-align: right;">
-                                            <span id="rtl-usermsg-preview-text">نمونه پیام کاربر / User prompt</span>
+                                        <div class="p-1 pb-2">
+                                            <div id="rtl-usermsg-preview" class="px-3 py-2 rounded-xl text-xs transition-all duration-200" style="direction: rtl; text-align: right;">
+                                                <span id="rtl-usermsg-preview-text">نمونه پیام کاربر / User prompt</span>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -949,7 +1058,7 @@ win.webContents.on('dom-ready', () => {
 
                                     <!-- Reset Button -->
                                     <button id="rtl-usermsg-reset-btn" type="button" class="rtl-btn-ghost mt-1 w-full">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                                         <span id="rtl-usermsg-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default</span>
                                     </button>
                                 </div>
@@ -991,54 +1100,10 @@ win.webContents.on('dom-ready', () => {
 
                                     <!-- Reset Button -->
                                     <button id="rtl-inputbox-reset-btn" type="button" class="rtl-btn-ghost mt-1 w-full">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                                         <span id="rtl-inputbox-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border</span>
                                     </button>
                                 </div>
-                            </div>
-
-                            <div class="h-px bg-border border-opacity-30 w-full"></div>
-
-                            <!-- Typography -->
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80">FA/AR Font</span>
-                                <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
-                            </div>
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80">EN Font</span>
-                                <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
-                            </div>
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80">Code Font</span>
-                                <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input text-[11px] px-2 py-0.5 rounded-md w-32 focus:outline-none">
-                            </div>
-
-                            <!-- Line Height & Font Size -->
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80">Line Height</span>
-                                <div class="flex items-center gap-1.5">
-                                    <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                    <button id="rtl-lh-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset (1.6)">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80">Font Size</span>
-                                <div class="flex items-center gap-1.5">
-                                    <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                    <button id="rtl-fs-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset (16px)">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Shift+2 Fix -->
-                            <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80">Shift+2 for @</span>
-                                <button id="rtl-at-btn" type="button" role="switch" aria-checked="\${fixAtSign}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${fixAtSign ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                    <span id="rtl-at-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${fixAtSign ? '24px' : '4px'});"></span>
-                                </button>
                             </div>
                         </div>
 
@@ -1101,6 +1166,30 @@ win.webContents.on('dom-ready', () => {
                 '3d': document.getElementById('rtl-shadow-3d'),
                 glow: document.getElementById('rtl-shadow-glow')
             };
+
+            const mainNavRtl = document.getElementById('rtl-main-nav-rtl');
+            const mainNavUi = document.getElementById('rtl-main-nav-ui');
+            const viewRtl = document.getElementById('rtl-view-rtl');
+            const viewUi = document.getElementById('rtl-view-ui');
+
+            function switchMainTab(tab) {
+                activeMainTab = tab;
+                if (tab === 'rtl') {
+                    if (mainNavRtl) mainNavRtl.classList.add('active');
+                    if (mainNavUi) mainNavUi.classList.remove('active');
+                    if (viewRtl) viewRtl.classList.remove('hidden');
+                    if (viewUi) viewUi.classList.add('hidden');
+                } else {
+                    if (mainNavUi) mainNavUi.classList.add('active');
+                    if (mainNavRtl) mainNavRtl.classList.remove('active');
+                    if (viewUi) viewUi.classList.remove('hidden');
+                    if (viewRtl) viewRtl.classList.add('hidden');
+                }
+                saveConfig();
+            }
+
+            if (mainNavRtl) mainNavRtl.addEventListener('click', () => switchMainTab('rtl'));
+            if (mainNavUi) mainNavUi.addEventListener('click', () => switchMainTab('ui'));
 
             const inputBoxToggleBtn = document.getElementById('rtl-inputbox-toggle-btn');
             const inputBoxToggleKnob = document.getElementById('rtl-inputbox-toggle-knob');
@@ -1224,7 +1313,8 @@ win.webContents.on('dom-ready', () => {
                     userMsgLight: userMsgLight,
                     inputBoxEnabled: inputBoxEnabled,
                     inputBoxDark: inputBoxDark,
-                    inputBoxLight: inputBoxLight
+                    inputBoxLight: inputBoxLight,
+                    activeMainTab: activeMainTab
                 };
                 console.log("SAVE_RTL_CONFIG|" + JSON.stringify(cfg));
             }
