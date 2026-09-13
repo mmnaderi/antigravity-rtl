@@ -34,17 +34,41 @@ win.webContents.on('dom-ready', () => {
             floatingBottom: 24,
             sidebarWidth: 256,
             userMsgEnabled: true,
-            userMsgBg: '#1e2433',
-            userMsgText: '#f1f5f9',
-            userMsgBorder: '#384c6e',
-            userMsgBorderWidth: '1.5',
-            userMsgShadow: 'soft'
+            userMsgDark: {
+                bg: '#1e2433',
+                text: '#f1f5f9',
+                border: '#384c6e',
+                borderWidth: '1.5',
+                shadow: 'soft'
+            },
+            userMsgLight: {
+                bg: '#f0f4ff',
+                text: '#0f172a',
+                border: '#cbd5e1',
+                borderWidth: '1.5',
+                shadow: 'soft'
+            }
         };
         try {
             const configPath = require('path').join(require('os').homedir(), '.antigravity-rtl.json');
             if (require('fs').existsSync(configPath)) {
                 const cfg = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
-                rtlConfig = { ...rtlConfig, ...cfg };
+                // Backward compatibility if single colors were saved
+                if (cfg.userMsgBg && !cfg.userMsgDark) {
+                    cfg.userMsgDark = {
+                        bg: cfg.userMsgBg,
+                        text: cfg.userMsgText || '#f1f5f9',
+                        border: cfg.userMsgBorder || '#384c6e',
+                        borderWidth: cfg.userMsgBorderWidth || '1.5',
+                        shadow: cfg.userMsgShadow || 'soft'
+                    };
+                }
+                rtlConfig = { 
+                    ...rtlConfig, 
+                    ...cfg,
+                    userMsgDark: { ...rtlConfig.userMsgDark, ...(cfg.userMsgDark || {}) },
+                    userMsgLight: { ...rtlConfig.userMsgLight, ...(cfg.userMsgLight || {}) }
+                };
             }
         } catch (e) {}
 
@@ -58,25 +82,48 @@ win.webContents.on('dom-ready', () => {
             let placement = rtlConfig.placement || 'sidebar';
             let floatingBottom = parseInt(rtlConfig.floatingBottom) || 24;
             let sidebarWidth = parseInt(rtlConfig.sidebarWidth) || 256;
-            
             let userMsgEnabled = rtlConfig.userMsgEnabled !== false;
-            let userMsgBg = rtlConfig.userMsgBg || '#1e2433';
-            let userMsgText = rtlConfig.userMsgText || '#f1f5f9';
-            let userMsgBorder = rtlConfig.userMsgBorder || '#384c6e';
-            let userMsgBorderWidth = rtlConfig.userMsgBorderWidth !== undefined ? rtlConfig.userMsgBorderWidth : '1.5';
-            let userMsgShadow = rtlConfig.userMsgShadow || 'soft';
 
-            function getShadowCSS(type, borderCol) {
-                switch (type) {
-                    case 'soft': return '0 3px 12px -2px rgba(0, 0, 0, 0.28)';
-                    case 'medium': return '0 6px 18px -2px rgba(0, 0, 0, 0.42)';
-                    case 'glow': return \`0 0 14px 1px \${borderCol}66\`;
-                    case 'none':
-                    default: return 'none';
+            let userMsgDark = {
+                bg: '#1e2433',
+                text: '#f1f5f9',
+                border: '#384c6e',
+                borderWidth: '1.5',
+                shadow: 'soft',
+                ...(rtlConfig.userMsgDark || {})
+            };
+
+            let userMsgLight = {
+                bg: '#f0f4ff',
+                text: '#0f172a',
+                border: '#cbd5e1',
+                borderWidth: '1.5',
+                shadow: 'soft',
+                ...(rtlConfig.userMsgLight || {})
+            };
+
+            let activeTab = (document.body.classList.contains('dark') || document.body.classList.contains('dark-theme')) ? 'dark' : 'light';
+
+            function getShadowCSS(type, borderCol, mode) {
+                if (type === 'none') return 'none';
+                if (mode === 'light') {
+                    switch (type) {
+                        case 'soft': return '0 2px 8px -1px rgba(0, 0, 0, 0.08)';
+                        case 'medium': return '0 4px 14px -2px rgba(0, 0, 0, 0.14)';
+                        case 'glow': return \`0 0 12px 1px \${borderCol}44\`;
+                        default: return 'none';
+                    }
+                } else {
+                    switch (type) {
+                        case 'soft': return '0 3px 12px -2px rgba(0, 0, 0, 0.28)';
+                        case 'medium': return '0 6px 18px -2px rgba(0, 0, 0, 0.42)';
+                        case 'glow': return \`0 0 14px 1px \${borderCol}66\`;
+                        default: return 'none';
+                    }
                 }
             }
 
-            // 1. Inject permanent widget styles
+            // 1. Permanent Widget Styles
             if (!document.getElementById('rtl-widget-style')) {
                 let widgetStyle = document.createElement('style');
                 widgetStyle.id = 'rtl-widget-style';
@@ -208,13 +255,24 @@ win.webContents.on('dom-ready', () => {
                 \` : '';
 
                 let msgBoxCSS = userMsgEnabled ? \`
+                    /* Light Mode User Message */
                     :root {
-                        --user-msg-bg: \${userMsgBg};
-                        --user-msg-text: \${userMsgText};
-                        --user-msg-border-color: \${userMsgBorder};
-                        --user-msg-border-width: \${userMsgBorderWidth}px;
-                        --user-msg-shadow: \${getShadowCSS(userMsgShadow, userMsgBorder)};
+                        --user-msg-bg: \${userMsgLight.bg};
+                        --user-msg-text: \${userMsgLight.text};
+                        --user-msg-border-color: \${userMsgLight.border};
+                        --user-msg-border-width: \${userMsgLight.borderWidth}px;
+                        --user-msg-shadow: \${getShadowCSS(userMsgLight.shadow, userMsgLight.border, 'light')};
                     }
+
+                    /* Dark Mode User Message */
+                    :root.dark, .dark, body.dark, body.dark-theme, body.theme-dark {
+                        --user-msg-bg: \${userMsgDark.bg};
+                        --user-msg-text: \${userMsgDark.text};
+                        --user-msg-border-color: \${userMsgDark.border};
+                        --user-msg-border-width: \${userMsgDark.borderWidth}px;
+                        --user-msg-shadow: \${getShadowCSS(userMsgDark.shadow, userMsgDark.border, 'dark')};
+                    }
+
                     [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] {
                         border-radius: 0.75rem !important;
                         transition: all 0.2s ease !important;
@@ -498,7 +556,7 @@ win.webContents.on('dom-ready', () => {
 
                             <div class="h-px bg-border border-opacity-30 w-full"></div>
 
-                            <!-- User Message Box Customizer -->
+                            <!-- User Message Box Customizer with Dual Dark/Light Mode Tabs -->
                             <div class="flex flex-col gap-2 px-1">
                                 <!-- Toggle Header -->
                                 <div class="flex items-center justify-between">
@@ -508,15 +566,27 @@ win.webContents.on('dom-ready', () => {
                                     </button>
                                 </div>
 
-                                <!-- Manual Controls -->
+                                <!-- Manual Controls Container -->
                                 <div id="rtl-usermsg-controls" class="flex flex-col gap-2 p-2 rounded-xl bg-muted bg-opacity-40 border border-border border-opacity-40 transition-all duration-200 \${userMsgEnabled ? '' : 'opacity-40 pointer-events-none'}">
                                     
+                                    <!-- Dark / Light Mode Tabs -->
+                                    <div class="grid grid-cols-2 gap-1 p-0.5 rounded-lg bg-background border border-border border-opacity-40 text-xs">
+                                        <button id="rtl-tab-dark" type="button" class="py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer \${activeTab === 'dark' ? 'bg-accent text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                                            <span>Dark Mode</span>
+                                        </button>
+                                        <button id="rtl-tab-light" type="button" class="py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer \${activeTab === 'light' ? 'bg-accent text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'}">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>
+                                            <span>Light Mode</span>
+                                        </button>
+                                    </div>
+
                                     <!-- Background Color -->
-                                    <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center justify-between gap-2 pt-1">
                                         <span class="text-[11px] font-medium opacity-80">Background</span>
                                         <div class="flex items-center gap-1.5">
-                                            <input type="color" id="rtl-usermsg-bg-color" value="\${userMsgBg}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
-                                            <input type="text" id="rtl-usermsg-bg-hex" maxlength="7" value="\${userMsgBg}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                            <input type="color" id="rtl-usermsg-bg-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).bg}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
+                                            <input type="text" id="rtl-usermsg-bg-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).bg}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
                                         </div>
                                     </div>
 
@@ -524,8 +594,8 @@ win.webContents.on('dom-ready', () => {
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="text-[11px] font-medium opacity-80">Text Color</span>
                                         <div class="flex items-center gap-1.5">
-                                            <input type="color" id="rtl-usermsg-text-color" value="\${userMsgText}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
-                                            <input type="text" id="rtl-usermsg-text-hex" maxlength="7" value="\${userMsgText}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                            <input type="color" id="rtl-usermsg-text-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).text}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
+                                            <input type="text" id="rtl-usermsg-text-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).text}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
                                         </div>
                                     </div>
 
@@ -533,8 +603,8 @@ win.webContents.on('dom-ready', () => {
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="text-[11px] font-medium opacity-80">Border Color</span>
                                         <div class="flex items-center gap-1.5">
-                                            <input type="color" id="rtl-usermsg-border-color" value="\${userMsgBorder}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
-                                            <input type="text" id="rtl-usermsg-border-hex" maxlength="7" value="\${userMsgBorder}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                            <input type="color" id="rtl-usermsg-border-color" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).border}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
+                                            <input type="text" id="rtl-usermsg-border-hex" maxlength="7" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).border}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
                                         </div>
                                     </div>
 
@@ -542,8 +612,8 @@ win.webContents.on('dom-ready', () => {
                                     <div class="flex items-center justify-between gap-2">
                                         <span class="text-[11px] font-medium opacity-80">Border Width</span>
                                         <div class="flex items-center gap-1.5">
-                                            <input id="rtl-usermsg-bw-input" type="range" min="0" max="4" step="0.5" value="\${userMsgBorderWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                            <span id="rtl-usermsg-bw-val" class="text-[10px] font-mono text-muted-foreground w-10 text-right">\${userMsgBorderWidth}px</span>
+                                            <input id="rtl-usermsg-bw-input" type="range" min="0" max="4" step="0.5" value="\${(activeTab === 'dark' ? userMsgDark : userMsgLight).borderWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
+                                            <span id="rtl-usermsg-bw-val" class="text-[10px] font-mono text-muted-foreground w-10 text-right">\${(activeTab === 'dark' ? userMsgDark : userMsgLight).borderWidth}px</span>
                                         </div>
                                     </div>
 
@@ -551,17 +621,17 @@ win.webContents.on('dom-ready', () => {
                                     <div class="flex flex-col gap-1 pt-0.5">
                                         <span class="text-[11px] font-medium opacity-80">Shadow</span>
                                         <div class="grid grid-cols-4 gap-1 p-0.5 rounded-lg bg-background border border-border border-opacity-40 text-[10px]">
-                                            <button id="rtl-shadow-none" type="button" class="py-0.5 rounded transition-all \${userMsgShadow === 'none' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">None</button>
-                                            <button id="rtl-shadow-soft" type="button" class="py-0.5 rounded transition-all \${userMsgShadow === 'soft' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Soft</button>
-                                            <button id="rtl-shadow-medium" type="button" class="py-0.5 rounded transition-all \${userMsgShadow === 'medium' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Medium</button>
-                                            <button id="rtl-shadow-glow" type="button" class="py-0.5 rounded transition-all \${userMsgShadow === 'glow' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Glow</button>
+                                            <button id="rtl-shadow-none" type="button" class="py-0.5 rounded transition-all \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'none' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">None</button>
+                                            <button id="rtl-shadow-soft" type="button" class="py-0.5 rounded transition-all \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'soft' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Soft</button>
+                                            <button id="rtl-shadow-medium" type="button" class="py-0.5 rounded transition-all \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'medium' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Medium</button>
+                                            <button id="rtl-shadow-glow" type="button" class="py-0.5 rounded transition-all \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'glow' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Glow</button>
                                         </div>
                                     </div>
 
                                     <!-- Reset to Default Button -->
                                     <button id="rtl-usermsg-reset-btn" type="button" class="mt-1 text-[11px] text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 py-1 px-2 rounded-md hover:bg-background border border-border border-opacity-40 transition-all cursor-pointer">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
-                                        <span>Reset to Gentle Default</span>
+                                        <span id="rtl-usermsg-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default</span>
                                     </button>
                                 </div>
                             </div>
@@ -642,10 +712,14 @@ win.webContents.on('dom-ready', () => {
             const sidebarWidthVal = document.getElementById('rtl-sidebar-width-val');
             const sidebarWidthReset = document.getElementById('rtl-sidebar-width-reset');
 
-            // User Message Box References
             const userMsgToggleBtn = document.getElementById('rtl-usermsg-toggle-btn');
             const userMsgToggleKnob = document.getElementById('rtl-usermsg-toggle-knob');
             const userMsgControls = document.getElementById('rtl-usermsg-controls');
+            
+            const tabDark = document.getElementById('rtl-tab-dark');
+            const tabLight = document.getElementById('rtl-tab-light');
+            const resetLabel = document.getElementById('rtl-usermsg-reset-label');
+
             const userMsgBgColor = document.getElementById('rtl-usermsg-bg-color');
             const userMsgBgHex = document.getElementById('rtl-usermsg-bg-hex');
             const userMsgTextColor = document.getElementById('rtl-usermsg-text-color');
@@ -673,7 +747,6 @@ win.webContents.on('dom-ready', () => {
             const atBtn = document.getElementById('rtl-at-btn');
             const atKnob = document.getElementById('rtl-at-knob');
 
-            // Click-to-toggle panel logic
             let isPanelOpen = false;
             function updatePanelPosition() {
                 if (placement === 'sidebar') {
@@ -705,7 +778,6 @@ win.webContents.on('dom-ready', () => {
                 setPanelOpen(false);
             });
 
-            // Close on click outside & Escape
             document.addEventListener('click', (e) => {
                 if (!isPanelOpen) return;
                 const sidebarBtn = document.getElementById('rtl-sidebar-btn');
@@ -720,7 +792,6 @@ win.webContents.on('dom-ready', () => {
                 }
             });
 
-            // Mount sidebar button
             function attachSidebarButton() {
                 const sidebar = document.querySelector('[role="navigation"][aria-label="Sidebar"]');
                 if (!sidebar) return;
@@ -750,7 +821,6 @@ win.webContents.on('dom-ready', () => {
             attachSidebarButton();
             setInterval(attachSidebarButton, 1500);
 
-            // Save config function
             function saveConfig() {
                 const cfg = {
                     faFont: faFontInput.value.trim(),
@@ -765,11 +835,8 @@ win.webContents.on('dom-ready', () => {
                     floatingBottom: floatingBottom,
                     sidebarWidth: sidebarWidth,
                     userMsgEnabled: userMsgEnabled,
-                    userMsgBg: userMsgBg,
-                    userMsgText: userMsgText,
-                    userMsgBorder: userMsgBorder,
-                    userMsgBorderWidth: userMsgBorderWidth,
-                    userMsgShadow: userMsgShadow
+                    userMsgDark: userMsgDark,
+                    userMsgLight: userMsgLight
                 };
                 console.log("SAVE_RTL_CONFIG|" + JSON.stringify(cfg));
             }
@@ -778,7 +845,6 @@ win.webContents.on('dom-ready', () => {
                 updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth);
             }
 
-            // Placement Buttons
             locSidebarBtn.addEventListener('click', () => {
                 placement = 'sidebar';
                 locSidebarBtn.classList.add('bg-background', 'text-foreground', 'shadow-sm');
@@ -803,7 +869,6 @@ win.webContents.on('dom-ready', () => {
                 saveConfig();
             });
 
-            // Floating Bottom Slider
             floatHeightInput.addEventListener('input', (e) => {
                 floatingBottom = parseInt(e.target.value);
                 floatHeightVal.textContent = floatingBottom + 'px';
@@ -812,7 +877,6 @@ win.webContents.on('dom-ready', () => {
                 saveConfig();
             });
 
-            // Sidebar Width Slider (140px - 420px)
             sidebarWidthInput.addEventListener('input', (e) => {
                 sidebarWidth = parseInt(e.target.value);
                 sidebarWidthVal.textContent = sidebarWidth + 'px';
@@ -828,7 +892,6 @@ win.webContents.on('dom-ready', () => {
                 saveConfig();
             });
 
-            // User Message Box Controls
             userMsgToggleBtn.addEventListener('click', () => {
                 userMsgEnabled = !userMsgEnabled;
                 userMsgToggleBtn.setAttribute('aria-checked', userMsgEnabled);
@@ -847,8 +910,64 @@ win.webContents.on('dom-ready', () => {
                 saveConfig();
             });
 
-            // Sync color picker and hex inputs
-            function bindColorPair(colorInput, hexInput, getter, setter) {
+            function updateShadowUI(selected) {
+                const cur = activeTab === 'dark' ? userMsgDark : userMsgLight;
+                cur.shadow = selected;
+                Object.keys(shadowBtns).forEach(key => {
+                    const b = shadowBtns[key];
+                    if (key === selected) {
+                        b.className = 'py-0.5 rounded transition-all bg-accent text-white font-semibold';
+                    } else {
+                        b.className = 'py-0.5 rounded transition-all text-muted-foreground hover:text-foreground';
+                    }
+                });
+                refreshStyles();
+                saveConfig();
+            }
+
+            function syncInputsForActiveTab() {
+                const cur = activeTab === 'dark' ? userMsgDark : userMsgLight;
+                userMsgBgColor.value = cur.bg;
+                userMsgBgHex.value = cur.bg;
+                userMsgTextColor.value = cur.text;
+                userMsgTextHex.value = cur.text;
+                userMsgBorderColor.value = cur.border;
+                userMsgBorderHex.value = cur.border;
+                userMsgBwInput.value = cur.borderWidth;
+                userMsgBwVal.textContent = cur.borderWidth + 'px';
+                
+                // Update shadow buttons
+                Object.keys(shadowBtns).forEach(key => {
+                    const b = shadowBtns[key];
+                    if (key === cur.shadow) {
+                        b.className = 'py-0.5 rounded transition-all bg-accent text-white font-semibold';
+                    } else {
+                        b.className = 'py-0.5 rounded transition-all text-muted-foreground hover:text-foreground';
+                    }
+                });
+
+                resetLabel.textContent = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default\`;
+
+                if (activeTab === 'dark') {
+                    tabDark.className = 'py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer bg-accent text-white shadow-sm';
+                    tabLight.className = 'py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer text-muted-foreground hover:text-foreground';
+                } else {
+                    tabLight.className = 'py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer bg-accent text-white shadow-sm';
+                    tabDark.className = 'py-1 px-2 rounded-md font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer text-muted-foreground hover:text-foreground';
+                }
+            }
+
+            tabDark.addEventListener('click', () => {
+                activeTab = 'dark';
+                syncInputsForActiveTab();
+            });
+
+            tabLight.addEventListener('click', () => {
+                activeTab = 'light';
+                syncInputsForActiveTab();
+            });
+
+            function bindColorPair(colorInput, hexInput, setter) {
                 colorInput.addEventListener('input', (e) => {
                     setter(e.target.value);
                     hexInput.value = e.target.value;
@@ -867,32 +986,17 @@ win.webContents.on('dom-ready', () => {
                 });
             }
 
-            bindColorPair(userMsgBgColor, userMsgBgHex, () => userMsgBg, (v) => { userMsgBg = v; });
-            bindColorPair(userMsgTextColor, userMsgTextHex, () => userMsgText, (v) => { userMsgText = v; });
-            bindColorPair(userMsgBorderColor, userMsgBorderHex, () => userMsgBorder, (v) => { userMsgBorder = v; });
+            bindColorPair(userMsgBgColor, userMsgBgHex, (v) => { (activeTab === 'dark' ? userMsgDark : userMsgLight).bg = v; });
+            bindColorPair(userMsgTextColor, userMsgTextHex, (v) => { (activeTab === 'dark' ? userMsgDark : userMsgLight).text = v; });
+            bindColorPair(userMsgBorderColor, userMsgBorderHex, (v) => { (activeTab === 'dark' ? userMsgDark : userMsgLight).border = v; });
 
-            // Border Width Slider
             userMsgBwInput.addEventListener('input', (e) => {
-                userMsgBorderWidth = e.target.value;
-                userMsgBwVal.textContent = userMsgBorderWidth + 'px';
+                const cur = activeTab === 'dark' ? userMsgDark : userMsgLight;
+                cur.borderWidth = e.target.value;
+                userMsgBwVal.textContent = cur.borderWidth + 'px';
                 refreshStyles();
                 saveConfig();
             });
-
-            // Shadow selection
-            function updateShadowUI(selected) {
-                userMsgShadow = selected;
-                Object.keys(shadowBtns).forEach(key => {
-                    const b = shadowBtns[key];
-                    if (key === selected) {
-                        b.className = 'py-0.5 rounded transition-all bg-accent text-white font-semibold';
-                    } else {
-                        b.className = 'py-0.5 rounded transition-all text-muted-foreground hover:text-foreground';
-                    }
-                });
-                refreshStyles();
-                saveConfig();
-            }
 
             Object.keys(shadowBtns).forEach(key => {
                 shadowBtns[key].addEventListener('click', () => {
@@ -900,24 +1004,23 @@ win.webContents.on('dom-ready', () => {
                 });
             });
 
-            // Reset to gentle defaults
             userMsgResetBtn.addEventListener('click', () => {
-                userMsgBg = '#1e2433';
-                userMsgText = '#f1f5f9';
-                userMsgBorder = '#384c6e';
-                userMsgBorderWidth = '1.5';
-                userMsgShadow = 'soft';
-
-                userMsgBgColor.value = userMsgBg;
-                userMsgBgHex.value = userMsgBg;
-                userMsgTextColor.value = userMsgText;
-                userMsgTextHex.value = userMsgText;
-                userMsgBorderColor.value = userMsgBorder;
-                userMsgBorderHex.value = userMsgBorder;
-                userMsgBwInput.value = userMsgBorderWidth;
-                userMsgBwVal.textContent = userMsgBorderWidth + 'px';
-                
-                updateShadowUI('soft');
+                if (activeTab === 'dark') {
+                    userMsgDark.bg = '#1e2433';
+                    userMsgDark.text = '#f1f5f9';
+                    userMsgDark.border = '#384c6e';
+                    userMsgDark.borderWidth = '1.5';
+                    userMsgDark.shadow = 'soft';
+                } else {
+                    userMsgLight.bg = '#f0f4ff';
+                    userMsgLight.text = '#0f172a';
+                    userMsgLight.border = '#cbd5e1';
+                    userMsgLight.borderWidth = '1.5';
+                    userMsgLight.shadow = 'soft';
+                }
+                syncInputsForActiveTab();
+                refreshStyles();
+                saveConfig();
             });
 
             // Main RTL Toggle
@@ -945,7 +1048,6 @@ win.webContents.on('dom-ready', () => {
                 setRTLActive(!isRTL);
             });
 
-            // Force RTL Event
             forceBtn.addEventListener('click', () => {
                 forceRTL = !forceRTL;
                 saveConfig();
@@ -963,7 +1065,6 @@ win.webContents.on('dom-ready', () => {
                 updateDir();
             });
 
-            // At Sign Fix Event
             atBtn.addEventListener('click', () => {
                 fixAtSign = !fixAtSign;
                 saveConfig();
@@ -979,7 +1080,6 @@ win.webContents.on('dom-ready', () => {
                 }
             });
 
-            // Typography Inputs
             [faFontInput, enFontInput, codeFontInput, lhInput, fsInput].forEach(inp => {
                 inp.addEventListener('input', () => {
                     saveConfig();
