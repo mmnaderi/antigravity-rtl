@@ -33,7 +33,12 @@ win.webContents.on('dom-ready', () => {
             placement: 'sidebar',
             floatingBottom: 24,
             sidebarWidth: 256,
-            userMsgTheme: 'blue'
+            userMsgEnabled: true,
+            userMsgBg: '#1e2433',
+            userMsgText: '#f1f5f9',
+            userMsgBorder: '#384c6e',
+            userMsgBorderWidth: '1.5',
+            userMsgShadow: 'soft'
         };
         try {
             const configPath = require('path').join(require('os').homedir(), '.antigravity-rtl.json');
@@ -47,57 +52,35 @@ win.webContents.on('dom-ready', () => {
             const fontBase64 = '${fontBase64}';
             const rtlConfig = ${JSON.stringify(rtlConfig)};
             
-            let isRTL = rtlConfig.isRTL;
+            let isRTL = rtlConfig.isRTL !== false;
             let forceRTL = rtlConfig.forceRTL || false;
             let fixAtSign = rtlConfig.fixAtSign !== false;
             let placement = rtlConfig.placement || 'sidebar';
             let floatingBottom = parseInt(rtlConfig.floatingBottom) || 24;
             let sidebarWidth = parseInt(rtlConfig.sidebarWidth) || 256;
-            let userMsgTheme = rtlConfig.userMsgTheme || 'blue';
+            
+            let userMsgEnabled = rtlConfig.userMsgEnabled !== false;
+            let userMsgBg = rtlConfig.userMsgBg || '#1e2433';
+            let userMsgText = rtlConfig.userMsgText || '#f1f5f9';
+            let userMsgBorder = rtlConfig.userMsgBorder || '#384c6e';
+            let userMsgBorderWidth = rtlConfig.userMsgBorderWidth !== undefined ? rtlConfig.userMsgBorderWidth : '1.5';
+            let userMsgShadow = rtlConfig.userMsgShadow || 'soft';
 
-            const MSG_THEMES = {
-                blue: {
-                    name: 'Blue',
-                    light: { bg: '#eff6ff', border: '#93c5fd', hover: '#3b82f6', shadow: '0 2px 8px -2px rgba(59, 130, 246, 0.15)' },
-                    dark: { bg: '#172554', border: '#2563eb', hover: '#60a5fa', shadow: '0 4px 14px -2px rgba(37, 99, 235, 0.25)' }
-                },
-                indigo: {
-                    name: 'Indigo',
-                    light: { bg: '#eef2ff', border: '#a5b4fc', hover: '#6366f1', shadow: '0 2px 8px -2px rgba(99, 102, 241, 0.15)' },
-                    dark: { bg: '#1e1b4b', border: '#4f46e5', hover: '#818cf8', shadow: '0 4px 14px -2px rgba(79, 70, 229, 0.25)' }
-                },
-                purple: {
-                    name: 'Purple',
-                    light: { bg: '#faf5ff', border: '#d8b4fe', hover: '#a855f7', shadow: '0 2px 8px -2px rgba(168, 85, 247, 0.15)' },
-                    dark: { bg: '#2e1065', border: '#7c3aed', hover: '#c084fc', shadow: '0 4px 14px -2px rgba(124, 58, 237, 0.25)' }
-                },
-                slate: {
-                    name: 'Slate',
-                    light: { bg: '#f1f5f9', border: '#cbd5e1', hover: '#64748b', shadow: '0 2px 8px -2px rgba(100, 116, 139, 0.15)' },
-                    dark: { bg: '#1e293b', border: '#475569', hover: '#94a3b8', shadow: '0 4px 14px -2px rgba(71, 85, 105, 0.25)' }
-                },
-                none: {
-                    name: 'Default',
-                    light: { bg: 'transparent', border: 'transparent', hover: 'transparent', shadow: 'none' },
-                    dark: { bg: 'transparent', border: 'transparent', hover: 'transparent', shadow: 'none' }
+            function getShadowCSS(type, borderCol) {
+                switch (type) {
+                    case 'soft': return '0 3px 12px -2px rgba(0, 0, 0, 0.28)';
+                    case 'medium': return '0 6px 18px -2px rgba(0, 0, 0, 0.42)';
+                    case 'glow': return \`0 0 14px 1px \${borderCol}66\`;
+                    case 'none':
+                    default: return 'none';
                 }
-            };
+            }
 
             // 1. Inject permanent widget styles
             if (!document.getElementById('rtl-widget-style')) {
                 let widgetStyle = document.createElement('style');
                 widgetStyle.id = 'rtl-widget-style';
                 widgetStyle.innerHTML = \`
-                    .rtl-tooltip {
-                        visibility: hidden;
-                        opacity: 0;
-                        transition: opacity 0.2s ease-in-out;
-                        pointer-events: none;
-                    }
-                    .rtl-info-icon:hover .rtl-tooltip {
-                        visibility: visible;
-                        opacity: 1;
-                    }
                     .rtl-widget-panel {
                         transform: scale(0.95);
                         opacity: 0;
@@ -152,7 +135,7 @@ win.webContents.on('dom-ready', () => {
                         padding: 0 !important;
                         border: none !important;
                         box-sizing: border-box !important;
-                        min-width: 44px !important;
+                        min-width: 36px !important;
                         outline: none !important;
                         display: inline-flex !important;
                         align-items: center !important;
@@ -165,19 +148,6 @@ win.webContents.on('dom-ready', () => {
                         color: #eab308 !important;
                         opacity: 1 !important;
                     }
-                    .rtl-theme-chip {
-                        height: 20px;
-                        border-radius: 4px;
-                        cursor: pointer;
-                        transition: all 0.15s ease;
-                    }
-                    .rtl-theme-chip:hover {
-                        transform: scale(1.08);
-                    }
-                    .rtl-theme-chip.active {
-                        outline: 2px solid #3b82f6;
-                        outline-offset: 1px;
-                    }
                 \`;
                 document.head.appendChild(widgetStyle);
             }
@@ -189,10 +159,14 @@ win.webContents.on('dom-ready', () => {
             const savedFS = rtlConfig.fs || '16';
             
             // 2. Dynamic Style Tag
-            const rtlStyle = document.createElement('style');
-            rtlStyle.id = 'antigravity-rtl-style';
+            let rtlStyle = document.getElementById('antigravity-rtl-style');
+            if (!rtlStyle) {
+                rtlStyle = document.createElement('style');
+                rtlStyle.id = 'antigravity-rtl-style';
+                document.head.appendChild(rtlStyle);
+            }
             
-            const updateDynamicCSS = (faFont, enFont, codeFont, lh, fs, sWidth, themeKey) => {
+            const updateDynamicCSS = (faFont, enFont, codeFont, lh, fs, sWidth) => {
                 let faFontRule = '';
                 let faFontName = "'PersianOnlyFont'";
                 
@@ -233,7 +207,34 @@ win.webContents.on('dom-ready', () => {
                     }
                 \` : '';
 
-                const currentTheme = MSG_THEMES[themeKey] || MSG_THEMES.blue;
+                let msgBoxCSS = userMsgEnabled ? \`
+                    :root {
+                        --user-msg-bg: \${userMsgBg};
+                        --user-msg-text: \${userMsgText};
+                        --user-msg-border-color: \${userMsgBorder};
+                        --user-msg-border-width: \${userMsgBorderWidth}px;
+                        --user-msg-shadow: \${getShadowCSS(userMsgShadow, userMsgBorder)};
+                    }
+                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] {
+                        border-radius: 0.75rem !important;
+                        transition: all 0.2s ease !important;
+                    }
+                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] > div {
+                        background-color: var(--user-msg-bg) !important;
+                        border: var(--user-msg-border-width) solid var(--user-msg-border-color) !important;
+                        box-shadow: var(--user-msg-shadow) !important;
+                        color: var(--user-msg-text) !important;
+                        transition: all 0.2s ease !important;
+                    }
+                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"]:hover > div {
+                        filter: brightness(1.04);
+                    }
+                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] .whitespace-pre-wrap,
+                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] p,
+                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] span:not(.text-muted-foreground) {
+                        color: var(--user-msg-text) !important;
+                    }
+                \` : '';
                 
                 rtlStyle.textContent = \`
                     \${faFontRule}
@@ -245,24 +246,6 @@ win.webContents.on('dom-ready', () => {
                     }
                     :root {
                         --antigravity-sidebar-width: \${sWidth}px;
-                        --user-box-bg: \${currentTheme.light.bg};
-                        --user-box-border: \${currentTheme.light.border};
-                        --user-box-hover: \${currentTheme.light.hover};
-                        --user-box-shadow: \${currentTheme.light.shadow};
-                    }
-                    :root.dark, .dark {
-                        --user-box-bg: \${currentTheme.dark.bg};
-                        --user-box-border: \${currentTheme.dark.border};
-                        --user-box-hover: \${currentTheme.dark.hover};
-                        --user-box-shadow: \${currentTheme.dark.shadow};
-                    }
-                    @media (prefers-color-scheme: dark) {
-                        :root:not(.light) {
-                            --user-box-bg: \${currentTheme.dark.bg};
-                            --user-box-border: \${currentTheme.dark.border};
-                            --user-box-hover: \${currentTheme.dark.hover};
-                            --user-box-shadow: \${currentTheme.dark.shadow};
-                        }
                     }
 
                     /* Sidebar Width Override */
@@ -271,20 +254,8 @@ win.webContents.on('dom-ready', () => {
                         width: var(--antigravity-sidebar-width, 256px) !important;
                     }
 
-                    /* User Message Contrast Styling */
-                    \${themeKey !== 'none' ? \`
-                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] {
-                        background-color: var(--user-box-border) !important;
-                        box-shadow: var(--user-box-shadow) !important;
-                        transition: all 0.2s ease !important;
-                    }
-                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] > div {
-                        background-color: var(--user-box-bg) !important;
-                    }
-                    [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"]:hover {
-                        background-color: var(--user-box-hover) !important;
-                    }
-                    \` : ''}
+                    /* Custom User Message Box */
+                    \${msgBoxCSS}
 
                     :root, :host, html, body {
                         font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
@@ -369,8 +340,7 @@ win.webContents.on('dom-ready', () => {
                 \`;
             };
             
-            document.head.appendChild(rtlStyle);
-            updateDynamicCSS(savedFaFont, savedEnFont, savedCodeFont, savedLH, savedFS, sidebarWidth, userMsgTheme);
+            updateDynamicCSS(savedFaFont, savedEnFont, savedCodeFont, savedLH, savedFS, sidebarWidth);
             
             // 3. Input Observer Logic
             function updateDir() {
@@ -443,6 +413,9 @@ win.webContents.on('dom-ready', () => {
             }, { capture: true });
 
             // 4. Create Settings Widget
+            const oldWidget = document.querySelector('.rtl-widget-container');
+            if (oldWidget) oldWidget.remove();
+            
             const widgetWrapper = document.createElement('div');
             widgetWrapper.className = 'rtl-widget-container group fixed';
             widgetWrapper.style.cssText = \`direction: ltr; z-index: 999999; overflow: visible !important; bottom: \${floatingBottom}px; right: 16px;\`;
@@ -454,7 +427,7 @@ win.webContents.on('dom-ready', () => {
                 </div>
                 
                 <!-- Settings Panel -->
-                <div id="rtl-settings-panel" class="rtl-widget-panel rtl-theme-panel fixed p-px rounded-2xl text-sm w-72" style="bottom: \${placement === 'sidebar' ? '60px' : (floatingBottom + 45) + 'px'}; \${placement === 'sidebar' ? 'left: 16px;' : 'right: 16px;'}">
+                <div id="rtl-settings-panel" class="rtl-widget-panel rtl-theme-panel fixed p-px rounded-2xl text-sm w-80" style="bottom: \${placement === 'sidebar' ? '56px' : (floatingBottom + 45) + 'px'}; \${placement === 'sidebar' ? 'left: 16px;' : 'right: 16px;'}">
                     <div class="flex flex-col gap-2 p-3.5 rounded-[15px] w-full h-full max-h-[85vh] overflow-y-auto">
                         
                         <!-- Header with Close Button -->
@@ -469,7 +442,7 @@ win.webContents.on('dom-ready', () => {
                         </div>
                         
                         <!-- Main RTL Toggle -->
-                        <div class="flex items-center justify-between gap-4 px-1 pt-1">
+                        <div class="flex items-center justify-between gap-4 px-1 pt-0.5">
                             <span id="rtl-toggle-label" class="font-medium text-xs opacity-90">\${isRTL ? 'RTL Engine Enabled' : 'RTL Engine Disabled'}</span>
                             <button id="rtl-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${isRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
                                 <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
@@ -482,8 +455,8 @@ win.webContents.on('dom-ready', () => {
                             <!-- Force RTL -->
                             <div class="flex items-center justify-between gap-2 px-1">
                                 <span class="font-medium text-xs opacity-80">Force Full RTL</span>
-                                <button id="rtl-force-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                    <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${forceRTL ? '24px' : '4px'});"></span>
+                                <button id="rtl-force-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                    <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${forceRTL ? '18px' : '3px'});"></span>
                                 </button>
                             </div>
                             
@@ -511,32 +484,85 @@ win.webContents.on('dom-ready', () => {
                                 </div>
                             </div>
 
-                            <!-- Sidebar Width Control -->
+                            <!-- Sidebar Width Control (140px to 420px) -->
                             <div class="flex items-center justify-between gap-2 px-1">
-                                <span class="font-medium text-xs opacity-80" title="Custom Sidebar Width">Sidebar Width</span>
+                                <span class="font-medium text-xs opacity-80" title="Custom Sidebar Width (140px - 420px)">Sidebar Width</span>
                                 <div class="flex items-center gap-1.5">
-                                    <input id="rtl-sidebar-width-input" type="range" min="220" max="420" step="4" value="\${sidebarWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                    <span id="rtl-sidebar-width-val" class="text-[10px] font-mono text-muted-foreground w-8 text-right">\${sidebarWidth}px</span>
-                                    <button id="rtl-sidebar-width-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset (256px)">
-                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                    <input id="rtl-sidebar-width-input" type="range" min="140" max="420" step="2" value="\${sidebarWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
+                                    <span id="rtl-sidebar-width-val" class="text-[10px] font-mono text-muted-foreground w-10 text-right">\${sidebarWidth}px</span>
+                                    <button id="rtl-sidebar-width-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" title="Reset (256px)">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
                                     </button>
                                 </div>
                             </div>
 
                             <div class="h-px bg-border border-opacity-30 w-full"></div>
 
-                            <!-- User Message Box Theming -->
-                            <div class="flex flex-col gap-1.5 px-1">
+                            <!-- User Message Box Customizer -->
+                            <div class="flex flex-col gap-2 px-1">
+                                <!-- Toggle Header -->
                                 <div class="flex items-center justify-between">
-                                    <span class="font-medium text-xs opacity-80">User Box Theme</span>
-                                    <span id="rtl-theme-label" class="text-[10px] font-mono text-blue-500 font-semibold uppercase">\${userMsgTheme}</span>
+                                    <span class="font-medium text-xs opacity-90">User Message Box</span>
+                                    <button id="rtl-usermsg-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-5 w-9 \${userMsgEnabled ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                        <span id="rtl-usermsg-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-3.5 w-3.5" style="transform: translateX(\${userMsgEnabled ? '18px' : '3px'});"></span>
+                                    </button>
                                 </div>
-                                <div class="grid grid-cols-5 gap-1.5 pt-0.5">
-                                    <button type="button" class="rtl-theme-chip \${userMsgTheme === 'blue' ? 'active' : ''}" data-theme="blue" title="Blue (High Contrast)" style="background: linear-gradient(135deg, #eff6ff 50%, #172554 50%); border: 1px solid #3b82f6;"></button>
-                                    <button type="button" class="rtl-theme-chip \${userMsgTheme === 'indigo' ? 'active' : ''}" data-theme="indigo" title="Indigo (Modern Royal)" style="background: linear-gradient(135deg, #eef2ff 50%, #1e1b4b 50%); border: 1px solid #6366f1;"></button>
-                                    <button type="button" class="rtl-theme-chip \${userMsgTheme === 'purple' ? 'active' : ''}" data-theme="purple" title="Purple (Luxury)" style="background: linear-gradient(135deg, #faf5ff 50%, #2e1065 50%); border: 1px solid #a855f7;"></button>
-                                    <button type="button" class="rtl-theme-chip \${userMsgTheme === 'slate' ? 'active' : ''}" data-theme="slate" title="Slate (Minimal)" style="background: linear-gradient(135deg, #f1f5f9 50%, #1e293b 50%); border: 1px solid #64748b;"></button>
-                                    <button type="button" class="rtl-theme-chip \${userMsgTheme === 'none' ? 'active' : ''}" data-theme="none" title="Default Antigravity" style="background: #94a3b8; border: 1px solid #64748b;"></button>
+
+                                <!-- Manual Controls -->
+                                <div id="rtl-usermsg-controls" class="flex flex-col gap-2 p-2 rounded-xl bg-muted bg-opacity-40 border border-border border-opacity-40 transition-all duration-200 \${userMsgEnabled ? '' : 'opacity-40 pointer-events-none'}">
+                                    
+                                    <!-- Background Color -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-[11px] font-medium opacity-80">Background</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input type="color" id="rtl-usermsg-bg-color" value="\${userMsgBg}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
+                                            <input type="text" id="rtl-usermsg-bg-hex" maxlength="7" value="\${userMsgBg}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                        </div>
+                                    </div>
+
+                                    <!-- Text Color -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-[11px] font-medium opacity-80">Text Color</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input type="color" id="rtl-usermsg-text-color" value="\${userMsgText}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
+                                            <input type="text" id="rtl-usermsg-text-hex" maxlength="7" value="\${userMsgText}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                        </div>
+                                    </div>
+
+                                    <!-- Border Color -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-[11px] font-medium opacity-80">Border Color</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input type="color" id="rtl-usermsg-border-color" value="\${userMsgBorder}" class="w-5 h-5 rounded cursor-pointer border-0 p-0 bg-transparent">
+                                            <input type="text" id="rtl-usermsg-border-hex" maxlength="7" value="\${userMsgBorder}" class="rtl-theme-input font-mono text-[10px] uppercase px-1.5 py-0.5 rounded w-16 text-center focus:outline-none">
+                                        </div>
+                                    </div>
+
+                                    <!-- Border Width -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="text-[11px] font-medium opacity-80">Border Width</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input id="rtl-usermsg-bw-input" type="range" min="0" max="4" step="0.5" value="\${userMsgBorderWidth}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
+                                            <span id="rtl-usermsg-bw-val" class="text-[10px] font-mono text-muted-foreground w-10 text-right">\${userMsgBorderWidth}px</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Shadow Selector -->
+                                    <div class="flex flex-col gap-1 pt-0.5">
+                                        <span class="text-[11px] font-medium opacity-80">Shadow</span>
+                                        <div class="grid grid-cols-4 gap-1 p-0.5 rounded-lg bg-background border border-border border-opacity-40 text-[10px]">
+                                            <button id="rtl-shadow-none" type="button" class="py-0.5 rounded transition-all \${userMsgShadow === 'none' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">None</button>
+                                            <button id="rtl-shadow-soft" type="button" class="py-0.5 rounded transition-all \${userMsgShadow === 'soft' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Soft</button>
+                                            <button id="rtl-shadow-medium" type="button" class="py-0.5 rounded transition-all \${userMsgShadow === 'medium' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Medium</button>
+                                            <button id="rtl-shadow-glow" type="button" class="py-0.5 rounded transition-all \${userMsgShadow === 'glow' ? 'bg-accent text-white font-semibold' : 'text-muted-foreground hover:text-foreground'}">Glow</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Reset to Default Button -->
+                                    <button id="rtl-usermsg-reset-btn" type="button" class="mt-1 text-[11px] text-muted-foreground hover:text-foreground flex items-center justify-center gap-1.5 py-1 px-2 rounded-md hover:bg-background border border-border border-opacity-40 transition-all cursor-pointer">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
+                                        <span>Reset to Gentle Default</span>
+                                    </button>
                                 </div>
                             </div>
 
@@ -586,7 +612,7 @@ win.webContents.on('dom-ready', () => {
                         </div>
 
                         <!-- Footer -->
-                        <div class="h-px bg-card-border w-full mt-1"></div>
+                        <div class="h-px bg-border border-opacity-30 w-full mt-1"></div>
                         <a href="https://github.com/omid-io/antigravity-rtl" target="_blank" class="rtl-github-link flex items-center justify-center gap-1.5 text-xs font-semibold opacity-70 no-underline pt-0.5">
                             <svg height="13" width="13" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
                             Star on GitHub
@@ -611,11 +637,31 @@ win.webContents.on('dom-ready', () => {
             const floatHeightRow = document.getElementById('rtl-float-height-row');
             const floatHeightInput = document.getElementById('rtl-float-height-input');
             const floatHeightVal = document.getElementById('rtl-float-height-val');
+            
             const sidebarWidthInput = document.getElementById('rtl-sidebar-width-input');
             const sidebarWidthVal = document.getElementById('rtl-sidebar-width-val');
             const sidebarWidthReset = document.getElementById('rtl-sidebar-width-reset');
-            const themeLabel = document.getElementById('rtl-theme-label');
-            const themeChips = document.querySelectorAll('.rtl-theme-chip');
+
+            // User Message Box References
+            const userMsgToggleBtn = document.getElementById('rtl-usermsg-toggle-btn');
+            const userMsgToggleKnob = document.getElementById('rtl-usermsg-toggle-knob');
+            const userMsgControls = document.getElementById('rtl-usermsg-controls');
+            const userMsgBgColor = document.getElementById('rtl-usermsg-bg-color');
+            const userMsgBgHex = document.getElementById('rtl-usermsg-bg-hex');
+            const userMsgTextColor = document.getElementById('rtl-usermsg-text-color');
+            const userMsgTextHex = document.getElementById('rtl-usermsg-text-hex');
+            const userMsgBorderColor = document.getElementById('rtl-usermsg-border-color');
+            const userMsgBorderHex = document.getElementById('rtl-usermsg-border-hex');
+            const userMsgBwInput = document.getElementById('rtl-usermsg-bw-input');
+            const userMsgBwVal = document.getElementById('rtl-usermsg-bw-val');
+            const userMsgResetBtn = document.getElementById('rtl-usermsg-reset-btn');
+
+            const shadowBtns = {
+                none: document.getElementById('rtl-shadow-none'),
+                soft: document.getElementById('rtl-shadow-soft'),
+                medium: document.getElementById('rtl-shadow-medium'),
+                glow: document.getElementById('rtl-shadow-glow')
+            };
 
             const faFontInput = document.getElementById('rtl-fafont-input');
             const enFontInput = document.getElementById('rtl-enfont-input');
@@ -718,9 +764,18 @@ win.webContents.on('dom-ready', () => {
                     placement: placement,
                     floatingBottom: floatingBottom,
                     sidebarWidth: sidebarWidth,
-                    userMsgTheme: userMsgTheme
+                    userMsgEnabled: userMsgEnabled,
+                    userMsgBg: userMsgBg,
+                    userMsgText: userMsgText,
+                    userMsgBorder: userMsgBorder,
+                    userMsgBorderWidth: userMsgBorderWidth,
+                    userMsgShadow: userMsgShadow
                 };
                 console.log("SAVE_RTL_CONFIG|" + JSON.stringify(cfg));
+            }
+
+            function refreshStyles() {
+                updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth);
             }
 
             // Placement Buttons
@@ -757,11 +812,11 @@ win.webContents.on('dom-ready', () => {
                 saveConfig();
             });
 
-            // Sidebar Width Slider
+            // Sidebar Width Slider (140px - 420px)
             sidebarWidthInput.addEventListener('input', (e) => {
                 sidebarWidth = parseInt(e.target.value);
                 sidebarWidthVal.textContent = sidebarWidth + 'px';
-                updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth, userMsgTheme);
+                refreshStyles();
                 saveConfig();
             });
 
@@ -769,21 +824,100 @@ win.webContents.on('dom-ready', () => {
                 sidebarWidth = 256;
                 sidebarWidthInput.value = '256';
                 sidebarWidthVal.textContent = '256px';
-                updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth, userMsgTheme);
+                refreshStyles();
                 saveConfig();
             });
 
-            // User Message Theme Chips
-            themeChips.forEach(chip => {
-                chip.addEventListener('click', () => {
-                    const selected = chip.getAttribute('data-theme');
-                    userMsgTheme = selected;
-                    themeChips.forEach(c => c.classList.remove('active'));
-                    chip.classList.add('active');
-                    themeLabel.textContent = selected;
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth, userMsgTheme);
+            // User Message Box Controls
+            userMsgToggleBtn.addEventListener('click', () => {
+                userMsgEnabled = !userMsgEnabled;
+                userMsgToggleBtn.setAttribute('aria-checked', userMsgEnabled);
+                if (userMsgEnabled) {
+                    userMsgToggleBtn.classList.add('bg-accent');
+                    userMsgToggleBtn.classList.remove('bg-gray-400', 'bg-opacity-40');
+                    userMsgToggleKnob.style.transform = 'translateX(18px)';
+                    userMsgControls.classList.remove('opacity-40', 'pointer-events-none');
+                } else {
+                    userMsgToggleBtn.classList.remove('bg-accent');
+                    userMsgToggleBtn.classList.add('bg-gray-400', 'bg-opacity-40');
+                    userMsgToggleKnob.style.transform = 'translateX(3px)';
+                    userMsgControls.classList.add('opacity-40', 'pointer-events-none');
+                }
+                refreshStyles();
+                saveConfig();
+            });
+
+            // Sync color picker and hex inputs
+            function bindColorPair(colorInput, hexInput, getter, setter) {
+                colorInput.addEventListener('input', (e) => {
+                    setter(e.target.value);
+                    hexInput.value = e.target.value;
+                    refreshStyles();
                     saveConfig();
                 });
+                hexInput.addEventListener('input', (e) => {
+                    let val = e.target.value.trim();
+                    if (!val.startsWith('#')) val = '#' + val;
+                    if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                        setter(val);
+                        colorInput.value = val;
+                        refreshStyles();
+                        saveConfig();
+                    }
+                });
+            }
+
+            bindColorPair(userMsgBgColor, userMsgBgHex, () => userMsgBg, (v) => { userMsgBg = v; });
+            bindColorPair(userMsgTextColor, userMsgTextHex, () => userMsgText, (v) => { userMsgText = v; });
+            bindColorPair(userMsgBorderColor, userMsgBorderHex, () => userMsgBorder, (v) => { userMsgBorder = v; });
+
+            // Border Width Slider
+            userMsgBwInput.addEventListener('input', (e) => {
+                userMsgBorderWidth = e.target.value;
+                userMsgBwVal.textContent = userMsgBorderWidth + 'px';
+                refreshStyles();
+                saveConfig();
+            });
+
+            // Shadow selection
+            function updateShadowUI(selected) {
+                userMsgShadow = selected;
+                Object.keys(shadowBtns).forEach(key => {
+                    const b = shadowBtns[key];
+                    if (key === selected) {
+                        b.className = 'py-0.5 rounded transition-all bg-accent text-white font-semibold';
+                    } else {
+                        b.className = 'py-0.5 rounded transition-all text-muted-foreground hover:text-foreground';
+                    }
+                });
+                refreshStyles();
+                saveConfig();
+            }
+
+            Object.keys(shadowBtns).forEach(key => {
+                shadowBtns[key].addEventListener('click', () => {
+                    updateShadowUI(key);
+                });
+            });
+
+            // Reset to gentle defaults
+            userMsgResetBtn.addEventListener('click', () => {
+                userMsgBg = '#1e2433';
+                userMsgText = '#f1f5f9';
+                userMsgBorder = '#384c6e';
+                userMsgBorderWidth = '1.5';
+                userMsgShadow = 'soft';
+
+                userMsgBgColor.value = userMsgBg;
+                userMsgBgHex.value = userMsgBg;
+                userMsgTextColor.value = userMsgText;
+                userMsgTextHex.value = userMsgText;
+                userMsgBorderColor.value = userMsgBorder;
+                userMsgBorderHex.value = userMsgBorder;
+                userMsgBwInput.value = userMsgBorderWidth;
+                userMsgBwVal.textContent = userMsgBorderWidth + 'px';
+                
+                updateShadowUI('soft');
             });
 
             // Main RTL Toggle
@@ -797,7 +931,7 @@ win.webContents.on('dom-ready', () => {
                     toggleBtn.classList.add('bg-accent');
                     toggleKnob.style.transform = 'translateX(24px)';
                     document.head.appendChild(rtlStyle);
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth, userMsgTheme);
+                    refreshStyles();
                 } else {
                     toggleLabel.innerText = 'RTL Engine Disabled';
                     toggleBtn.classList.remove('bg-accent');
@@ -819,13 +953,13 @@ win.webContents.on('dom-ready', () => {
                 if (forceRTL) {
                     forceBtn.classList.add('bg-accent');
                     forceBtn.classList.remove('bg-gray-400', 'bg-opacity-40');
-                    forceKnob.style.transform = 'translateX(24px)';
+                    forceKnob.style.transform = 'translateX(18px)';
                 } else {
                     forceBtn.classList.remove('bg-accent');
                     forceBtn.classList.add('bg-gray-400', 'bg-opacity-40');
-                    forceKnob.style.transform = 'translateX(4px)';
+                    forceKnob.style.transform = 'translateX(3px)';
                 }
-                updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth, userMsgTheme);
+                refreshStyles();
                 updateDir();
             });
 
@@ -845,24 +979,24 @@ win.webContents.on('dom-ready', () => {
                 }
             });
 
-            // Inputs
+            // Typography Inputs
             [faFontInput, enFontInput, codeFontInput, lhInput, fsInput].forEach(inp => {
                 inp.addEventListener('input', () => {
                     saveConfig();
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth, userMsgTheme);
+                    refreshStyles();
                 });
             });
 
             lhResetBtn.addEventListener('click', () => {
                 lhInput.value = '1.6';
                 saveConfig();
-                updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth, userMsgTheme);
+                refreshStyles();
             });
 
             fsResetBtn.addEventListener('click', () => {
                 fsInput.value = '16';
                 saveConfig();
-                updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value, sidebarWidth, userMsgTheme);
+                refreshStyles();
             });
         `).catch(err => console.error('Failed to inject RTL features:', err));
     } catch(e) {

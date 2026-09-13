@@ -12,8 +12,8 @@ https://github.com/user-attachments/assets/f2e8722d-3aeb-47d3-a37e-c33b6a89676e
 - **Force RTL Mode**: Want everything aligned to the right? Just toggle the switch.
 - **Sidebar Menu Integration**: Neatly places the settings button inside the sidebar above Settings, or switch to floating mode.
 - **Click-to-Toggle Panel**: Opens smoothly on click and closes on outside click or Esc key (no unwanted hover popups).
-- **Custom Sidebar Width**: Real-time slider to adjust the Antigravity sidebar width from 220px to 420px with reset.
-- **User Message Theming & Contrast**: Visually distinguishes user prompts from AI responses with curated high-contrast palettes (Blue, Indigo, Purple, Slate).
+- **Custom Sidebar Width**: Real-time slider to adjust the Antigravity sidebar width from 140px to 420px with a one-click reset button.
+- **User Message Customizer**: Full control over user prompt styling — customize background color, text color, border color, border width, and shadow (None, Soft, Medium, Glow), with toggle on/off and reset to gentle default.
 - **Custom Typography**: Define different fonts for your RTL text, English text, and Code blocks!
 - **Line Height & Font Size Control**: Precise sliders to adjust line height and font size for optimal readability.
 - **Persian Keyboard Fix**: Maps `Shift + 2` to type `@` instead of `٬` on Persian keyboards.
@@ -92,8 +92,8 @@ Feel free to open issues or submit pull requests. Let's make Antigravity accessi
 - **حالت راست‌چینِ اجباری (Force RTL Mode)**: دوست دارید همه چیز (حتی پیام‌های انگلیسی) کاملاً در سمت راست قرار بگیرند؟ فقط کافیست سوئیچ را روشن کنید!
 - **یکپارچگی با سایدبار (Sidebar Integration)**: دکمه تنظیمات مستقیماً در منوی سایدبار بالای بخش Settings قرار می‌گیرد (با امکان سوئیچ به آیکون شناور).
 - **باز شدن با کلیک (Click-to-Toggle)**: پنل فقط با کلیک باز می‌شود و با کلیک در بیرون صفحه یا کلید Esc بسته می‌شود (حذف مزاحمت‌های حالت هاور).
-- **تنظیم دلخواه عرض سایدبار**: اسلایدر زنده برای تنظیم عرض سایدبار برنامه از ۲۲۰ تا ۴۲۰ پیکسل همراه با دکمه ریست.
-- **تم و تفکیک رنگ پیام‌های کاربر**: تفکیک بصری پیام‌های کاربر از پاسخ‌های ایجنت با پالت‌های متنوع با کنتراست بالا (آبی، سرمه‌ای، بنفش، خاکستری).
+- **تنظیم دلخواه عرض سایدبار**: اسلایدر زنده برای تنظیم عرض سایدبار برنامه از ۱۴۰ تا ۴۲۰ پیکسل همراه با دکمه ریست به پیش‌فرض.
+- **سفارشی‌سازی کامل کادر پیام کاربر**: کنترل دستی رنگ پس‌زمینه، رنگ متن، رنگ کادر دور، ضخامت کادر و افکت سایه (ملایم، متوسط، درخشان)، به همراه سوییچ خاموش/روشن و کلید بازگشت به پیش‌فرض ملایم جهت تفکیک دقیق پیام‌های شما از پاسخ‌های ایجنت.
 - **تنظیماتِ پیشرفتهِ فونت**: می‌توانید برای متون فارسی، متون انگلیسی و کدهای برنامه‌نویسیِ داخل چت، فونت‌های کاملاً جداگانه‌ای تعریف کنید.
 - **کنترل فاصله خطوط و اندازه قلم**: اسلایدرهای دقیق برای تنظیم ارتفاع خطوط (Line Height) و اندازه قلم (Font Size) متون چت.
 - **حل مشکل کیبورد فارسی**: این ابزار کلید ترکیبی `Shift + 2` روی کیبورد فارسی را اصلاح می‌کند تا به جای «٬» علامت `@` تایپ شود.
