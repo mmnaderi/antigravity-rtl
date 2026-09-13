@@ -292,6 +292,26 @@ win.webContents.on('dom-ready', () => {
                     [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] span:not(.text-muted-foreground) {
                         color: var(--user-msg-text) !important;
                     }
+
+                    /* Harmonized Action Buttons Pill (Edit / Copy) */
+                    [data-testid="user-input-step"] .user-input-buttons-container {
+                        background-color: var(--user-msg-bg) !important;
+                        border: 1px solid var(--user-msg-border-color) !important;
+                        box-shadow: 0 0 16px 6px var(--user-msg-bg) !important;
+                    }
+                    [data-testid="user-input-step"] .user-input-buttons-container button {
+                        color: var(--user-msg-text) !important;
+                        opacity: 0.75 !important;
+                        transition: all 0.15s ease !important;
+                        border-radius: 9999px !important;
+                    }
+                    [data-testid="user-input-step"] .user-input-buttons-container button:hover {
+                        opacity: 1 !important;
+                        background-color: rgba(255, 255, 255, 0.15) !important;
+                    }
+                    :root:not(.dark) [data-testid="user-input-step"] .user-input-buttons-container button:hover {
+                        background-color: rgba(0, 0, 0, 0.08) !important;
+                    }
                 \` : '';
                 
                 rtlStyle.textContent = \`
