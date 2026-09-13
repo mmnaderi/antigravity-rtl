@@ -207,6 +207,8 @@ win.webContents.on('dom-ready', () => {
                     }
 
                     .rtl-widget-panel {
+                        height: 540px !important;
+                        max-height: 85vh !important;
                         transform: scale(0.95);
                         opacity: 0;
                         pointer-events: none;
@@ -239,6 +241,22 @@ win.webContents.on('dom-ready', () => {
                         color: var(--rtl-text-secondary) !important;
                         line-height: 1.2 !important;
                         user-select: none !important;
+                    }
+
+                    /* Custom Slim Scrollbar for Settings Panel (Vibe UI Spec) */
+                    .rtl-widget-panel *::-webkit-scrollbar {
+                        width: 4px !important;
+                        height: 4px !important;
+                    }
+                    .rtl-widget-panel *::-webkit-scrollbar-track {
+                        background: transparent !important;
+                    }
+                    .rtl-widget-panel *::-webkit-scrollbar-thumb {
+                        background: rgba(140, 150, 170, 0.28) !important;
+                        border-radius: 9999px !important;
+                    }
+                    .rtl-widget-panel *::-webkit-scrollbar-thumb:hover {
+                        background: rgba(140, 150, 170, 0.5) !important;
                     }
 
                     /* Main Navigation Tabs (RTL & Text vs UI & Styling) */
@@ -998,21 +1016,6 @@ win.webContents.on('dom-ready', () => {
                                             <span>Light Mode</span>
                                         </button>
                                     </div>
-
-                                    <!-- Live Preview Bubble with breath margin -->
-                                    <div class="flex flex-col gap-1">
-                                        <div class="flex items-center justify-between px-0.5">
-                                            <span class="rtl-label" style="font-size: 10px !important;">Live Preview</span>
-                                            <span class="text-[10px] font-mono text-muted-foreground opacity-75" id="rtl-preview-tag">\${activeTab === 'dark' ? 'Dark Preset' : 'Light Preset'}</span>
-                                        </div>
-                                        <div class="p-1 pb-2">
-                                            <div id="rtl-usermsg-preview" class="px-3 py-2 rounded-xl text-xs transition-all duration-200" style="direction: rtl; text-align: right;">
-                                                <span id="rtl-usermsg-preview-text">نمونه پیام کاربر / User prompt</span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="h-px bg-border border-opacity-30 w-full my-0.5"></div>
 
                                     <!-- Background Color Row -->
                                     <div class="flex items-center justify-between gap-2">
