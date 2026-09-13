@@ -47,6 +47,15 @@ win.webContents.on('dom-ready', () => {
                 border: '#cbd5e1',
                 borderWidth: '1.5',
                 shadow: 'soft'
+            },
+            inputBoxEnabled: false,
+            inputBoxDark: {
+                border: '#384c6e',
+                borderWidth: '1.5'
+            },
+            inputBoxLight: {
+                border: '#6366f1',
+                borderWidth: '1.5'
             }
         };
         try {
@@ -66,7 +75,9 @@ win.webContents.on('dom-ready', () => {
                     ...rtlConfig, 
                     ...cfg,
                     userMsgDark: { ...rtlConfig.userMsgDark, ...(cfg.userMsgDark || {}) },
-                    userMsgLight: { ...rtlConfig.userMsgLight, ...(cfg.userMsgLight || {}) }
+                    userMsgLight: { ...rtlConfig.userMsgLight, ...(cfg.userMsgLight || {}) },
+                    inputBoxDark: { ...rtlConfig.inputBoxDark, ...(cfg.inputBoxDark || {}) },
+                    inputBoxLight: { ...rtlConfig.inputBoxLight, ...(cfg.inputBoxLight || {}) }
                 };
             }
         } catch (e) {}
@@ -101,6 +112,18 @@ win.webContents.on('dom-ready', () => {
                 ...(rtlConfig.userMsgLight || {})
             };
 
+            let inputBoxEnabled = rtlConfig.inputBoxEnabled || false;
+            let inputBoxDark = {
+                border: '#384c6e',
+                borderWidth: '1.5',
+                ...(rtlConfig.inputBoxDark || {})
+            };
+            let inputBoxLight = {
+                border: '#6366f1',
+                borderWidth: '1.5',
+                ...(rtlConfig.inputBoxLight || {})
+            };
+
             function isAppDark() {
                 const b = document.body;
                 const d = document.documentElement;
@@ -115,16 +138,24 @@ win.webContents.on('dom-ready', () => {
                 if (type === 'none') return 'none';
                 if (mode === 'light') {
                     switch (type) {
-                        case 'soft': return '0 2px 8px -1px rgba(0, 0, 0, 0.08)';
-                        case 'medium': return '0 4px 14px -2px rgba(0, 0, 0, 0.14)';
-                        case 'glow': return \`0 0 12px 1px \${borderCol}44\`;
+                        case 'soft': 
+                            return '0 3px 10px -1px rgba(0, 0, 0, 0.09)';
+                        case '3d': 
+                        case 'medium':
+                            return '0 4px 0 0 rgba(0, 0, 0, 0.06), 0 10px 22px -3px rgba(0, 0, 0, 0.13), inset 0 1px 0 rgba(255, 255, 255, 0.7)';
+                        case 'glow': 
+                            return \`0 4px 18px 2px \${borderCol}38, 0 1px 4px \${borderCol}25\`;
                         default: return 'none';
                     }
                 } else {
                     switch (type) {
-                        case 'soft': return '0 3px 12px -2px rgba(0, 0, 0, 0.28)';
-                        case 'medium': return '0 6px 18px -2px rgba(0, 0, 0, 0.42)';
-                        case 'glow': return \`0 0 14px 1px \${borderCol}66\`;
+                        case 'soft': 
+                            return '0 4px 14px -2px rgba(0, 0, 0, 0.38)';
+                        case '3d': 
+                        case 'medium':
+                            return '0 4px 0 0 rgba(0, 0, 0, 0.5), 0 10px 24px -3px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08)';
+                        case 'glow': 
+                            return \`0 0 18px 2px \${borderCol}55, 0 0 36px 4px \${borderCol}25\`;
                         default: return 'none';
                     }
                 }
@@ -543,6 +574,25 @@ win.webContents.on('dom-ready', () => {
                         background-color: rgba(0, 0, 0, 0.08) !important;
                     }
                 \` : '';
+
+                let inputBoxCSS = inputBoxEnabled ? \`
+                    /* Light Mode Input Box */
+                    :root, body, body.light, body.theme-light {
+                        --input-box-border-color: \${inputBoxLight.border};
+                        --input-box-border-width: \${inputBoxLight.borderWidth}px;
+                    }
+
+                    /* Dark Mode Input Box */
+                    body.dark, body.theme-dark, body.dark-theme, body.vscode-dark, :root.dark, .dark {
+                        --input-box-border-color: \${inputBoxDark.border};
+                        --input-box-border-width: \${inputBoxDark.borderWidth}px;
+                    }
+
+                    [id="antigravity.agentSidePanelInputBox"], [id*="agentSidePanelInputBox"] {
+                        border: var(--input-box-border-width) solid var(--input-box-border-color) !important;
+                        transition: border 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease !important;
+                    }
+                \` : '';
                 
                 rtlStyle.textContent = \`
                     \${faFontRule}
@@ -564,6 +614,9 @@ win.webContents.on('dom-ready', () => {
 
                     /* Custom User Message Box */
                     \${msgBoxCSS}
+
+                    /* Custom Chat Input Box */
+                    \${inputBoxCSS}
 
                     :root, :host, html, body {
                         font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
@@ -889,7 +942,7 @@ win.webContents.on('dom-ready', () => {
                                         <div class="rtl-shadow-group">
                                             <button id="rtl-shadow-none" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'none' ? 'active' : ''}">None</button>
                                             <button id="rtl-shadow-soft" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'soft' ? 'active' : ''}">Soft</button>
-                                            <button id="rtl-shadow-medium" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'medium' ? 'active' : ''}">Medium</button>
+                                            <button id="rtl-shadow-3d" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === '3d' || (activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'medium' ? 'active' : ''}">3D</button>
                                             <button id="rtl-shadow-glow" type="button" class="rtl-shadow-btn \${(activeTab === 'dark' ? userMsgDark : userMsgLight).shadow === 'glow' ? 'active' : ''}">Glow</button>
                                         </div>
                                     </div>
@@ -898,6 +951,48 @@ win.webContents.on('dom-ready', () => {
                                     <button id="rtl-usermsg-reset-btn" type="button" class="rtl-btn-ghost mt-1 w-full">
                                         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
                                         <span id="rtl-usermsg-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Chat Input Box Card -->
+                            <div class="flex flex-col gap-2 p-2.5 rounded-xl border border-border border-opacity-40 bg-surface">
+                                <div class="flex items-center justify-between gap-2">
+                                    <div class="flex items-center gap-1.5">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-75">
+                                            <rect width="20" height="16" x="2" y="4" rx="3" />
+                                            <path d="M6 8h.01M10 8h.01M6 12h12M6 16h8" />
+                                        </svg>
+                                        <span class="font-medium text-xs">Chat Input Box Border</span>
+                                    </div>
+                                    <button id="rtl-inputbox-toggle-btn" type="button" role="switch" aria-checked="\${inputBoxEnabled}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${inputBoxEnabled ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                        <span id="rtl-inputbox-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${inputBoxEnabled ? '24px' : '4px'});"></span>
+                                    </button>
+                                </div>
+
+                                <div id="rtl-inputbox-controls" class="flex flex-col gap-2.5 pt-1.5 border-t border-border border-opacity-30 \${inputBoxEnabled ? '' : 'hidden'}">
+                                    <!-- Border Color Row -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="rtl-label">Border Color</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input type="color" id="rtl-inputbox-border-color" value="\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).border}" class="rtl-color-input">
+                                            <input type="text" id="rtl-inputbox-border-hex" maxlength="7" value="\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).border}" class="rtl-hex-input">
+                                        </div>
+                                    </div>
+
+                                    <!-- Border Width Row -->
+                                    <div class="flex items-center justify-between gap-2">
+                                        <span class="rtl-label">Border Width</span>
+                                        <div class="flex items-center gap-1.5">
+                                            <input id="rtl-inputbox-bw-input" type="range" min="0" max="4" step="0.5" value="\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).borderWidth}" class="rtl-range-slider">
+                                            <span id="rtl-inputbox-bw-val" class="rtl-badge-val">\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).borderWidth}px</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Reset Button -->
+                                    <button id="rtl-inputbox-reset-btn" type="button" class="rtl-btn-ghost mt-1 w-full">
+                                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d="M3 3v5h5\"/></svg>
+                                        <span id="rtl-inputbox-reset-label">Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border</span>
                                     </button>
                                 </div>
                             </div>
@@ -1003,9 +1098,19 @@ win.webContents.on('dom-ready', () => {
             const shadowBtns = {
                 none: document.getElementById('rtl-shadow-none'),
                 soft: document.getElementById('rtl-shadow-soft'),
-                medium: document.getElementById('rtl-shadow-medium'),
+                '3d': document.getElementById('rtl-shadow-3d'),
                 glow: document.getElementById('rtl-shadow-glow')
             };
+
+            const inputBoxToggleBtn = document.getElementById('rtl-inputbox-toggle-btn');
+            const inputBoxToggleKnob = document.getElementById('rtl-inputbox-toggle-knob');
+            const inputBoxControls = document.getElementById('rtl-inputbox-controls');
+            const inputBoxBorderColor = document.getElementById('rtl-inputbox-border-color');
+            const inputBoxBorderHex = document.getElementById('rtl-inputbox-border-hex');
+            const inputBoxBwInput = document.getElementById('rtl-inputbox-bw-input');
+            const inputBoxBwVal = document.getElementById('rtl-inputbox-bw-val');
+            const inputBoxResetBtn = document.getElementById('rtl-inputbox-reset-btn');
+            const inputBoxResetLabel = document.getElementById('rtl-inputbox-reset-label');
 
             const faFontInput = document.getElementById('rtl-fafont-input');
             const enFontInput = document.getElementById('rtl-enfont-input');
@@ -1116,7 +1221,10 @@ win.webContents.on('dom-ready', () => {
                     sidebarWidth: sidebarWidth,
                     userMsgEnabled: userMsgEnabled,
                     userMsgDark: userMsgDark,
-                    userMsgLight: userMsgLight
+                    userMsgLight: userMsgLight,
+                    inputBoxEnabled: inputBoxEnabled,
+                    inputBoxDark: inputBoxDark,
+                    inputBoxLight: inputBoxLight
                 };
                 console.log("SAVE_RTL_CONFIG|" + JSON.stringify(cfg));
             }
@@ -1228,11 +1336,21 @@ win.webContents.on('dom-ready', () => {
                 
                 Object.keys(shadowBtns).forEach(key => {
                     const b = shadowBtns[key];
-                    if (b) b.classList.toggle('active', key === cur.shadow);
+                    if (b) b.classList.toggle('active', key === cur.shadow || (key === '3d' && cur.shadow === 'medium'));
                 });
 
                 if (resetLabel) {
                     resetLabel.textContent = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default\`;
+                }
+
+                // Sync Chat Input Box
+                const curInput = activeTab === 'dark' ? inputBoxDark : inputBoxLight;
+                if (inputBoxBorderColor) inputBoxBorderColor.value = curInput.border;
+                if (inputBoxBorderHex) inputBoxBorderHex.value = curInput.border;
+                if (inputBoxBwInput) inputBoxBwInput.value = curInput.borderWidth;
+                if (inputBoxBwVal) inputBoxBwVal.textContent = curInput.borderWidth + 'px';
+                if (inputBoxResetLabel) {
+                    inputBoxResetLabel.textContent = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border\`;
                 }
 
                 if (activeTab === 'dark') {
@@ -1302,18 +1420,70 @@ win.webContents.on('dom-ready', () => {
                     userMsgDark.text = '#f1f5f9';
                     userMsgDark.border = '#384c6e';
                     userMsgDark.borderWidth = '1.5';
-                    userMsgDark.shadow = 'soft';
+                    userMsgDark.shadow = '3d';
                 } else {
                     userMsgLight.bg = '#f0f4ff';
                     userMsgLight.text = '#0f172a';
                     userMsgLight.border = '#cbd5e1';
                     userMsgLight.borderWidth = '1.5';
-                    userMsgLight.shadow = 'soft';
+                    userMsgLight.shadow = '3d';
                 }
                 syncInputsForActiveTab();
                 refreshStyles();
                 saveConfig();
             });
+
+            // Chat Input Box Listeners
+            if (inputBoxToggleBtn) {
+                inputBoxToggleBtn.addEventListener('click', () => {
+                    inputBoxEnabled = !inputBoxEnabled;
+                    inputBoxToggleBtn.setAttribute('aria-checked', inputBoxEnabled);
+                    if (inputBoxEnabled) {
+                        inputBoxToggleBtn.classList.add('bg-accent');
+                        inputBoxToggleBtn.classList.remove('bg-gray-400', 'bg-opacity-40');
+                        inputBoxToggleKnob.style.transform = 'translateX(24px)';
+                        inputBoxControls.classList.remove('hidden');
+                    } else {
+                        inputBoxToggleBtn.classList.remove('bg-accent');
+                        inputBoxToggleBtn.classList.add('bg-gray-400', 'bg-opacity-40');
+                        inputBoxToggleKnob.style.transform = 'translateX(4px)';
+                        inputBoxControls.classList.add('hidden');
+                    }
+                    refreshStyles();
+                    saveConfig();
+                });
+            }
+
+            if (inputBoxBorderColor && inputBoxBorderHex) {
+                bindColorPair(inputBoxBorderColor, inputBoxBorderHex, (v) => {
+                    (activeTab === 'dark' ? inputBoxDark : inputBoxLight).border = v;
+                });
+            }
+
+            if (inputBoxBwInput) {
+                inputBoxBwInput.addEventListener('input', (e) => {
+                    const cur = activeTab === 'dark' ? inputBoxDark : inputBoxLight;
+                    cur.borderWidth = e.target.value;
+                    inputBoxBwVal.textContent = cur.borderWidth + 'px';
+                    refreshStyles();
+                    saveConfig();
+                });
+            }
+
+            if (inputBoxResetBtn) {
+                inputBoxResetBtn.addEventListener('click', () => {
+                    if (activeTab === 'dark') {
+                        inputBoxDark.border = '#384c6e';
+                        inputBoxDark.borderWidth = '1.5';
+                    } else {
+                        inputBoxLight.border = '#6366f1';
+                        inputBoxLight.borderWidth = '1.5';
+                    }
+                    syncInputsForActiveTab();
+                    refreshStyles();
+                    saveConfig();
+                });
+            }
 
             // Initial Sync
             syncInputsForActiveTab();
