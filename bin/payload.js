@@ -581,7 +581,21 @@ win.webContents.on('dom-ready', () => {
                         --user-msg-shadow: \${getShadowCSS(userMsgDark.shadow, userMsgDark.border, 'dark')};
                     }
 
+                    /* Layout, Stacking & Spacing Isolation (Anti-Overlap & Anti-Halo) */
+                    [data-testid="user-input-step"] {
+                        position: relative !important;
+                        z-index: 10 !important;
+                        padding-bottom: 8px !important;
+                        margin-bottom: 4px !important;
+                    }
+                    div.sticky:has([data-testid="user-input-step"]) {
+                        overflow: visible !important;
+                    }
                     [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"] {
+                        background: transparent !important;
+                        padding: 0 !important;
+                        border: none !important;
+                        box-shadow: none !important;
                         border-radius: 0.75rem !important;
                         transition: all 0.2s ease !important;
                     }
@@ -590,6 +604,9 @@ win.webContents.on('dom-ready', () => {
                         border: var(--user-msg-border-width) solid var(--user-msg-border-color) !important;
                         box-shadow: var(--user-msg-shadow) !important;
                         color: var(--user-msg-text) !important;
+                        border-radius: 0.75rem !important;
+                        position: relative !important;
+                        z-index: 2 !important;
                         transition: all 0.2s ease !important;
                     }
                     [data-testid="user-input-step"] [data-testid="lifted-context-menu-trigger"]:hover > div {
