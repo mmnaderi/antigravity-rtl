@@ -2,3 +2,4 @@ node_modules
 .DS_Store
 app.asar*
 unpatch.js
+PROJECT_STATE.md
