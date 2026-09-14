@@ -137,10 +137,16 @@ win.webContents.on('dom-ready', () => {
             };
 
             function isAppDark() {
-                const b = document.body;
-                const d = document.documentElement;
-                if (b && (b.classList.contains('dark') || b.classList.contains('theme-dark') || b.classList.contains('dark-theme') || b.classList.contains('vscode-dark'))) return true;
-                if (d && (d.classList.contains('dark') || d.classList.contains('theme-dark') || d.classList.contains('dark-theme') || d.classList.contains('vscode-dark'))) return true;
+                try {
+                    const b = document.body;
+                    const d = document.documentElement;
+                    if (b && b.classList) {
+                        if (b.classList.contains('dark') || b.classList.contains('theme-dark') || b.classList.contains('dark-theme') || b.classList.contains('vscode-dark')) return true;
+                    }
+                    if (d && d.classList) {
+                        if (d.classList.contains('dark') || d.classList.contains('theme-dark') || d.classList.contains('dark-theme') || d.classList.contains('vscode-dark')) return true;
+                    }
+                } catch (_) {}
                 return false;
             }
 
@@ -173,6 +179,35 @@ win.webContents.on('dom-ready', () => {
                     }
                 }
             }
+
+            // =========================================================================
+            // 🛡️ True App-Ready & Anti-White-Screen Guard
+            // Ensures Antigravity has genuinely mounted its React UI before touching DOM
+            // =========================================================================
+            function isAntigravityReady() {
+                try {
+                    if (!document || !document.body) return false;
+                    
+                    // 1. Antigravity root container must exist and contain rendered React elements
+                    const root = document.getElementById('root');
+                    if (!root || !root.children || root.children.length === 0) return false;
+
+                    // 2. Must contain at least one primary Antigravity UI shell element
+                    const hasSidebar = !!document.querySelector('[role="navigation"][aria-label="Sidebar"]') || 
+                                       !!document.querySelector('[role="navigation"]');
+                    const hasMain = !!document.querySelector('[role="main"]') || 
+                                    !!document.querySelector('main') || 
+                                    !!document.querySelector('[contenteditable="true"]');
+                    const hasResizer = !!document.querySelector('.cursor-col-resize');
+
+                    return Boolean(hasSidebar || hasMain || hasResizer);
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            function mountExtension() {
+                if (document.querySelector('.rtl-widget-container')) return;
 
             // 1. Permanent Widget Styles (Vibe UI Spec & WCAG AAA Contrast)
             if (!document.getElementById('rtl-widget-style')) {
@@ -956,16 +991,16 @@ win.webContents.on('dom-ready', () => {
             
             const widgetWrapper = document.createElement('div');
             widgetWrapper.className = 'rtl-widget-container group fixed';
-            widgetWrapper.style.cssText = \`direction: ltr; z-index: 999999; overflow: visible !important; bottom: \${floatingBottom}px; right: 16px;\`;
+            widgetWrapper.style.cssText = \`direction: ltr; position: fixed !important; z-index: 999999 !important; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none !important; overflow: visible !important;\`;
             
             widgetWrapper.innerHTML = \`
                 <!-- Floating Trigger Icon -->
-                <div id="rtl-floating-trigger" class="relative w-10 h-10 flex items-center justify-center rounded-full bg-secondary text-secondary-foreground hover:text-foreground cursor-pointer opacity-80 hover:opacity-100 transition-all duration-200 shadow-md \${placement === 'sidebar' ? 'hidden' : ''}">
+                <div id="rtl-floating-trigger" class="relative w-10 h-10 flex items-center justify-center rounded-full bg-secondary text-secondary-foreground hover:text-foreground cursor-pointer opacity-80 hover:opacity-100 transition-all duration-200 shadow-md \${placement === 'sidebar' ? 'hidden' : ''}" style="position: fixed !important; bottom: \${floatingBottom}px !important; right: 16px !important; pointer-events: auto !important; \${placement === 'sidebar' ? 'display: none !important;' : 'display: flex !important;'}">
                     <svg height="20" width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                 </div>
                 
                 <!-- Settings Panel -->
-                <div id="rtl-settings-panel" class="rtl-widget-panel rtl-theme-panel fixed p-0 rounded-2xl text-sm w-80 flex flex-col overflow-hidden" style="bottom: \${placement === 'sidebar' ? '56px' : (floatingBottom + 45) + 'px'}; \${placement === 'sidebar' ? 'left: 16px;' : 'right: 16px;'}">
+                <div id="rtl-settings-panel" class="rtl-widget-panel rtl-theme-panel fixed p-0 rounded-2xl text-sm w-80 flex flex-col overflow-hidden" style="position: fixed !important; pointer-events: auto !important; bottom: \${placement === 'sidebar' ? '56px' : (floatingBottom + 45) + 'px'} !important; \${placement === 'sidebar' ? 'left: 16px !important; right: auto !important;' : 'right: 16px !important; left: auto !important;'}">
                     
                     <!-- Pinned Top Header & Main Navigation Tabs -->
                     <div class="rtl-panel-header-pinned flex flex-col gap-2 p-2.5 pb-2 border-b border-border border-opacity-40 shrink-0">
@@ -1225,27 +1260,7 @@ win.webContents.on('dom-ready', () => {
                 </div>
             \`;
 
-            // 4. Safe Delayed App Initialization (Anti-White-Screen Guard)
-            function initExtension() {
-                if (document.querySelector('.rtl-widget-container')) return;
-                
-                if (!document.body) {
-                    requestAnimationFrame(initExtension);
-                    return;
-                }
-
-                // Ensure Antigravity core UI has rendered so we never interfere with React hydration
-                const hasAppShell = document.querySelector('[role="navigation"]') || 
-                                     document.querySelector('[role="main"]') || 
-                                     document.getElementById('root') || 
-                                     document.querySelector('main') ||
-                                     document.body.childElementCount > 1;
-
-                if (!hasAppShell && document.readyState !== 'complete') {
-                    setTimeout(initExtension, 120);
-                    return;
-                }
-
+                // Append widget wrapper to document.body
                 document.body.appendChild(widgetWrapper);
                 bindWidgetControls();
             }
@@ -1469,6 +1484,7 @@ win.webContents.on('dom-ready', () => {
                 locSidebarBtn.classList.remove('text-muted-foreground');
                 locFloatingBtn.classList.remove('bg-background', 'text-foreground', 'shadow-sm');
                 locFloatingBtn.classList.add('text-muted-foreground');
+                floatingTrigger.style.setProperty('display', 'none', 'important');
                 floatingTrigger.classList.add('hidden');
                 floatHeightRow.classList.add('hidden');
                 updatePanelPosition();
@@ -1481,6 +1497,7 @@ win.webContents.on('dom-ready', () => {
                 locFloatingBtn.classList.remove('text-muted-foreground');
                 locSidebarBtn.classList.remove('bg-background', 'text-foreground', 'shadow-sm');
                 locSidebarBtn.classList.add('text-muted-foreground');
+                floatingTrigger.style.setProperty('display', 'flex', 'important');
                 floatingTrigger.classList.remove('hidden');
                 floatHeightRow.classList.remove('hidden');
                 updatePanelPosition();
@@ -1836,7 +1853,48 @@ win.webContents.on('dom-ready', () => {
         }
 
             // Initialize after defining all controllers
-            initExtension();
+            // =========================================================================
+            // 🚀 Reactive Mount Swarm
+            // Wakes up instantly the exact millisecond React renders Antigravity's UI
+            // Never mounts or renders anything on a white/unloaded screen
+            // =========================================================================
+            let isMounted = false;
+            let checkTimer = null;
+            let startupObserver = null;
+
+            function tryMount() {
+                if (isMounted) return;
+                try {
+                    if (isAntigravityReady()) {
+                        isMounted = true;
+                        if (checkTimer) {
+                            clearInterval(checkTimer);
+                            checkTimer = null;
+                        }
+                        if (startupObserver) {
+                            try { startupObserver.disconnect(); } catch (_) {}
+                            startupObserver = null;
+                        }
+                        mountExtension();
+                    }
+                } catch (_) {}
+            }
+
+            // 1. Immediate check in case UI is already present
+            tryMount();
+
+            // 2. Reactive mutation observer for zero-delay wakeup as soon as React mounts into DOM
+            if (!isMounted) {
+                try {
+                    startupObserver = new MutationObserver(() => {
+                        tryMount();
+                    });
+                    startupObserver.observe(document.documentElement || document.body, { childList: true, subtree: true });
+                } catch (_) {}
+
+                // 3. Resilient fallback polling (250ms)
+                checkTimer = setInterval(tryMount, 250);
+            }
         })();`).catch(err => console.error('Failed to inject RTL features:', err));
     } catch(e) {
         console.error('Failed to read offline font', e);
