@@ -17,6 +17,11 @@ win.webContents.on('console-message', (event, ...args) => {
 void win.loadURL(url);
 
 win.webContents.on('dom-ready', () => {
+    // Guard: skip blank/loading pages — only inject on actual app URL
+    const currentURL = win.webContents.getURL();
+    if (!currentURL || currentURL === 'about:blank' || currentURL.startsWith('about:') || currentURL.startsWith('chrome-error://') || currentURL.startsWith('devtools://')) {
+        return;
+    }
     try {
         const fontPath = require('path').join(__dirname, 'Vazirmatn-Variable.woff2');
         const fontBase64 = require('fs').readFileSync(fontPath).toString('base64');
@@ -207,7 +212,7 @@ win.webContents.on('dom-ready', () => {
                     }
 
                     .rtl-widget-panel {
-                        height: 480px !important;
+                        height: 520px !important;
                         max-height: 85vh !important;
                         transform: scale(0.94) translateY(8px);
                         opacity: 0;
@@ -716,20 +721,23 @@ win.webContents.on('dom-ready', () => {
                 \` : '';
 
                 let inputBoxCSS = inputBoxEnabled ? \`
-                    /* Light Mode Input Box — mirrors User Message border */
+                    /* Light Mode Input Box — mirrors User Message border + shadow */
                     :root, body, body.light, body.theme-light {
                         --input-box-border-color: \${userMsgLight.border};
                         --input-box-border-width: \${userMsgLight.borderWidth}px;
+                        --input-box-shadow: \${getShadowCSS(userMsgLight.shadow, userMsgLight.border, 'light')};
                     }
 
-                    /* Dark Mode Input Box — mirrors User Message border */
+                    /* Dark Mode Input Box — mirrors User Message border + shadow */
                     body.dark, body.theme-dark, body.dark-theme, body.vscode-dark, :root.dark, .dark {
                         --input-box-border-color: \${userMsgDark.border};
                         --input-box-border-width: \${userMsgDark.borderWidth}px;
+                        --input-box-shadow: \${getShadowCSS(userMsgDark.shadow, userMsgDark.border, 'dark')};
                     }
 
                     [id="antigravity.agentSidePanelInputBox"], [id*="agentSidePanelInputBox"] {
                         border: var(--input-box-border-width) solid var(--input-box-border-color) !important;
+                        box-shadow: var(--input-box-shadow) !important;
                         transition: border 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease !important;
                     }
                 \` : '';
@@ -960,7 +968,7 @@ win.webContents.on('dom-ready', () => {
                     <div class="rtl-panel-body flex-1 overflow-y-auto p-2.5 flex flex-col gap-2">
                         
                         <!-- TAB 1: RTL & Typography View -->
-                        <div id="rtl-view-rtl" class="flex flex-col gap-2 \${activeMainTab === 'rtl' ? '' : 'hidden'}">
+                        <div id="rtl-view-rtl" class="rtl-tab-view flex flex-col gap-2 \${activeMainTab === 'rtl' ? 'rtl-tab-visible' : 'rtl-tab-hidden'}">
                             <!-- Card 1: RTL Engine & Controls -->
                             <div class="rtl-card flex flex-col gap-2 p-2.5">
                                 <div class="flex items-center justify-between gap-4">
@@ -1061,7 +1069,7 @@ win.webContents.on('dom-ready', () => {
                         </div>
 
                         <!-- TAB 2: UI & Styling View -->
-                        <div id="rtl-view-ui" class="flex flex-col gap-2.5 \${activeMainTab === 'ui' ? '' : 'hidden'}">
+                        <div id="rtl-view-ui" class="rtl-tab-view flex flex-col gap-2.5 \${activeMainTab === 'ui' ? 'rtl-tab-visible' : 'rtl-tab-hidden'}">
                             <!-- User Message Box Customizer with Dual Dark/Light Mode Tabs -->
                             <div class="flex flex-col gap-2">
                                 <!-- Toggle Header with Reset Button -->
@@ -1246,18 +1254,27 @@ win.webContents.on('dom-ready', () => {
             const viewUi = document.getElementById('rtl-view-ui');
 
             function switchMainTab(tab) {
+                if (activeMainTab === tab) return;
+                const leaving = activeMainTab === 'rtl' ? viewRtl : viewUi;
+                const entering = tab === 'rtl' ? viewRtl : viewUi;
+                const navLeave = activeMainTab === 'rtl' ? mainNavRtl : mainNavUi;
+                const navEnter = tab === 'rtl' ? mainNavRtl : mainNavUi;
                 activeMainTab = tab;
-                if (tab === 'rtl') {
-                    if (mainNavRtl) mainNavRtl.classList.add('active');
-                    if (mainNavUi) mainNavUi.classList.remove('active');
-                    if (viewRtl) viewRtl.classList.remove('hidden');
-                    if (viewUi) viewUi.classList.add('hidden');
-                } else {
-                    if (mainNavUi) mainNavUi.classList.add('active');
-                    if (mainNavRtl) mainNavRtl.classList.remove('active');
-                    if (viewUi) viewUi.classList.remove('hidden');
-                    if (viewRtl) viewRtl.classList.add('hidden');
+                // Fade out current
+                if (leaving) {
+                    leaving.classList.remove('rtl-tab-visible');
+                    leaving.classList.add('rtl-tab-hidden');
                 }
+                // Fade in new after brief delay for cross-fade feel
+                setTimeout(() => {
+                    if (entering) {
+                        entering.classList.remove('rtl-tab-hidden');
+                        entering.classList.add('rtl-tab-visible');
+                    }
+                }, 80);
+                // Update nav buttons
+                if (navLeave) navLeave.classList.remove('active');
+                if (navEnter) navEnter.classList.add('active');
                 saveConfig();
             }
 
