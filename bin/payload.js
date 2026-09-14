@@ -257,14 +257,16 @@ win.webContents.on('dom-ready', () => {
                         height: 520px !important;
                         max-height: 85vh !important;
                         transform: scale(0.94) translateY(8px);
-                        opacity: 0;
-                        pointer-events: none;
-                        transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                        pointer-events: none !important;
+                        transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease, visibility 0.22s;
                         transform-origin: bottom right;
                     }
                     .rtl-widget-panel.rtl-panel-open {
                         transform: scale(1) translateY(0) !important;
                         opacity: 1 !important;
+                        visibility: visible !important;
                         pointer-events: auto !important;
                     }
 
@@ -1024,7 +1026,7 @@ win.webContents.on('dom-ready', () => {
                 </div>
                 
                 <!-- Settings Panel -->
-                <div id="rtl-settings-panel" class="rtl-widget-panel rtl-theme-panel fixed p-0 rounded-2xl text-sm w-80 flex flex-col overflow-hidden" style="position: fixed !important; pointer-events: auto !important; bottom: \${placement === 'sidebar' ? '56px' : (floatingBottom + 45) + 'px'} !important; \${placement === 'sidebar' ? 'left: 16px !important; right: auto !important;' : 'right: 16px !important; left: auto !important;'}">
+                <div id="rtl-settings-panel" class="rtl-widget-panel rtl-theme-panel fixed p-0 rounded-2xl text-sm w-80 flex flex-col overflow-hidden" style="position: fixed !important; bottom: \${placement === 'sidebar' ? '56px' : (floatingBottom + 45) + 'px'} !important; \${placement === 'sidebar' ? 'left: 16px !important; right: auto !important;' : 'right: 16px !important; left: auto !important;'}">
                     
                     <!-- Pinned Top Header & Main Navigation Tabs -->
                     <div class="rtl-panel-header-pinned flex flex-col gap-2 p-2.5 pb-2 border-b border-border border-opacity-40 shrink-0">
