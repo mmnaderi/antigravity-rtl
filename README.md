@@ -37,14 +37,14 @@
     </td>
     <td align="center" width="54%" valign="top">
       <h4>📍 Activity Bar Docking & Compact Mode</h4>
-      <p><sub>Docked above Settings with fluid mouse dragging down to 140px</sub></p>
+      <p><sub>Docked above Settings with fluid mouse dragging down to 160px</sub></p>
       <br>
       <img src="assets/sidebar-placement.png" width="250" alt="Sidebar Placement">
       <br><br>
       <div align="left">
         <ul>
           <li><b>Zero Clutter:</b> Docked inside the sidebar, no floating button obstruction</li>
-          <li><b>Fluid 140px Dragging:</b> Natural mouse resize (140px–600px) breaking the 256px limit</li>
+          <li><b>Fluid 160px Dragging:</b> Natural mouse resize (160px–420px) breaking the 256px limit</li>
           <li><b>Anti-Clipping:</b> Left-pinned text alignment keeps labels fully readable</li>
           <li><b>Click-to-Toggle:</b> Opens on click; cleanly dismisses with <code>Esc</code> or outside click</li>
         </ul>
@@ -65,10 +65,10 @@
 - **Synchronized Chat Input**: Automatically harmonizes the active prompt input box border with your personalized bubble styling.
 - **Decoupled Architecture**: Custom UI styling stays 100% active even when the RTL engine is toggled off.
 
-### 📐 Ergonomic Sidebar & Compact Mode (140px)
+### 📐 Ergonomic Sidebar & Compact Mode (160px)
 - **Activity Sidebar Docking**: Integrates seamlessly right above the Settings gear icon, keeping the chat canvas clean.
-- **Fluid Mouse Resizing**: Removes rigid CSS locks, restoring natural, unrestricted mouse dragging across the full 140px–600px range.
-- **Compact Sidebar (140px)**: Allows resizing down to 140px with left-pinned CSS rules that prevent text clipping.
+- **Fluid Mouse Resizing**: Natural, smooth mouse dragging across the calibrated 160px–420px range.
+- **Compact Sidebar (160px)**: Allows resizing down to 160px with left-pinned CSS rules that prevent text clipping.
 - **Click-to-Toggle**: Opens only on click and dismisses smoothly on outside click or the `Esc` key.
 
 ### 📝 Smart Typography & RTL Engine
@@ -169,7 +169,7 @@ sudo npx antigravity-rtl --restore
       <div align="right">
         <ul>
           <li><b>میز کار خلوت:</b> ادغام مستقیم در سایدبار بدون مزاحمت آیکون‌های شناور</li>
-          <li><b>سایدبار فشرده (140px):</b> درگ آزاد موس و عبور از محدودیت ۲۵۶ پیکسلی</li>
+          <li><b>سایدبار فشرده (160px):</b> درگ آزاد موس تا ۱۶۰ پیکسل و عبور از محدودیت ۲۵۶ پیکسلی</li>
           <li><b>بدون برش متون:</b> تراز پین‌شده به چپ برای حفظ خوانایی کامل متن‌ها</li>
           <li><b>باز شدن با کلیک:</b> بدون هاور ناخواسته؛ بسته شدن با Esc یا کلیک بیرون</li>
         </ul>
@@ -190,10 +190,10 @@ sudo npx antigravity-rtl --restore
 - **همگام‌سازی کادر ورودی چت**: هماهنگی خودکار استایل و بوردر کادر ورودی پیام‌ها (Chat Input Box) با حباب پیام کاربر.
 - **استقلال کامل از موتور RTL**: استایل‌های ظاهری در تگ اختصاصی تفکیک شده و حتی در صورت خاموش کردن موتور RTL کاملاً فعال و دست‌نخورده باقی می‌مانند.
 
-#### ۲. یکپارچگی ارگونومیک با سایدبار و حالت فشرده (Compact 140px)
+#### ۲. یکپارچگی ارگونومیک با سایدبار و حالت فشرده (Compact 160px)
 - **جای‌گیری شیک در سایدبار بالای Settings**: دکمه تنظیمات مستقیماً در سایدبار اصلی و در بالای آیکون Settings قرار می‌گیرد تا میز کار همیشه خلوت بماند (همراه با قابلیت بازگشت به آیکون شناور).
-- **درگ کاملاً روان و طبیعی موس**: حذف محدودیت‌های صلب CSS و احیای کامل درگ آزاد موس بین ۱۴۰ تا ۶۰۰ پیکسل.
-- **سایدبار فشرده (Compact 140px)**: امکان کوچک کردن سایدبار تا ۱۴۰ پیکسل (فراتر از محدودیت پیش‌فرض ۲۵۶ پیکسلی نرم‌افزار) همراه با تراز پین‌شده به چپ جهت رفع کامل باگ بریده شدن متون.
+- **درگ کاملاً روان و طبیعی موس**: احیای درگ آزاد و نرم موس بین ۱۶۰ تا ۴۲۰ پیکسل بدون تداخل و پرش.
+- **سایدبار فشرده (Compact 160px)**: امکان کوچک کردن سایدبار تا ۱۶۰ پیکسل (فراتر از محدودیت پیش‌فرض ۲۵۶ پیکسلی نرم‌افزار) همراه با تراز پین‌شده به چپ جهت رفع کامل باگ بریده شدن متون.
 - **باز شدن با کلیک (Click-to-Toggle)**: حذف باز شدن‌های ناخواسته هنگام عبور موس؛ پنل صرفاً با کلیک باز شده و با کلیک بیرون یا کلید `Esc` بسته می‌شود.
 
 #### ۳. موتور هوشمند RTL و تایپوگرافی

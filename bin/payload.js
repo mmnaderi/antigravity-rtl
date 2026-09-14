@@ -1270,20 +1270,21 @@ win.webContents.on('dom-ready', () => {
                                 </button>
                             </div>
 
-                            <!-- Compact Sidebar Toggle (Down to 160px with Mouse Drag) -->
-                            <div class="flex flex-col gap-1">
-                                <div class="rtl-card flex items-center justify-between p-2.5">
-                                    <div class="flex items-center gap-2">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-70"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
-                                        <div class="flex flex-col">
-                                            <span class="rtl-label">Compact Sidebar (Min 160px)</span>
-                                            <span class="text-[10.5px] opacity-60">امکان کوچک کردن سایدبار تا ۱۶۰px با موس</span>
-                                        </div>
+                            <!-- Compact Sidebar Card (toggle-only, enables mouse drag down to 160px) -->
+                            <div class="rtl-card flex items-center justify-between p-2.5">
+                                <div class="flex items-center gap-1.5">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-75">
+                                        <rect width="18" height="18" x="3" y="3" rx="2" />
+                                        <path d="M9 3v18" />
+                                    </svg>
+                                    <div class="flex flex-col gap-0.5">
+                                        <span class="font-medium text-xs">Compact Sidebar (Min 160px)</span>
+                                        <span class="text-[10px] opacity-50">Allow mouse resizing down to 160px</span>
                                     </div>
-                                    <button id="rtl-compact-sidebar-toggle-btn" type="button" role="switch" aria-checked="\${compactSidebar}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${compactSidebar ? 'bg-accent' : 'rtl-toggle-off'} cursor-pointer">
-                                        <span id="rtl-compact-sidebar-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${compactSidebar ? '24px' : '4px'});"></span>
-                                    </button>
                                 </div>
+                                <button id="rtl-compact-sidebar-toggle-btn" type="button" role="switch" aria-checked="\${compactSidebar}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${compactSidebar ? 'bg-accent' : 'rtl-toggle-off'} cursor-pointer">
+                                    <span id="rtl-compact-sidebar-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${compactSidebar ? '24px' : '4px'});"></span>
+                                </button>
                             </div>
                         </div>
                     </div>
