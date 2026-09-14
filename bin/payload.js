@@ -607,12 +607,19 @@ win.webContents.on('dom-ready', () => {
             const savedLH = rtlConfig.lh || '1.6';
             const savedFS = rtlConfig.fs || '16';
             
-            // 2. Dynamic Style Tag
+            // 2. Dynamic Style Tags (Separate RTL and UI styles for complete independence)
             let rtlStyle = document.getElementById('antigravity-rtl-style');
             if (!rtlStyle) {
                 rtlStyle = document.createElement('style');
                 rtlStyle.id = 'antigravity-rtl-style';
                 document.head.appendChild(rtlStyle);
+            }
+
+            let uiStyle = document.getElementById('antigravity-ui-style');
+            if (!uiStyle) {
+                uiStyle = document.createElement('style');
+                uiStyle.id = 'antigravity-ui-style';
+                document.head.appendChild(uiStyle);
             }
             
             const updateDynamicCSS = (faFont, enFont, codeFont, lh, fs, sWidth) => {
@@ -755,14 +762,8 @@ win.webContents.on('dom-ready', () => {
                     }
                 \` : '';
                 
-                rtlStyle.textContent = \`
-                    \${faFontRule}
-                    @font-face {
-                        font-family: 'PersianOnlyFont';
-                        src: url('data:font/woff2;base64,\${fontBase64}') format('woff2');
-                        font-weight: 100 900;
-                        unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
-                    }
+                // 1. Independent UI & Styling CSS (Always active, never disabled by RTL Engine)
+                uiStyle.textContent = \`
                     :root {
                         --antigravity-sidebar-width: \${sWidth}px;
                     }
@@ -778,6 +779,17 @@ win.webContents.on('dom-ready', () => {
 
                     /* Custom Chat Input Box */
                     \${inputBoxCSS}
+                \`;
+
+                // 2. RTL Engine & Typography CSS (Toggled with RTL Engine)
+                rtlStyle.textContent = \`
+                    \${faFontRule}
+                    @font-face {
+                        font-family: 'PersianOnlyFont';
+                        src: url('data:font/woff2;base64,\${fontBase64}') format('woff2');
+                        font-weight: 100 900;
+                        unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+                    }
 
                     :root, :host, html, body {
                         font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
@@ -989,7 +1001,7 @@ win.webContents.on('dom-ready', () => {
                                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-70"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
                                         <span id="rtl-toggle-label" class="font-medium text-xs opacity-90">\${isRTL ? 'RTL Engine Enabled' : 'RTL Engine Disabled'}</span>
                                     </div>
-                                    <button id="rtl-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${isRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                                    <button id="rtl-toggle-btn" type="button" role="switch" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${isRTL ? 'bg-accent' : 'rtl-toggle-off'} cursor-pointer">
                                         <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
                                     </button>
                                 </div>
@@ -1673,18 +1685,19 @@ win.webContents.on('dom-ready', () => {
                 if (isRTL) {
                     toggleLabel.innerText = 'RTL Engine Enabled';
                     if (engineControls) engineControls.classList.remove('opacity-40', 'pointer-events-none');
-                    if (typoCard) typoCard.classList.remove('opacity-40', 'pointer-events-none');
                     toggleBtn.classList.add('bg-accent');
+                    toggleBtn.classList.remove('rtl-toggle-off');
                     toggleKnob.style.transform = 'translateX(24px)';
-                    document.head.appendChild(rtlStyle);
+                    if (!rtlStyle.parentNode) document.head.appendChild(rtlStyle);
                     refreshStyles();
                 } else {
                     toggleLabel.innerText = 'RTL Engine Disabled';
                     toggleBtn.classList.remove('bg-accent');
+                    toggleBtn.classList.add('rtl-toggle-off');
                     toggleKnob.style.transform = 'translateX(4px)';
                     if (engineControls) engineControls.classList.add('opacity-40', 'pointer-events-none');
-                    if (typoCard) typoCard.classList.add('opacity-40', 'pointer-events-none');
                     if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
+                    // uiStyle stays 100% active and untouched!
                 }
             }
 
