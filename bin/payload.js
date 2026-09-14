@@ -17,9 +17,9 @@ win.webContents.on('console-message', (event, ...args) => {
 void win.loadURL(url);
 
 win.webContents.on('dom-ready', () => {
-    // Guard: skip blank/loading pages — only inject on actual app URL
+    // Strict Guard: only inject when page has loaded a valid local server URL
     const currentURL = win.webContents.getURL();
-    if (!currentURL || currentURL === 'about:blank' || currentURL.startsWith('about:') || currentURL.startsWith('chrome-error://') || currentURL.startsWith('devtools://')) {
+    if (!currentURL || !/^https?:\/\/127\.0\.0\.1:\d+/i.test(currentURL)) {
         return;
     }
     try {
@@ -88,6 +88,12 @@ win.webContents.on('dom-ready', () => {
         } catch (e) {}
 
         win.webContents.executeJavaScript(`
+            if (window.__ANTIGRAVITY_RTL_LOADED__) {
+                // If already initialized on this window, do not reinject
+                return;
+            }
+            window.__ANTIGRAVITY_RTL_LOADED__ = true;
+
             const fontBase64 = '${fontBase64}';
             const rtlConfig = ${JSON.stringify(rtlConfig)};
             
@@ -234,23 +240,30 @@ win.webContents.on('dom-ready', () => {
                         background-color: rgba(100, 116, 139, 0.45) !important;
                     }
 
-                    /* Tab view fade transition */
+                    /* Rich Tab View Slide & Fade Transitions */
                     .rtl-tab-view {
-                        transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+                        display: none;
+                        opacity: 0;
+                        transform: translateY(8px) scale(0.99);
+                        transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1), transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+                        width: 100%;
                     }
-                    .rtl-tab-view.rtl-tab-hidden {
-                        opacity: 0 !important;
-                        transform: translateY(4px) !important;
-                        pointer-events: none !important;
-                        position: absolute !important;
-                        visibility: hidden !important;
-                    }
-                    .rtl-tab-view.rtl-tab-visible {
+                    .rtl-tab-view.rtl-tab-active {
+                        display: flex !important;
                         opacity: 1 !important;
-                        transform: translateY(0) !important;
-                        pointer-events: auto !important;
-                        position: relative !important;
-                        visibility: visible !important;
+                        transform: translateY(0) scale(1) !important;
+                    }
+                    .rtl-tab-view.rtl-tab-leaving {
+                        display: flex !important;
+                        opacity: 0 !important;
+                        transform: translateY(-8px) scale(0.99) !important;
+                        pointer-events: none !important;
+                    }
+                    .rtl-tab-view.rtl-tab-entering {
+                        display: flex !important;
+                        opacity: 0 !important;
+                        transform: translateY(10px) scale(0.99) !important;
+                        pointer-events: none !important;
                     }
 
                     .rtl-theme-panel {
@@ -968,7 +981,7 @@ win.webContents.on('dom-ready', () => {
                     <div class="rtl-panel-body flex-1 overflow-y-auto p-2.5 flex flex-col gap-2">
                         
                         <!-- TAB 1: RTL & Typography View -->
-                        <div id="rtl-view-rtl" class="rtl-tab-view flex flex-col gap-2 \${activeMainTab === 'rtl' ? 'rtl-tab-visible' : 'rtl-tab-hidden'}">
+                        <div id="rtl-view-rtl" class="rtl-tab-view flex flex-col gap-2 \${activeMainTab === 'rtl' ? 'rtl-tab-active' : ''}">
                             <!-- Card 1: RTL Engine & Controls -->
                             <div class="rtl-card flex flex-col gap-2 p-2.5">
                                 <div class="flex items-center justify-between gap-4">
@@ -1069,7 +1082,7 @@ win.webContents.on('dom-ready', () => {
                         </div>
 
                         <!-- TAB 2: UI & Styling View -->
-                        <div id="rtl-view-ui" class="rtl-tab-view flex flex-col gap-2.5 \${activeMainTab === 'ui' ? 'rtl-tab-visible' : 'rtl-tab-hidden'}">
+                        <div id="rtl-view-ui" class="rtl-tab-view flex flex-col gap-2.5 \${activeMainTab === 'ui' ? 'rtl-tab-active' : ''}">
                             <!-- User Message Box Customizer with Dual Dark/Light Mode Tabs -->
                             <div class="flex flex-col gap-2">
                                 <!-- Toggle Header with Reset Button -->
@@ -1196,10 +1209,35 @@ win.webContents.on('dom-ready', () => {
                     </div>
                 </div>
             \`;
-            document.body.appendChild(widgetWrapper);
 
-            // References
-            const panel = document.getElementById('rtl-settings-panel');
+            // 4. Safe Delayed App Initialization (Anti-White-Screen Guard)
+            function initExtension() {
+                if (document.querySelector('.rtl-widget-container')) return;
+                
+                if (!document.body) {
+                    requestAnimationFrame(initExtension);
+                    return;
+                }
+
+                // Ensure Antigravity core UI has rendered so we never interfere with React hydration
+                const hasAppShell = document.querySelector('[role="navigation"]') || 
+                                     document.querySelector('[role="main"]') || 
+                                     document.getElementById('root') || 
+                                     document.querySelector('main') ||
+                                     document.body.childElementCount > 1;
+
+                if (!hasAppShell && document.readyState !== 'complete') {
+                    setTimeout(initExtension, 120);
+                    return;
+                }
+
+                document.body.appendChild(widgetWrapper);
+                bindWidgetControls();
+            }
+
+            function bindWidgetControls() {
+                // References
+                const panel = document.getElementById('rtl-settings-panel');
             const floatingTrigger = document.getElementById('rtl-floating-trigger');
             const panelCloseBtn = document.getElementById('rtl-panel-close-btn');
             const toggleBtn = document.getElementById('rtl-toggle-btn');
@@ -1260,21 +1298,25 @@ win.webContents.on('dom-ready', () => {
                 const navLeave = activeMainTab === 'rtl' ? mainNavRtl : mainNavUi;
                 const navEnter = tab === 'rtl' ? mainNavRtl : mainNavUi;
                 activeMainTab = tab;
-                // Fade out current
-                if (leaving) {
-                    leaving.classList.remove('rtl-tab-visible');
-                    leaving.classList.add('rtl-tab-hidden');
-                }
-                // Fade in new after brief delay for cross-fade feel
-                setTimeout(() => {
-                    if (entering) {
-                        entering.classList.remove('rtl-tab-hidden');
-                        entering.classList.add('rtl-tab-visible');
-                    }
-                }, 80);
-                // Update nav buttons
+
                 if (navLeave) navLeave.classList.remove('active');
                 if (navEnter) navEnter.classList.add('active');
+
+                if (leaving && entering) {
+                    leaving.classList.remove('rtl-tab-active');
+                    leaving.classList.add('rtl-tab-leaving');
+                    
+                    setTimeout(() => {
+                        leaving.classList.remove('rtl-tab-leaving');
+                        entering.classList.add('rtl-tab-entering');
+                        
+                        // Force layout reflow so the transition reliably animates from translateY(10px) to translateY(0)
+                        void entering.offsetHeight;
+                        
+                        entering.classList.remove('rtl-tab-entering');
+                        entering.classList.add('rtl-tab-active');
+                    }, 120);
+                }
                 saveConfig();
             }
 
@@ -1700,6 +1742,10 @@ win.webContents.on('dom-ready', () => {
                 saveConfig();
                 refreshStyles();
             });
+        }
+
+        // Initialize after defining all controllers
+        initExtension();
         `).catch(err => console.error('Failed to inject RTL features:', err));
     } catch(e) {
         console.error('Failed to read offline font', e);
