@@ -765,8 +765,16 @@ win.webContents.on('dom-ready', () => {
                 
                 // 1. Independent UI & Styling CSS (Always active, never disabled by RTL Engine)
                 uiStyle.textContent = \`
-                    /* Compact Sidebar Support — enables smooth mouse resizing down to 140px */
+                    /* Compact Sidebar Support — prevents left-clipping and enables fluid mouse resizing down to 140px */
+                    div:has(> [role="navigation"][aria-label="Sidebar"]) {
+                        left: 0 !important;
+                        right: auto !important;
+                        width: 100% !important;
+                        max-width: 100% !important;
+                    }
                     [role="navigation"][aria-label="Sidebar"] {
+                        width: 100% !important;
+                        max-width: 100% !important;
                         min-width: 0 !important;
                     }
 
