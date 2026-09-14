@@ -207,18 +207,45 @@ win.webContents.on('dom-ready', () => {
                     }
 
                     .rtl-widget-panel {
-                        height: 520px !important;
+                        height: 480px !important;
                         max-height: 85vh !important;
-                        transform: scale(0.95);
+                        transform: scale(0.94) translateY(8px);
                         opacity: 0;
                         pointer-events: none;
-                        transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+                        transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.22s ease;
                         transform-origin: bottom right;
                     }
                     .rtl-widget-panel.rtl-panel-open {
-                        transform: scale(1) !important;
+                        transform: scale(1) translateY(0) !important;
                         opacity: 1 !important;
                         pointer-events: auto !important;
+                    }
+
+                    /* Toggle OFF state — explicit color instead of Tailwind utility */
+                    .rtl-toggle-off {
+                        background-color: rgba(148, 163, 184, 0.35) !important;
+                    }
+                    .rtl-widget-panel.rtl-is-dark .rtl-toggle-off {
+                        background-color: rgba(100, 116, 139, 0.45) !important;
+                    }
+
+                    /* Tab view fade transition */
+                    .rtl-tab-view {
+                        transition: opacity 0.18s ease, transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+                    }
+                    .rtl-tab-view.rtl-tab-hidden {
+                        opacity: 0 !important;
+                        transform: translateY(4px) !important;
+                        pointer-events: none !important;
+                        position: absolute !important;
+                        visibility: hidden !important;
+                    }
+                    .rtl-tab-view.rtl-tab-visible {
+                        opacity: 1 !important;
+                        transform: translateY(0) !important;
+                        pointer-events: auto !important;
+                        position: relative !important;
+                        visibility: visible !important;
                     }
 
                     .rtl-theme-panel {
@@ -689,16 +716,16 @@ win.webContents.on('dom-ready', () => {
                 \` : '';
 
                 let inputBoxCSS = inputBoxEnabled ? \`
-                    /* Light Mode Input Box */
+                    /* Light Mode Input Box — mirrors User Message border */
                     :root, body, body.light, body.theme-light {
-                        --input-box-border-color: \${inputBoxLight.border};
-                        --input-box-border-width: \${inputBoxLight.borderWidth}px;
+                        --input-box-border-color: \${userMsgLight.border};
+                        --input-box-border-width: \${userMsgLight.borderWidth}px;
                     }
 
-                    /* Dark Mode Input Box */
+                    /* Dark Mode Input Box — mirrors User Message border */
                     body.dark, body.theme-dark, body.dark-theme, body.vscode-dark, :root.dark, .dark {
-                        --input-box-border-color: \${inputBoxDark.border};
-                        --input-box-border-width: \${inputBoxDark.borderWidth}px;
+                        --input-box-border-color: \${userMsgDark.border};
+                        --input-box-border-width: \${userMsgDark.borderWidth}px;
                     }
 
                     [id="antigravity.agentSidePanelInputBox"], [id*="agentSidePanelInputBox"] {
@@ -1117,45 +1144,21 @@ win.webContents.on('dom-ready', () => {
                                 </div>
                             </div>
 
-                            <!-- Chat Input Box Card -->
-                            <div class="flex flex-col gap-2 p-2.5 rounded-xl border border-border border-opacity-40 bg-surface">
-                                <div class="flex items-center justify-between gap-2">
-                                    <div class="flex items-center gap-1.5">
-                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-75">
-                                            <rect width="20" height="16" x="2" y="4" rx="3" />
-                                            <path d="M6 8h.01M10 8h.01M6 12h12M6 16h8" />
-                                        </svg>
+                            <!-- Chat Input Box Card (toggle-only, inherits border from User Message) -->
+                            <div class="rtl-card flex items-center justify-between p-2.5">
+                                <div class="flex items-center gap-1.5">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-75">
+                                        <rect width="20" height="16" x="2" y="4" rx="3" />
+                                        <path d="M6 8h.01M10 8h.01M6 12h12M6 16h8" />
+                                    </svg>
+                                    <div class="flex flex-col gap-0.5">
                                         <span class="font-medium text-xs">Chat Input Box Border</span>
-                                    </div>
-                                    <div class="flex items-center gap-1.5">
-                                        <button id="rtl-inputbox-reset-btn" type="button" class="rtl-reset-icon-btn" title="Reset Input Border">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                        </button>
-                                        <button id="rtl-inputbox-toggle-btn" type="button" role="switch" aria-checked="\${inputBoxEnabled}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${inputBoxEnabled ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                            <span id="rtl-inputbox-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${inputBoxEnabled ? '24px' : '4px'});"></span>
-                                        </button>
+                                        <span class="text-[10px] opacity-50">Synced from User Message</span>
                                     </div>
                                 </div>
-
-                                <div id="rtl-inputbox-controls" class="flex flex-col gap-2.5 pt-1.5 border-t border-border border-opacity-30 \${inputBoxEnabled ? '' : 'hidden'}">
-                                    <!-- Border Color Row -->
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span class="rtl-label">Border Color</span>
-                                        <div class="flex items-center gap-1.5">
-                                            <input type="color" id="rtl-inputbox-border-color" value="\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).border}" class="rtl-color-input">
-                                            <input type="text" id="rtl-inputbox-border-hex" maxlength="7" value="\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).border}" class="rtl-hex-input">
-                                        </div>
-                                    </div>
-
-                                    <!-- Border Width Row -->
-                                    <div class="flex items-center justify-between gap-2">
-                                        <span class="rtl-label">Border Width</span>
-                                        <div class="flex items-center gap-1.5">
-                                            <input id="rtl-inputbox-bw-input" type="range" min="0" max="4" step="0.5" value="\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).borderWidth}" class="rtl-range-slider">
-                                            <span id="rtl-inputbox-bw-val" class="rtl-badge-val">\${(activeTab === 'dark' ? inputBoxDark : inputBoxLight).borderWidth}px</span>
-                                        </div>
-                                    </div>
-                                </div>
+                                <button id="rtl-inputbox-toggle-btn" type="button" role="switch" aria-checked="\${inputBoxEnabled}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${inputBoxEnabled ? 'bg-accent' : 'rtl-toggle-off'} cursor-pointer">
+                                    <span id="rtl-inputbox-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${inputBoxEnabled ? '24px' : '4px'});"></span>
+                                </button>
                             </div>
 
                             <!-- Sidebar Width Control (140px to 420px) -->
@@ -1263,13 +1266,6 @@ win.webContents.on('dom-ready', () => {
 
             const inputBoxToggleBtn = document.getElementById('rtl-inputbox-toggle-btn');
             const inputBoxToggleKnob = document.getElementById('rtl-inputbox-toggle-knob');
-            const inputBoxControls = document.getElementById('rtl-inputbox-controls');
-            const inputBoxBorderColor = document.getElementById('rtl-inputbox-border-color');
-            const inputBoxBorderHex = document.getElementById('rtl-inputbox-border-hex');
-            const inputBoxBwInput = document.getElementById('rtl-inputbox-bw-input');
-            const inputBoxBwVal = document.getElementById('rtl-inputbox-bw-val');
-            const inputBoxResetBtn = document.getElementById('rtl-inputbox-reset-btn');
-            const inputBoxResetLabel = document.getElementById('rtl-inputbox-reset-label');
 
             const faFontInput = document.getElementById('rtl-fafont-input');
             const enFontInput = document.getElementById('rtl-enfont-input');
@@ -1506,18 +1502,7 @@ win.webContents.on('dom-ready', () => {
                     userMsgResetBtn.title = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} to Gentle Default\`;
                 }
 
-                // Sync Chat Input Box
-                const curInput = activeTab === 'dark' ? inputBoxDark : inputBoxLight;
-                if (inputBoxBorderColor) inputBoxBorderColor.value = curInput.border;
-                if (inputBoxBorderHex) inputBoxBorderHex.value = curInput.border;
-                if (inputBoxBwInput) inputBoxBwInput.value = curInput.borderWidth;
-                if (inputBoxBwVal) inputBoxBwVal.textContent = curInput.borderWidth + 'px';
-                if (inputBoxResetLabel) {
-                    inputBoxResetLabel.textContent = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border\`;
-                }
-                if (inputBoxResetBtn) {
-                    inputBoxResetBtn.title = \`Reset \${activeTab === 'dark' ? 'Dark' : 'Light'} Input Border\`;
-                }
+                // (Chat Input Box border is synced automatically via refreshStyles)
 
                 if (activeTab === 'dark') {
                     tabDark.classList.add('active');
@@ -1599,53 +1584,20 @@ win.webContents.on('dom-ready', () => {
                 saveConfig();
             });
 
-            // Chat Input Box Listeners
+            // Chat Input Box Toggle (border synced from User Message settings)
             if (inputBoxToggleBtn) {
                 inputBoxToggleBtn.addEventListener('click', () => {
                     inputBoxEnabled = !inputBoxEnabled;
                     inputBoxToggleBtn.setAttribute('aria-checked', inputBoxEnabled);
                     if (inputBoxEnabled) {
                         inputBoxToggleBtn.classList.add('bg-accent');
-                        inputBoxToggleBtn.classList.remove('bg-gray-400', 'bg-opacity-40');
+                        inputBoxToggleBtn.classList.remove('rtl-toggle-off');
                         inputBoxToggleKnob.style.transform = 'translateX(24px)';
-                        inputBoxControls.classList.remove('hidden');
                     } else {
                         inputBoxToggleBtn.classList.remove('bg-accent');
-                        inputBoxToggleBtn.classList.add('bg-gray-400', 'bg-opacity-40');
+                        inputBoxToggleBtn.classList.add('rtl-toggle-off');
                         inputBoxToggleKnob.style.transform = 'translateX(4px)';
-                        inputBoxControls.classList.add('hidden');
                     }
-                    refreshStyles();
-                    saveConfig();
-                });
-            }
-
-            if (inputBoxBorderColor && inputBoxBorderHex) {
-                bindColorPair(inputBoxBorderColor, inputBoxBorderHex, (v) => {
-                    (activeTab === 'dark' ? inputBoxDark : inputBoxLight).border = v;
-                });
-            }
-
-            if (inputBoxBwInput) {
-                inputBoxBwInput.addEventListener('input', (e) => {
-                    const cur = activeTab === 'dark' ? inputBoxDark : inputBoxLight;
-                    cur.borderWidth = e.target.value;
-                    inputBoxBwVal.textContent = cur.borderWidth + 'px';
-                    refreshStyles();
-                    saveConfig();
-                });
-            }
-
-            if (inputBoxResetBtn) {
-                inputBoxResetBtn.addEventListener('click', () => {
-                    if (activeTab === 'dark') {
-                        inputBoxDark.border = '#384c6e';
-                        inputBoxDark.borderWidth = '1.5';
-                    } else {
-                        inputBoxLight.border = '#cbd5e1';
-                        inputBoxLight.borderWidth = '1.5';
-                    }
-                    syncInputsForActiveTab();
                     refreshStyles();
                     saveConfig();
                 });
