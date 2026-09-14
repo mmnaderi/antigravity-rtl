@@ -270,6 +270,13 @@ win.webContents.on('dom-ready', () => {
                         pointer-events: auto !important;
                     }
 
+                    /* Sidebar Resizing Cursor & Selection Lock */
+                    body.rtl-sidebar-resizing,
+                    body.rtl-sidebar-resizing * {
+                        cursor: col-resize !important;
+                        user-select: none !important;
+                    }
+
                     /* Toggle OFF state — explicit color instead of Tailwind utility */
                     .rtl-toggle-off {
                         background-color: rgba(148, 163, 184, 0.35) !important;
@@ -826,7 +833,11 @@ win.webContents.on('dom-ready', () => {
                 
                 // 1. Independent UI & Styling CSS (Always active, never disabled by RTL Engine)
                 uiStyle.textContent = \`
-                    /* Compact Sidebar Support — prevents left-clipping and enables fluid mouse resizing down to 140px */
+                    /* Compact Sidebar Support — prevents left-clipping and enables fluid mouse resizing down to 160px */
+                    div:has(> div > [role="navigation"][aria-label="Sidebar"]),
+                    div:has(> [role="navigation"][aria-label="Sidebar"]) {
+                        min-width: 0 !important;
+                    }
                     div:has(> [role="navigation"][aria-label="Sidebar"]) {
                         left: 0 !important;
                         right: auto !important;
@@ -1259,14 +1270,14 @@ win.webContents.on('dom-ready', () => {
                                 </button>
                             </div>
 
-                            <!-- Compact Sidebar Toggle (Down to 140px with Mouse Drag) -->
+                            <!-- Compact Sidebar Toggle (Down to 160px with Mouse Drag) -->
                             <div class="flex flex-col gap-1">
                                 <div class="rtl-card flex items-center justify-between p-2.5">
                                     <div class="flex items-center gap-2">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="opacity-70"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/></svg>
                                         <div class="flex flex-col">
-                                            <span class="rtl-label">Compact Sidebar (140px)</span>
-                                            <span class="text-[10.5px] opacity-60">کوچک کردن سایدبار تا ۱۴۰px با موس</span>
+                                            <span class="rtl-label">Compact Sidebar (Min 160px)</span>
+                                            <span class="text-[10.5px] opacity-60">امکان کوچک کردن سایدبار تا ۱۶۰px با موس</span>
                                         </div>
                                     </div>
                                     <button id="rtl-compact-sidebar-toggle-btn" type="button" role="switch" aria-checked="\${compactSidebar}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${compactSidebar ? 'bg-accent' : 'rtl-toggle-off'} cursor-pointer">
@@ -1557,9 +1568,9 @@ win.webContents.on('dom-ready', () => {
                         const parent = sidebar ? sidebar.parentElement : null;
                         const grandParent = parent ? parent.parentElement : null;
                         if (grandParent && grandParent.offsetWidth < 256) {
-                            grandParent.style.width = '256px';
-                            if (parent) parent.style.width = '256px';
-                            localStorage.setItem('sidebarWidth', 256);
+                            grandParent.style.setProperty('width', '256px', 'important');
+                            if (parent) parent.style.setProperty('width', '256px', 'important');
+                            localStorage.setItem('sidebarWidth', '256');
                         }
                     }
                     saveConfig();
@@ -1578,10 +1589,10 @@ win.webContents.on('dom-ready', () => {
 
                 // Restore saved compact width on startup if enabled
                 if (compactSidebar && grandParent) {
-                    const storedW = parseInt(localStorage.getItem('sidebarWidth'));
-                    if (storedW && storedW >= 140 && storedW < 256) {
-                        grandParent.style.width = storedW + 'px';
-                        if (parent) parent.style.width = storedW + 'px';
+                    const storedW = parseInt(localStorage.getItem('sidebarWidth'), 10);
+                    if (storedW && storedW >= 160 && storedW < 256) {
+                        grandParent.style.setProperty('width', storedW + 'px', 'important');
+                        if (parent) parent.style.setProperty('width', storedW + 'px', 'important');
                     }
                 }
 
@@ -1589,41 +1600,63 @@ win.webContents.on('dom-ready', () => {
                 let startX = 0;
                 let startW = 0;
 
-                resizer.addEventListener('mousedown', (e) => {
-                    if (!compactSidebar) return; // If compact mode is OFF, let native resizing work
-                    
+                function onPointerMove(ev) {
+                    if (!isDragging || !grandParent) return;
+                    const delta = ev.clientX - startX;
+                    let newW = Math.round(startW + delta);
+                    const maxLimit = Math.min(420, Math.floor(window.innerWidth * 0.45));
+                    if (newW < 160) newW = 160;
+                    if (newW > maxLimit) newW = maxLimit;
+
+                    grandParent.style.setProperty('width', newW + 'px', 'important');
+                    if (parent) parent.style.setProperty('width', newW + 'px', 'important');
+                }
+
+                function onPointerEnd() {
+                    if (!isDragging) return;
+                    isDragging = false;
+                    document.body.classList.remove('rtl-sidebar-resizing');
+
+                    window.removeEventListener('pointermove', onPointerMove, true);
+                    window.removeEventListener('pointerup', onPointerEnd, true);
+                    window.removeEventListener('pointercancel', onPointerEnd, true);
+                    window.removeEventListener('mousemove', onPointerMove, true);
+                    window.removeEventListener('mouseup', onPointerEnd, true);
+                    window.removeEventListener('blur', onPointerEnd);
+
+                    if (grandParent) {
+                        const finalW = grandParent.offsetWidth;
+                        localStorage.setItem('sidebarWidth', finalW);
+                        sidebarWidth = finalW;
+                        saveConfig();
+                    }
+                }
+
+                function onPointerStart(e) {
+                    if (!compactSidebar) return; // If compact mode is OFF, let Antigravity handle native resize
+                    if (e.button !== 0) return; // Primary left-click only
+
+                    // Stop Antigravity's native handler to eliminate 60fps jitter/conflict
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+
                     isDragging = true;
                     startX = e.clientX;
                     startW = grandParent ? grandParent.offsetWidth : 256;
-                    document.body.style.userSelect = 'none';
-                    document.body.style.cursor = 'col-resize';
 
-                    function onMouseMove(ev) {
-                        if (!isDragging || !grandParent) return;
-                        const delta = ev.clientX - startX;
-                        let newW = startW + delta;
-                        if (newW < 140) newW = 140;
-                        if (newW > 600) newW = 600;
+                    document.body.classList.add('rtl-sidebar-resizing');
 
-                        grandParent.style.width = newW + 'px';
-                        if (parent) parent.style.width = newW + 'px';
-                    }
+                    window.addEventListener('pointermove', onPointerMove, true);
+                    window.addEventListener('pointerup', onPointerEnd, true);
+                    window.addEventListener('pointercancel', onPointerEnd, true);
+                    window.addEventListener('mousemove', onPointerMove, true);
+                    window.addEventListener('mouseup', onPointerEnd, true);
+                    window.addEventListener('blur', onPointerEnd);
+                }
 
-                    function onMouseUp() {
-                        isDragging = false;
-                        document.body.style.userSelect = '';
-                        document.body.style.cursor = '';
-                        window.removeEventListener('mousemove', onMouseMove, true);
-
-                        if (grandParent) {
-                            const finalW = grandParent.offsetWidth;
-                            localStorage.setItem('sidebarWidth', finalW);
-                        }
-                    }
-
-                    window.addEventListener('mousemove', onMouseMove, true);
-                    window.addEventListener('mouseup', onMouseUp, { capture: true, once: true });
-                }, true);
+                resizer.addEventListener('pointerdown', onPointerStart, { capture: true });
+                resizer.addEventListener('mousedown', onPointerStart, { capture: true });
             }
 
             initSidebarResizer();
