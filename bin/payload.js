@@ -87,9 +87,8 @@ win.webContents.on('dom-ready', () => {
             }
         } catch (e) {}
 
-        win.webContents.executeJavaScript(`
+        win.webContents.executeJavaScript(`(() => {
             if (window.__ANTIGRAVITY_RTL_LOADED__) {
-                // If already initialized on this window, do not reinject
                 return;
             }
             window.__ANTIGRAVITY_RTL_LOADED__ = true;
@@ -1757,9 +1756,9 @@ win.webContents.on('dom-ready', () => {
             });
         }
 
-        // Initialize after defining all controllers
-        initExtension();
-        `).catch(err => console.error('Failed to inject RTL features:', err));
+            // Initialize after defining all controllers
+            initExtension();
+        })();`).catch(err => console.error('Failed to inject RTL features:', err));
     } catch(e) {
         console.error('Failed to read offline font', e);
     }
