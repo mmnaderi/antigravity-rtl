@@ -1,158 +1,203 @@
 # Antigravity Smart RTL & UI Patcher
 
-A smart and beautiful RTL (Right-to-Left) patch for the [Antigravity](https://github.com/google/antigravity) application.
+<p align="center">
+  <img src="assets/showcase-split.png" alt="Antigravity UI Dual Theme Showcase" width="100%">
+</p>
 
-This CLI tool automatically injects a sophisticated RTL engine into Antigravity, adding support for Persian (Farsi), Arabic, Hebrew, and other RTL languages, along with a sleek UI to configure fonts and settings on the fly.
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Installation</a> •
+  <a href="#restoring-to-original-uninstall">Uninstall</a> •
+  <a href="#how-it-works">How It Works</a> •
+  <a href="#persian-guide-راهنمای-فارسی">راهنمای فارسی</a>
+</p>
+
+---
+
+A smart and beautiful RTL (Right-to-Left) & UI Customization patch for the **[Antigravity](https://github.com/google/antigravity)** desktop application.
+
+This CLI tool automatically injects a high-performance RTL engine and a modular Vibe UI Customization Panel into Antigravity. It delivers native-like support for Persian (Farsi), Arabic, Hebrew, and other RTL scripts, alongside granular controls for dual Dark/Light mode theme styling, typography, and sidebar responsiveness.
 
 https://github.com/user-attachments/assets/f2e8722d-3aeb-47d3-a37e-c33b6a89676e
 
-## Features
+---
 
-- **Smart Auto-Direction**: Automatically detects if a paragraph is RTL or LTR and aligns it perfectly.
-- **Force RTL Mode**: Want everything aligned to the right? Just toggle the switch.
-- **Sidebar Menu Integration**: Neatly places the settings button inside the sidebar above Settings, or switch to floating mode.
-- **Click-to-Toggle Panel**: Opens smoothly on click and closes on outside click or Esc key (no unwanted hover popups).
-- **Compact Sidebar (140px)**: Allows fluid mouse-drag resizing down to 140px (breaking Antigravity's default 256px limit) while keeping mouse dragging 100% natural and unrestricted.
-- **User Message Customizer**: Full control over user prompt styling with dedicated tabs for **Dark Mode** and **Light Mode** — independently customize background color, text color, border color, border width, and shadow (None, Soft, Medium, Glow), with toggle on/off and reset to gentle defaults.
-- **Custom Typography**: Define different fonts for your RTL text, English text, and Code blocks!
-- **Line Height & Font Size Control**: Precise sliders to adjust line height and font size for optimal readability.
-- **Persian Keyboard Fix**: Maps `Shift + 2` to type `@` instead of `٬` on Persian keyboards.
-- **Vazirmatn Built-in**: Comes with the beautiful Vazirmatn variable font by default.
+## ✨ Features
 
-## Installation
+### 🎨 Dual-Theme UI & Styling Engine
+- **Dedicated Dark & Light Tabs**: Independently customize user message bubbles for **Dark Mode** (with vibrant Neon Glow) and **Light Mode** (with elevated 3D shadow) to adapt effortlessly to any ambient lighting.
+- **Anti AI-Slop & Zero Inversion Contrast**: Built upon WCAG AAA contrast standards; labels and text remain crystal clear with zero contrast inversion or invisible labels.
+- **Granular Visual Controls**: Custom background color, text color, border width, border color, and shadow intensity presets (`None`, `Soft`, `Medium`, `Glow`).
+- **Synchronized Chat Input Box**: Automatically aligns and styles the active chat input field border to match your personalized bubble aesthetics.
+- **Decoupled from RTL Engine**: Custom UI styling stays completely active and independent, even if the RTL engine is switched off.
 
-You don't need to download any files. Just run the following command in your terminal:
+<p align="center">
+  <img src="assets/tab-switch.gif" alt="Smooth Physics-Based Tab Switch" width="85%">
+</p>
+
+### 📐 Ergonomic Sidebar & Compact Mode (140px)
+- **Docked Above Settings**: Integrates seamlessly inside the main activity sidebar right above the Settings icon for an uncluttered workspace (switch back to floating badge anytime).
+- **Fluid Mouse Resizing**: Eliminates rigid CSS overrides, restoring 100% natural, fluid mouse dragging between 140px and 600px.
+- **Compact Sidebar (140px)**: Enables shrinking the sidebar down to 140px (breaking Antigravity's default 256px barrier) with left-pinned alignment to prevent text clipping.
+- **Click-to-Toggle & Outside Dismiss**: Opens only on click and dismisses smoothly on outside clicks or the `Esc` key (no accidental hover triggers).
+
+<p align="center">
+  <img src="assets/sidebar-placement.png" alt="Sidebar Integration Above Settings" width="480">
+</p>
+
+### 📝 Smart Typography & RTL Engine
+- **Intelligent Auto-Direction**: Dynamically inspects paragraph content and aligns Persian/Arabic to the right while keeping English and code snippets neatly LTR.
+- **Force RTL Mode**: Option to align all text to the right when full RTL presentation is preferred.
+- **Built-in Vazirmatn Variable Font**: Ships with the modern, elegant Vazirmatn font out of the box for superior readability.
+- **Multi-Font Granularity**: Define different typography for RTL text, Latin text, and code blocks independently.
+- **Typography Sliders**: Fine-tune line height and font size with real-time responsive sliders.
+- **Persian Keyboard Optimization**: Automatically remaps `Shift + 2` to type `@` instead of `٬` on Persian keyboard layouts.
+- **Zero White-Screen Startup Guard**: Wrapped inside an isolated IIFE with safe lifecycle hooks to prevent startup race conditions.
+
+---
+
+## 🚀 Installation
+
+You don't need to clone any repositories or download files manually. Simply run the command for your operating system:
 
 ### macOS
-Before running the patcher, make sure [Node.js](https://nodejs.org) is installed. You can install it from the official website, or if you already use Homebrew:
-```bash
-brew install node
-```
-Because the tool needs to modify the Antigravity application files, you must run it with `sudo`:
+Ensure [Node.js](https://nodejs.org) is installed (e.g. via Homebrew: `brew install node`). Run with `sudo` to allow patching application files:
 ```bash
 sudo npx antigravity-rtl
 ```
-> **macOS Users:** If you get a "Permission Denied" error even with sudo, ensure your terminal (e.g. Terminal, iTerm2, VS Code) has **App Management** permissions enabled in `System Settings > Privacy & Security > App Management`.
+> **macOS Users:** If you encounter a "Permission Denied" error even with `sudo`, ensure your terminal app (Terminal, iTerm2, VS Code) has **App Management** permission in `System Settings > Privacy & Security > App Management`.
 
 ### Linux
-Because the tool needs to modify the Antigravity application files, you must run it with `sudo`:
+Run with `sudo` to allow patching application files:
 ```bash
-sudo apt install nodejs npm # Skip this line if Node.js is already installed.
+sudo apt install nodejs npm # Skip if Node.js is already installed
 sudo npx antigravity-rtl
 ```
 
 ### Windows
 Open **PowerShell** as **Administrator** (Right-click -> Run as Administrator), then run:
 ```powershell
-winget install OpenJS.NodeJS.LTS # Skip this line if Node.js is already installed.
+winget install OpenJS.NodeJS.LTS # Skip if Node.js is already installed
 npx antigravity-rtl
 ```
 
 > [!WARNING]
-> **App Updates:** Since updating the Antigravity application overwrites its internal files, the RTL patch will be removed. You will need to run the installation command again after each update to re-apply the patch.
+> **Antigravity Updates:** Because updating Antigravity overwrites internal application files, the patch will be reset upon each app update. Simply re-run `npx antigravity-rtl` to re-apply the patch.
 
-## Restoring to Original (Uninstall)
+---
 
-If you ever want to revert Antigravity back to its original state (before the patch), simply run the command with the `--restore` flag:
+## 🔄 Restoring to Original (Uninstall)
+
+To revert Antigravity to its pristine factory state at any time, run the command with the `--restore` flag:
 
 ```bash
 sudo npx antigravity-rtl --restore
 ```
-*(On Windows, run without `sudo` in an Administrator terminal)*
+*(On Windows, run without `sudo` in an Administrator PowerShell window)*
 
-## How it works
+---
 
-This CLI tool:
-1. Locates your Antigravity installation.
-2. Creates a safe backup of the original `app.asar` file.
-3. Extracts the application and safely injects the Smart RTL Engine into the core logic (`utils.js`).
-4. Repacks the application so you can start using it immediately.
+## 🛠️ How It Works
 
-## Future Plans (Roadmap)
-
-- Add Right-to-Left (RTL) support for **Antigravity IDE**.
-
-## Contributing
-
-Feel free to open issues or submit pull requests. Let's make Antigravity accessible and beautiful for everyone!
+1. **Locates Installation**: Detects your Antigravity installation path across macOS, Linux, and Windows.
+2. **Safe Backup**: Creates an untouched safety backup of the original `app.asar` file.
+3. **Core Injection**: Unpacks the archive and injects the modular RTL & UI engine safely into client logic.
+4. **Repacks & Seals**: Repackages the application so changes take effect immediately upon launch.
 
 ---
 
 <div dir="rtl">
 
-# اصلاح‌کنندهٔ هوشمند راست‌به‌چپ در Antigravity
+# Persian Guide (راهنمای فارسی)
 
-یک پچِ هوشمند و زیبا برای پشتیبانی از زبان‌های راست‌به‌چپ (RTL) در نرم‌افزار [Antigravity](https://github.com/google/antigravity).
+## اصلاح‌کنندهٔ هوشمند راست‌به‌چپ و شخصی‌ساز ظاهر Antigravity
 
-این ابزارِ خط فرمان (CLI) به صورت کاملاً خودکار یک موتور پیشرفتهٔ RTL را به هستهٔ برنامهٔ آنتی‌گرویتی تزریق می‌کند تا از زبان‌های فارسی، عربی و عبری به بهترین شکل پشتیبانی شود. همچنین یک پنل تنظیماتِ (UI) برای تغییر زندهٔ فونت‌ها در اختیار شما قرار می‌دهد.
+<p align="center">
+  <img src="assets/showcase-split.png" alt="نمای تم دارک و لایت پچ آنتی‌گرویتی" width="100%">
+</p>
 
-## امکانات
+یک افزونه و پچِ هوشمند، پایدار و مدرن برای پشتیبانی بی‌نقص از زبان‌های راست‌به‌چپ (RTL) و شخصی‌سازی پیشرفته رابط کاربری در نرم‌افزار **[Antigravity](https://github.com/google/antigravity)**.
 
-- **راست‌چین هوشمند (Smart Auto-Direction)**: سیستم به طور خودکار تشخیص می‌دهد که پاراگراف شما با حرف انگلیسی شروع شده یا فارسی، و چیدمان را بر همان اساس تنظیم می‌کند.
-- **حالت راست‌چینِ اجباری (Force RTL Mode)**: دوست دارید همه چیز (حتی پیام‌های انگلیسی) کاملاً در سمت راست قرار بگیرند؟ فقط کافیست سوئیچ را روشن کنید!
-- **یکپارچگی با سایدبار (Sidebar Integration)**: دکمه تنظیمات مستقیماً در منوی سایدبار بالای بخش Settings قرار می‌گیرد (با امکان سوئیچ به آیکون شناور).
-- **باز شدن با کلیک (Click-to-Toggle)**: پنل فقط با کلیک باز می‌شود و با کلیک در بیرون صفحه یا کلید Esc بسته می‌شود (حذف مزاحمت‌های حالت هاور).
-- **سایدبار فشرده (Compact Sidebar)**: تاگل هوشمند برای آزادسازی درگ با موس تا ۱۴۰ پیکسل (عبور از محدودیت پیش‌فرض ۲۵۶ پیکسلی Antigravity) همراه با حفظ روانی کامل درگ طبیعی با موس.
-- **سفارشی‌سازی تفکیک‌شده برای دارک‌مود و لایت‌مود**: دارای دو تب مجزا برای حالت تیره (Dark Mode) و حالت روشن (Light Mode) تا رنگ پس‌زمینه، رنگ متن، کادر دور، ضخامت کادر و سایه در هر دو تم بدون تداخل و متناسب با نور محیط تنظیم شوند، همراه با کلید خاموش/روشن و بازگشت به پیش‌فرض ملایم.
-- **تنظیماتِ پیشرفتهِ فونت**: می‌توانید برای متون فارسی، متون انگلیسی و کدهای برنامه‌نویسیِ داخل چت، فونت‌های کاملاً جداگانه‌ای تعریف کنید.
-- **کنترل فاصله خطوط و اندازه قلم**: اسلایدرهای دقیق برای تنظیم ارتفاع خطوط (Line Height) و اندازه قلم (Font Size) متون چت.
-- **حل مشکل کیبورد فارسی**: این ابزار کلید ترکیبی `Shift + 2` روی کیبورد فارسی را اصلاح می‌کند تا به جای «٬» علامت `@` تایپ شود.
-- **فونت وزیرمتن**: فونت زیبای Vazirmatn Variable به صورت پیش‌فرض در این افزونه گنجانده شده است.
+این ابزار خط فرمان (CLI) بدون نیاز به کامپایل مجدد، موتور هوشمند RTL و پنل تنظیمات مدرن Vibe UI را به کلاینت Antigravity تزریق می‌کند و امکاناتی نظیر پشتیبانی کامل از زبان‌های فارسی، عربی و عبری، تم‌های مستقل تیره و روشن برای حباب پیام‌ها، سایدبار فشرده و تایپوگرافی را فراهم می‌سازد.
 
-## آموزش نصب
+---
 
-بدون نیاز به دانلود هیچ فایلی، فقط کافیست دستور زیر را در ترمینال سیستم خود اجرا کنید:
+### 🌟 امکانات و قابلیت‌های کلیدی
 
-### در مک (macOS)
-قبل از اجرای پچر، مطمئن شوید [Node.js](https://nodejs.org) روی سیستم شما نصب است. می‌توانید آن را از سایت رسمی Node.js نصب کنید، یا اگر از Homebrew استفاده می‌کنید:
-```bash
-brew install node
-```
-از آنجایی که این ابزار قرار است فایل‌های سیستمی آنتی‌گرویتی را ویرایش کند، باید حتماً دسترسی `sudo` داشته باشد:
+#### ۱. استودیو شخصی‌سازی پیام‌ها (Dual Dark/Light UI)
+- **دو تب کاملاً مستقل برای دارک‌مود و لایت‌مود**: تنظیم مجزای استایل پیام‌های کاربر در تم تیره (با افکت درخشش نئونی / Neon Glow) و تم روشن (با سایه برجسته سه‌بعدی / Elevated 3D Shadow) متناسب با نور محیط.
+- **کنتراست استاندارد WCAG AAA**: تضمین خوانایی ۱۰۰٪ متون و لیبل‌ها در هر دو تم بدون هیچ‌گونه وارونگی ناخواسته یا محو شدن متن‌ها.
+- **کنترل کامل المان‌های بصری**: شخصی‌سازی رنگ پس‌زمینه، رنگ متن، رنگ و ضخامت کادر (Border) و شدت سایه (`None`، `Soft`، `Medium`، `Glow`).
+- **همگام‌سازی کادر ورودی چت**: هماهنگی خودکار استایل و بوردر کادر ورودی پیام‌ها (Chat Input Box) با حباب پیام کاربر.
+- **استقلال کامل از موتور RTL**: استایل‌های ظاهری در تگ اختصاصی تفکیک شده و حتی در صورت خاموش کردن موتور RTL کاملاً فعال و دست‌نخورده باقی می‌مانند.
+
+<p align="center">
+  <img src="assets/tab-switch.gif" alt="انیمیشن سوییچ نرم بین تب‌ها" width="85%">
+</p>
+
+#### ۲. یکپارچگی ارگونومیک با سایدبار و حالت فشرده (Compact 140px)
+- **جای‌گیری شیک در سایدبار بالای Settings**: دکمه تنظیمات مستقیماً در سایدبار اصلی و در بالای آیکون Settings قرار می‌گیرد تا میز کار همیشه خلوت بماند (همراه با قابلیت بازگشت به آیکون شناور).
+- **درگ کاملاً روان و طبیعی موس**: حذف محدودیت‌های صلب CSS و احیای کامل درگ آزاد موس بین ۱۴۰ تا ۶۰۰ پیکسل.
+- **سایدبار فشرده (Compact 140px)**: امکان کوچک کردن سایدبار تا ۱۴۰ پیکسل (فراتر از محدودیت پیش‌فرض ۲۵۶ پیکسلی نرم‌افزار) همراه با تراز پین‌شده به چپ جهت رفع کامل باگ بریده شدن متون.
+- **باز شدن با کلیک (Click-to-Toggle)**: حذف باز شدن‌های ناخواسته هنگام عبور موس؛ پنل صرفاً با کلیک باز شده و با کلیک بیرون یا کلید `Esc` بسته می‌شود.
+
+<p align="center">
+  <img src="assets/sidebar-placement.png" alt="قرارگیری در سایدبار بالای تنظیمات" width="480">
+</p>
+
+#### ۳. موتور هوشمند RTL و تایپوگرافی
+- **راست‌چین خودکار پاراگراف‌ها (Smart Auto-Direction)**: تشخیص هوشمند زبان هر پاراگراف؛ متون فارسی راست‌چین و تکه‌های کد یا انگلیسی چپ‌چین و تراز باقی می‌مانند.
+- **حالت راست‌چین اجباری (Force RTL)**: هدایت کلیه پیام‌ها به سمت راست تنها با فشردن یک کلید.
+- **فونت وزیرمتن توکار**: گنجانده شدن فونت استاندارد و زیبای Vazirmatn Variable برای بالاترین سطح خوانایی.
+- **تفکیک فونت‌ها**: امکان تعیین فونت اختصاصی و جداگانه برای متون فارسی، انگلیسی و بلاک‌های کد.
+- **اسلایدرهای دقیق تایپوگرافی**: تنظیم فاصله خطوط (Line Height) و اندازه قلم (Font Size) پیام‌های چت به صورت زنده.
+- **حل مشکل کیبورد فارسی**: نگاشت خودکار کلید ترکیبی `Shift + 2` برای تایپ کاراکتر `@` به جای «٬» در چیدمان فارسی.
+- **محافظ ضد صفحه سفید استارت‌آپ**: اجرای ایزوله و امن در قالب IIFE با لودینگ منعطف در چرخه حیات کلاینت.
+
+---
+
+### 💻 آموزش نصب و استفاده
+
+بدون نیاز به دانلود فایل یا کلون کردن مخزن، دستور متناسب با سیستم‌عامل خود را در ترمینال اجرا کنید:
+
+#### در مک (macOS)
+مطمئن شوید [Node.js](https://nodejs.org) روی سیستم نصب است (مثلاً با دستور `brew install node`). سپس دستور زیر را با `sudo` اجرا نمایید:
 ```bash
 sudo npx antigravity-rtl
 ```
-> **کاربران مک (macOS):** اگر با وجود استفاده از sudo باز هم خطای Permission Denied دریافت کردید، باید به ترمینال خود (مثل Terminal، iTerm2 یا VS Code) دسترسی **App Management** بدهید. برای این کار به مسیر `System Settings > Privacy & Security > App Management` بروید و دسترسی ترمینال خود را فعال کنید.
+> **کاربران مک:** در صورت مواجهه با خطای عدم دسترسی حتی با وجود `sudo`، دسترسی **App Management** را در مسیر `System Settings > Privacy & Security > App Management` برای نرم‌افزار ترمینال خود فعال کنید.
 
-### در لینوکس
-از آنجایی که این ابزار قرار است فایل‌های سیستمی آنتی‌گرویتی را ویرایش کند، باید حتماً دسترسی `sudo` داشته باشد:
+#### در لینوکس
 ```bash
-sudo apt install nodejs npm # اگر Node.js از قبل نصب است، این خط را رد کنید.
+sudo apt install nodejs npm # در صورت نصب بودن نود جی‌اس این خط را رد کنید
 sudo npx antigravity-rtl
 ```
 
-### در ویندوز
-برنامهٔ **PowerShell** را در حالت **Administrator** (راست‌کلیک -> Run as Administrator) باز کنید و دستور زیر را بنویسید:
+#### در ویندوز
+برنامه **PowerShell** را در حالت **Administrator** (راست‌کلیک -> Run as Administrator) باز کرده و دستور زیر را اجرا کنید:
 ```powershell
-winget install OpenJS.NodeJS.LTS # اگر Node.js از قبل نصب است، این خط را رد کنید.
+winget install OpenJS.NodeJS.LTS # در صورت نصب بودن نود جی‌اس این خط را رد کنید
 npx antigravity-rtl
 ```
 
 > [!WARNING]
-> **به‌روزرسانی برنامه:** از آنجا که آپدیت کردنِ برنامهٔ آنتی‌گرویتی کدهای آن را بازنویسی می‌کند، پچِ اعمال‌شده از بین خواهد رفت و لازم است پس از هر بار آپدیت، دستور نصب را مجدداً اجرا کنید.
+> **به‌روزرسانی نرم‌افزار:** از آنجا که آپدیت‌های Antigravity فایل‌های داخلی برنامه را بازنویسی می‌کنند، پچ با هر بار آپدیت نرم‌افزار ریست می‌شود. پس از هر آپدیت کافیست دستور `npx antigravity-rtl` را مجدداً اجرا کنید.
 
-## بازگردانی به حالت اولیه (Uninstall)
+---
 
-اگر زمانی خواستید آنتی‌گرویتی را به حالتِ کارخانه (قبل از نصب این پچ) برگردانید، فقط کافیست دستور بالا را با فلگ `--restore` اجرا کنید:
+### 🔄 بازگردانی به حالت اولیه کارخانه (Uninstall)
+
+برای برگرداندن Antigravity به وضعیت دست‌نخورده قبل از پچ، از فلگ `--restore` استفاده کنید:
 
 ```bash
 sudo npx antigravity-rtl --restore
 ```
-*(کاربران ویندوز این دستور را بدون `sudo` و در یک ترمینال ادمین اجرا کنند)*
+*(در ویندوز دستور فوق را بدون `sudo` در ترمینال ادمین اجرا کنید)*
 
-## این ابزار چگونه کار می‌کند؟
+---
 
-1. ابزار به صورت خودکار محل نصب آنتی‌گرویتی را روی سیستم شما پیدا می‌کند.
-2. یک نسخهٔ پشتیبانِ امن از فایل اوریجینالِ `app.asar` تهیه می‌کند.
-3. فایل را استخراج کرده و کدهای موتورِ RTL را به ایمن‌ترین شکل ممکن به هستهٔ برنامه تزریق می‌کند.
-4. در نهایت برنامه را مجدداً بسته‌بندی می‌کند تا بتوانید بلافاصله از آن لذت ببرید.
+### 🤝 مشارکت در توسعه (Contributing)
 
-## کارهای آینده (Roadmap)
-
-- اضافه کردن قابلیت حل مشکل راست‌به‌چپ برای **Antigravity IDE**.
-
-## مشارکت در توسعه
-
-با کمال میل از نظرات، گزارشِ باگ‌ها و Pull Request های شما استقبال می‌شود. 
+با کمال میل از نظرات، پیشنهادات، گزارش باگ‌ها و ارسال Pull Request استقبال می‌شود.
 
 </div>
