@@ -870,7 +870,12 @@ win.webContents.on('dom-ready', () => {
                     :root, :host, html, body {
                         font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
                     }
-                    .prose, [data-testid="chat-message"], .markdown-body, .leading-relaxed, [contenteditable="true"], [contenteditable="true"] p {
+                    .prose, .prose p, .prose li, .prose span:not(.font-mono),
+                    [data-testid="chat-message"], [data-testid="chat-message"] p, [data-testid="chat-message"] li,
+                    .markdown-body, .markdown-body p, .markdown-body li,
+                    .leading-relaxed, .leading-relaxed p, .leading-relaxed li,
+                    [data-testid="user-input-step"], [data-testid="user-input-step"] div, [data-testid="user-input-step"] p, [data-testid="user-input-step"] .whitespace-pre-wrap,
+                    [contenteditable="true"], [contenteditable="true"] p, [data-lexical-text="true"] {
                         font-size: \${fs}px !important;
                     }
                     p, h1, h2, h3, h4, h5, h6, ul, ol {
@@ -944,7 +949,7 @@ win.webContents.on('dom-ready', () => {
                         text-align: start !important;
                     }
                     /* Apply line height exclusively to chat paragraphs and input area */
-                    .prose p, .prose li, .markdown-body p, [data-testid="chat-message"] p, [data-testid="chat-message"] .leading-relaxed, .leading-relaxed, [data-testid="user-input-step"], [data-testid="user-input-step"] div, [data-lexical-text="true"], [contenteditable="true"], [contenteditable="true"] p, .pointer-events-none.absolute.overflow-hidden, label[for^="ask-opt-"] {
+                    .prose p, .prose li, .markdown-body p, [data-testid="chat-message"] p, [data-testid="chat-message"] .leading-relaxed, .leading-relaxed, .leading-relaxed p, .leading-relaxed li, [data-testid="user-input-step"], [data-testid="user-input-step"] div, [data-testid="user-input-step"] p, [data-testid="user-input-step"] .whitespace-pre-wrap, [data-lexical-text="true"], [contenteditable="true"], [contenteditable="true"] p, .pointer-events-none.absolute.overflow-hidden, label[for^="ask-opt-"] {
                         line-height: \${lh} !important;
                     }
                 \`;
@@ -1144,8 +1149,9 @@ win.webContents.on('dom-ready', () => {
                                     <span class="font-medium text-xs opacity-80">Line Height</span>
                                     <div class="flex items-center gap-1.5">
                                         <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                        <button id="rtl-lh-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset (1.6)">
-                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        <span id="rtl-lh-val" class="rtl-badge-val">\${savedLH}</span>
+                                        <button id="rtl-lh-reset" type="button" class="rtl-reset-icon-btn" title="Reset (1.6)">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                                         </button>
                                     </div>
                                 </div>
@@ -1153,8 +1159,9 @@ win.webContents.on('dom-ready', () => {
                                     <span class="font-medium text-xs opacity-80">Font Size</span>
                                     <div class="flex items-center gap-1.5">
                                         <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="h-1 w-20 cursor-pointer" style="accent-color: #3b82f6;">
-                                        <button id="rtl-fs-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset (16px)">
-                                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                                        <span id="rtl-fs-val" class="rtl-badge-val">\${savedFS}px</span>
+                                        <button id="rtl-fs-reset" type="button" class="rtl-reset-icon-btn" title="Reset (16px)">
+                                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                                         </button>
                                     </div>
                                 </div>
@@ -1302,7 +1309,6 @@ win.webContents.on('dom-ready', () => {
                 // Append widget wrapper to document.body
                 document.body.appendChild(widgetWrapper);
                 bindWidgetControls();
-            }
 
             function bindWidgetControls() {
                 // References
@@ -1398,8 +1404,10 @@ win.webContents.on('dom-ready', () => {
             const enFontInput = document.getElementById('rtl-enfont-input');
             const codeFontInput = document.getElementById('rtl-codefont-input');
             const lhInput = document.getElementById('rtl-lh-input');
+            const lhVal = document.getElementById('rtl-lh-val');
             const lhResetBtn = document.getElementById('rtl-lh-reset');
             const fsInput = document.getElementById('rtl-fs-input');
+            const fsVal = document.getElementById('rtl-fs-val');
             const fsResetBtn = document.getElementById('rtl-fs-reset');
             const atBtn = document.getElementById('rtl-at-btn');
             const atKnob = document.getElementById('rtl-at-knob');
@@ -1893,25 +1901,50 @@ win.webContents.on('dom-ready', () => {
                 }
             });
 
-            [faFontInput, enFontInput, codeFontInput, lhInput, fsInput].forEach(inp => {
-                inp.addEventListener('input', () => {
+            [faFontInput, enFontInput, codeFontInput].forEach(inp => {
+                if (inp) {
+                    inp.addEventListener('input', () => {
+                        saveConfig();
+                        refreshStyles();
+                    });
+                }
+            });
+
+            if (lhInput) {
+                lhInput.addEventListener('input', () => {
+                    if (lhVal) lhVal.textContent = lhInput.value;
                     saveConfig();
                     refreshStyles();
                 });
-            });
+            }
 
-            lhResetBtn.addEventListener('click', () => {
-                lhInput.value = '1.6';
-                saveConfig();
-                refreshStyles();
-            });
+            if (fsInput) {
+                fsInput.addEventListener('input', () => {
+                    if (fsVal) fsVal.textContent = fsInput.value + 'px';
+                    saveConfig();
+                    refreshStyles();
+                });
+            }
 
-            fsResetBtn.addEventListener('click', () => {
-                fsInput.value = '16';
-                saveConfig();
-                refreshStyles();
-            });
+            if (lhResetBtn) {
+                lhResetBtn.addEventListener('click', () => {
+                    if (lhInput) lhInput.value = '1.6';
+                    if (lhVal) lhVal.textContent = '1.6';
+                    saveConfig();
+                    refreshStyles();
+                });
+            }
+
+            if (fsResetBtn) {
+                fsResetBtn.addEventListener('click', () => {
+                    if (fsInput) fsInput.value = '16';
+                    if (fsVal) fsVal.textContent = '16px';
+                    saveConfig();
+                    refreshStyles();
+                });
+            }
         }
+    }
 
             // Initialize after defining all controllers
             // =========================================================================
