@@ -17,11 +17,16 @@ win.webContents.on('console-message', (event, ...args) => {
     void win.loadURL(url);
     
     win.webContents.on('dom-ready', () => {
+        // Strict Guard: only inject into local application server
+        const currentURL = win.webContents.getURL();
+        if (!currentURL || !/^https?:\/\/127\.0\.0\.1:\d+/i.test(currentURL)) {
+            return;
+        }
         try {
             const fontPath = require('path').join(__dirname, 'Vazirmatn-Variable.woff2');
             const fontBase64 = require('fs').readFileSync(fontPath).toString('base64');
             // Read config
-            let rtlConfig = { faFont: '', enFont: '', codeFont: '', lh: '1.6', isRTL: true, forceRTL: false, fixAtSign: true };
+            let rtlConfig = { faFont: '', enFont: '', codeFont: '', lh: '1.6', isRTL: true, forceRTL: false };
             try {
                 const configPath = require('path').join(require('os').homedir(), '.antigravity-rtl.json');
                 if (require('fs').existsSync(configPath)) {
@@ -31,77 +36,72 @@ win.webContents.on('console-message', (event, ...args) => {
             } catch (e) {}
 
             // Unified injection for RTL Toggle, CSS, and JS
-            win.webContents.executeJavaScript(`
-                const fontBase64 = '${fontBase64}';
+            win.webContents.executeJavaScript(`(() => {
+                if (window.__ANTIGRAVITY_RTL_LOADED__) return;
+                window.__ANTIGRAVITY_RTL_LOADED__ = true;
+
+                // 🛡️ True App-Ready Guard: ensures React mounted the UI shell before touching DOM
+                function isAntigravityReady() {
+                    try {
+                        if (!document || !document.body) return false;
+                        const root = document.getElementById('root');
+                        if (!root || !root.children || root.children.length === 0) return false;
+                        return Boolean(document.querySelector('[role="navigation"]') || 
+                                       document.querySelector('[role="main"]') || 
+                                       document.querySelector('[contenteditable="true"]'));
+                    } catch (_) {
+                        return false;
+                    }
+                }
+
+                function init() {
+                    const fontBase64 = '${fontBase64}';
                 const rtlConfig = ${JSON.stringify(rtlConfig)};
                 
                 // 2. Observer Logic
                 let isRTL = rtlConfig.isRTL;
                 let forceRTL = rtlConfig.forceRTL || false;
-                let fixAtSign = rtlConfig.fixAtSign !== false;
                 
                 // Inject permanent widget styles
                 if (!document.getElementById('rtl-widget-style')) {
                     let widgetStyle = document.createElement('style');
                     widgetStyle.id = 'rtl-widget-style';
                     widgetStyle.innerHTML = \`
-                        .rtl-tooltip {
-                            visibility: hidden;
-                            opacity: 0;
-                            transition: opacity 0.2s ease-in-out;
-                            pointer-events: none;
+                        #rtl-dropdown-panel {
+                            transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
                         }
-                        .rtl-info-icon:hover .rtl-tooltip {
-                            visibility: visible;
-                            opacity: 1;
-                        }
-                        .rtl-widget-panel {
-                            transform: scale(0);
-                            opacity: 0;
-                            pointer-events: none;
-                            transition: all 0.3s;
-                            transform-origin: bottom right;
-                        }
-                        .rtl-widget-container:hover .rtl-widget-trigger {
-                            opacity: 0 !important;
-                            transform: scale(0.5) !important;
-                            pointer-events: none !important;
-                        }
-                        .rtl-widget-container:hover .rtl-widget-panel {
-                            transform: scale(1) !important;
-                            opacity: 1 !important;
-                            pointer-events: auto !important;
-                        }
-                        /* Theme Colors */
-                        :root {
-                            --rtl-bg: #ffffff;
-                            --rtl-text: #111827;
-                            --rtl-border: #e5e7eb;
-                            --rtl-input-bg: #f3f4f6;
-                        }
-                        :root.dark, .dark {
-                            --rtl-bg: #1e293b;
-                            --rtl-text: #f3f4f6;
-                            --rtl-border: #334155;
-                            --rtl-input-bg: #334155;
-                        }
-                        @media (prefers-color-scheme: dark) {
-                            :root:not(.light) {
-                                --rtl-bg: #1e293b;
-                                --rtl-text: #f3f4f6;
-                                --rtl-border: #334155;
-                                --rtl-input-bg: #334155;
-                            }
-                        }
+                        /* Native Antigravity Theme Tokens */
                         .rtl-theme-panel {
-                            background-color: var(--rtl-bg) !important;
-                            color: var(--rtl-text) !important;
-                            border: 1px solid var(--rtl-border) !important;
+                            background-color: var(--popover, var(--card, #18181b)) !important;
+                            color: var(--popover-foreground, var(--foreground, #f4f4f5)) !important;
+                            border: 1px solid var(--border, rgba(255, 255, 255, 0.1)) !important;
+                            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.15), 0 2px 4px -2px rgba(0, 0, 0, 0.1) !important;
+                        }
+                        .rtl-separator {
+                            height: 1px !important;
+                            background-color: var(--border, rgba(255, 255, 255, 0.1)) !important;
+                            margin: 8px -12px !important;
+                            width: calc(100% + 24px) !important;
+                            box-sizing: border-box !important;
                         }
                         .rtl-theme-input {
-                            background-color: var(--rtl-input-bg) !important;
-                            color: var(--rtl-text) !important;
-                            border: 1px solid var(--rtl-border) !important;
+                            font-size: 12px !important;
+                            border-radius: 4px !important;
+                            padding: 4px 8px !important;
+                            height: 24px !important;
+                            background-color: var(--muted, #27272a) !important;
+                            color: var(--foreground, #f4f4f5) !important;
+                            border: 1px solid var(--border, rgba(255, 255, 255, 0.15)) !important;
+                            box-shadow: none !important;
+                            transition: all 0.15s ease !important;
+                        }
+                        .rtl-theme-input:focus {
+                            outline: none !important;
+                            box-shadow: none !important;
+                            border-color: var(--color-primary, var(--ring, var(--vscode-button-background, #3b82f6))) !important;
+                        }
+                        .rtl-theme-input::placeholder {
+                            color: var(--placeholder, rgba(255, 255, 255, 0.4)) !important;
                         }
                         /* Missing Tailwind Utilities */
                         .w-11 { width: 44px !important; }
@@ -110,7 +110,46 @@ win.webContents.on('console-message', (event, ...args) => {
                         .h-4 { height: 16px !important; }
                         .translate-x-6 { transform: translateX(20px) !important; }
                         .translate-x-1 { transform: translateX(4px) !important; }
-                        .bg-accent { background-color: #4f46e5 !important; }
+                        .bg-accent { background-color: var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) !important; }
+                        /* Modern Seamless Range Slider */
+                        .rtl-theme-range {
+                            -webkit-appearance: none !important;
+                            appearance: none !important;
+                            width: 80px !important;
+                            height: 14px !important;
+                            background: transparent !important;
+                            cursor: pointer !important;
+                            outline: none !important;
+                            border: none !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
+                        }
+                        .rtl-theme-range::-webkit-slider-runnable-track {
+                            width: 100% !important;
+                            height: 5px !important;
+                            border-radius: 9999px !important;
+                            border: none !important;
+                            box-shadow: none !important;
+                            background: linear-gradient(
+                                to right,
+                                var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) 0%,
+                                var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) var(--range-pct, 50%),
+                                var(--muted, rgba(255, 255, 255, 0.15)) var(--range-pct, 50%),
+                                var(--muted, rgba(255, 255, 255, 0.15)) 100%
+                            ) !important;
+                        }
+                        .rtl-theme-range::-webkit-slider-thumb {
+                            -webkit-appearance: none !important;
+                            appearance: none !important;
+                            width: 13px !important;
+                            height: 13px !important;
+                            border-radius: 50% !important;
+                            background: var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) !important;
+                            border: 2px solid var(--popover, var(--card, #18181b)) !important;
+                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+                            cursor: pointer !important;
+                            margin-top: -4px !important;
+                        }
                         
                         /* Toggle Button CSS Reset */
                         .rtl-toggle-btn-reset {
@@ -121,6 +160,92 @@ win.webContents.on('console-message', (event, ...args) => {
                             outline: none !important;
                             display: inline-flex !important;
                             align-items: center !important;
+                        }
+                        
+                        /* Shortcut KBD Badge */
+                        .rtl-kbd {
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            justify-content: center !important;
+                            min-width: 17px !important;
+                            height: 17px !important;
+                            padding: 0 4px !important;
+                            font-size: 10px !important;
+                            font-weight: 600 !important;
+                            line-height: 1 !important;
+                            color: var(--muted-foreground, #a1a1aa) !important;
+                            background-color: var(--muted, rgba(255, 255, 255, 0.08)) !important;
+                            border: 1px solid var(--border, rgba(255, 255, 255, 0.15)) !important;
+                            border-radius: 4px !important;
+                            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2) !important;
+                        }
+                        
+                        /* RTL Tooltips */
+                        [data-rtl-tooltip] {
+                            position: relative;
+                            display: inline-flex;
+                            align-items: center;
+                        }
+                        [data-rtl-tooltip]::after {
+                            content: attr(data-rtl-tooltip);
+                            position: absolute;
+                            bottom: calc(100% + 7px);
+                            left: 50%;
+                            transform: translate(-50%, 2px);
+                            background-color: var(--secondary, #2a2c33) !important;
+                            color: var(--secondary-foreground, #f4f4f5) !important;
+                            border: 1px solid var(--border, rgba(255, 255, 255, 0.18)) !important;
+                            font-family: ui-sans-serif, system-ui, -apple-system, sans-serif !important;
+                            font-size: 11px;
+                            font-weight: 500;
+                            line-height: 1.35;
+                            padding: 5px 9px;
+                            border-radius: 6px;
+                            white-space: normal;
+                            width: max-content;
+                            max-width: 190px;
+                            text-align: center;
+                            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+                            pointer-events: none;
+                            opacity: 0;
+                            visibility: hidden;
+                            transition: opacity 0.12s ease, transform 0.12s ease;
+                            z-index: 10000000;
+                        }
+                        [data-rtl-tooltip]:not([data-rtl-tooltip-pos])::before {
+                            content: '';
+                            position: absolute;
+                            bottom: calc(100% + 2px);
+                            left: 50%;
+                            transform: translate(-50%, 2px);
+                            border-width: 5px 5px 0 5px;
+                            border-style: solid;
+                            border-color: var(--secondary, #2a2c33) transparent transparent transparent;
+                            opacity: 0;
+                            visibility: hidden;
+                            transition: opacity 0.12s ease, transform 0.12s ease;
+                            z-index: 10000001;
+                            pointer-events: none;
+                        }
+                        [data-rtl-tooltip]:hover::after {
+                            opacity: 1 !important;
+                            visibility: visible !important;
+                            transform: translate(-50%, 0) !important;
+                        }
+                        [data-rtl-tooltip]:not([data-rtl-tooltip-pos]):hover::before {
+                            opacity: 1 !important;
+                            visibility: visible !important;
+                            transform: translate(-50%, 0) !important;
+                        }
+                        [data-rtl-tooltip-pos="left"]::after {
+                            left: auto;
+                            right: 0;
+                            transform: translateY(2px);
+                        }
+                        [data-rtl-tooltip-pos="left"]:hover::after {
+                            opacity: 1 !important;
+                            visibility: visible !important;
+                            transform: translateY(0) !important;
                         }
                         
                         /* GitHub Link Hover */
@@ -172,7 +297,7 @@ win.webContents.on('console-message', (event, ...args) => {
                     let enFontStr = enFont ? \`'\${enFont}', ui-sans-serif, system-ui, sans-serif\` : 'ui-sans-serif, system-ui, sans-serif';
                     let codeFontStr = codeFont ? \`'\${codeFont}', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace\` : 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
                     
-                    let forceRtlStyle = forceRTL ? \`
+                    let forceRtlStyle = (isRTL && forceRTL) ? \`
                         .prose > *:not(pre):not(code), 
                         [data-testid="chat-message"] > *:not(pre):not(code), 
                         .markdown-body > *:not(pre):not(code), 
@@ -250,8 +375,9 @@ win.webContents.on('console-message', (event, ...args) => {
                         
                         /* Custom CSS removed to rely on Tailwind completely */
                         
-                        /* Code Blocks */
-                        pre, code, pre *, code * {
+                        /* Code Blocks & Terminal */
+                        pre, code, pre *, code *,
+                        .xterm, .xterm * {
                             unicode-bidi: isolate !important;
                             direction: ltr !important;
                             text-align: left !important;
@@ -278,10 +404,18 @@ win.webContents.on('console-message', (event, ...args) => {
                             line-height: \${lh} !important;
                         }
                     \`;
+                    if (isRTL) {
+                        if (!rtlStyle.parentNode) document.head.appendChild(rtlStyle);
+                    } else {
+                        if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
+                    }
+                    window.dispatchEvent(new Event('resize'));
                 };
                 
-                document.head.appendChild(rtlStyle);
-                updateDynamicCSS(savedFaFont, savedEnFont, savedCodeFont, savedLH, savedFS);
+                if (isRTL) {
+                    document.head.appendChild(rtlStyle);
+                    updateDynamicCSS(savedFaFont, savedEnFont, savedCodeFont, savedLH, savedFS);
+                }
                 
                 // 2. Input Observer Logic
                 function updateDir() {
@@ -347,173 +481,161 @@ win.webContents.on('console-message', (event, ...args) => {
                     }
                 });
                 
-                // Keyboard layout fixes
-                document.addEventListener('keydown', (e) => {
-                    if (!fixAtSign) return;
-                    // Intercept Shift + 2 in Persian keyboard
-                    if (e.code === 'Digit2' && e.shiftKey) {
-                        if (e.key === '٬' || e.key === '،') {
-                            e.preventDefault();
-                            document.execCommand('insertText', false, '@');
-                        }
-                    }
-                }, { capture: true });                // 3. Create Floating Widget
+                const isMac = /Mac/i.test(navigator.userAgent || navigator.platform);
+                const shortcutKbdHtml = isMac 
+                    ? '<span class="flex items-center gap-1"><kbd class="rtl-kbd">⌥</kbd><kbd class="rtl-kbd">R</kbd></span>'
+                    : '<span class="flex items-center gap-0.5"><kbd class="rtl-kbd">Alt</kbd><span class="opacity-40 text-[9px] mx-0.5">+</span><kbd class="rtl-kbd">R</kbd></span>';
+
+                // 3. Create Topbar Widget Trigger
                 const widgetWrapper = document.createElement('div');
+                widgetWrapper.id = 'rtl-topbar-wrapper';
+                widgetWrapper.className = 'relative inline-flex items-center';
+                widgetWrapper.style.appRegion = 'no-drag';
                 widgetWrapper.innerHTML = \`
-                    <div class="rtl-widget-container group fixed bottom-4 right-4 w-10 h-10" style="direction: ltr; z-index: 999999; overflow: visible !important;">
-                      <!-- Trigger Icon -->
-                      <div class="rtl-widget-trigger relative w-10 h-10 flex items-center justify-center rounded-full bg-secondary text-secondary-foreground hover:text-foreground cursor-pointer opacity-80 transition-all duration-300">
-                        <svg height="20" width="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                    <!-- Topbar Button (Twin of Install IDE button) -->
+                    <button id="rtl-topbar-btn" type="button" class="inline-flex items-center font-medium transition-colors select-none outline-none cursor-pointer justify-center border border-border bg-transparent text-secondary-foreground hover:text-foreground hover:bg-secondary h-6 text-[13px] rounded-md gap-1.5 px-2 whitespace-nowrap" style="app-region: no-drag;" title="Antigravity RTL (\${isMac ? '⌥R' : 'Alt+R'})"><span class="relative flex items-center justify-center shrink-0" style="width: 14px; height: 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg><span id="rtl-status-dot" class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full \${isRTL ? 'bg-emerald-500' : 'hidden'}"></span></span><span>RTL</span></button>
+                \`;
+
+                // 4. Create Dropdown Panel (Portaled to document.body to escape topbar overflow:hidden)
+                const dropdownPanel = document.createElement('div');
+                dropdownPanel.id = 'rtl-dropdown-panel';
+                dropdownPanel.className = 'rtl-theme-panel fixed flex flex-col rounded-lg text-sm w-64 origin-top-right scale-0 opacity-0 pointer-events-none p-3';
+                dropdownPanel.style.direction = 'ltr';
+                dropdownPanel.style.zIndex = '999999';
+                dropdownPanel.innerHTML = \`
+                    <!-- Header -->
+                    <div class="flex items-center justify-between pb-1">
+                      <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Antigravity RTL</span>
+                      \${shortcutKbdHtml}
+                    </div>
+                    
+                    <div class="rtl-separator"></div>
+                    
+                    <!-- Toggles Category (Enable & Force RTL) -->
+                    <div class="flex flex-col gap-1.5">
+                      <!-- Enable Toggle -->
+                      <div class="flex items-center justify-between gap-4 px-1 h-7">
+                        <span id="rtl-toggle-label" class="font-medium text-xs opacity-90">\${isRTL ? 'Enabled' : 'Disabled'}</span>
+                        <button id="rtl-toggle-btn" type="button" role="switch" aria-checked="\${isRTL}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${isRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                          <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
+                        </button>
+                      </div>
+
+                      <!-- Force RTL Toggle -->
+                      <div id="rtl-force-row" class="flex items-center justify-between gap-2 px-1 h-7 transition-opacity \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
+                        <div class="flex items-center">
+                          <span class="font-medium text-xs opacity-80 whitespace-nowrap">Force RTL</span>
+                          <span class="cursor-pointer inline-flex items-center text-muted-foreground hover:text-foreground ml-1.5" data-rtl-tooltip="Forces Chat &amp; Artifacts to RTL layout even if paragraph starts with English">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 -960 960 960" fill="currentColor"><path d="M450-290h60V-520H450v230Zm52.92-307.75q9.38-9.29 9.38-23.02t-9.29-23.02T480-653.07t-23.02,9.29t-9.29,23.02t9.38,23.02T480-588.46t22.92-9.29ZM480.07-100q-78.84,0-148.2-29.92T211.18-211.13T129.93-331.76T100-479.93t29.92-148.2t81.21-120.68t120.63-81.25T479.93-860t148.2,29.92t120.68,81.21t81.25,120.63T860-480.07t-29.92,148.2T748.87-211.18T628.24-129.93T480.07-100ZM480-160q134,0 227-93t93-227T707-707T480-800T253-707T160-480t93,227t227,93Zm0-320Z"></path></svg>
+                          </span>
+                        </div>
+                        <button id="rtl-force-btn" type="button" role="switch" aria-checked="\${forceRTL}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
+                          <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${forceRTL ? '24px' : '4px'});"></span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="rtl-separator"></div>
+                    
+                    <!-- Grouped Settings -->
+                    <div id="rtl-settings-wrapper" class="flex flex-col gap-1.5 transition-all duration-300 \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
+                      
+                      <!-- Persian Font -->
+                      <!-- Tooltip example if needed later: <span class="font-medium text-xs opacity-80 whitespace-nowrap cursor-help" data-rtl-tooltip="Fallback: Vazirmatn">FA/AR Font</span> -->
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">FA/AR Font</span>
+                        <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
                       </div>
                       
-                      <!-- Panel -->
-                      <div class="rtl-widget-panel rtl-theme-panel absolute bottom-0 right-0 flex flex-col p-px rounded-2xl text-sm w-60">
-                        <div class="flex flex-col gap-2 p-3 rounded-[15px] w-full h-full">
-                        
-                        <!-- Header -->
-                        <div class="text-center px-1 pb-2 mb-1 border-b border-border border-opacity-50">
-                            <span class="text-base font-semibold">Antigravity Smart RTL</span>
-                        </div>
-                        
-                        <!-- Toggle -->
-                        <div class="flex items-center justify-between gap-4 px-1">
-                          <div class="flex items-center">
-                            <span id="rtl-toggle-label" class="font-medium text-xs opacity-80">\${isRTL ? 'Enabled' : 'Disabled'}</span>
-                            <div class="relative flex items-center rtl-info-icon ml-1">
-                              <span class="cursor-pointer inline-flex items-center text-muted-foreground hover:text-foreground">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" class="w-3.5 h-3.5"><path d="M450-290h60V-520H450v230Zm52.92-307.75q9.38-9.29 9.38-23.02t-9.29-23.02T480-653.07t-23.02,9.29t-9.29,23.02t9.38,23.02T480-588.46t22.92-9.29ZM480.07-100q-78.84,0-148.2-29.92T211.18-211.13T129.93-331.76T100-479.93t29.92-148.2t81.21-120.68t120.63-81.25T479.93-860t148.2,29.92t120.68,81.21t81.25,120.63T860-480.07t-29.92,148.2T748.87-211.18T628.24-129.93T480.07-100ZM480-160q134,0 227-93t93-227T707-707T480-800T253-707T160-480t93,227t227,93Zm0-320Z"></path></svg>
-                              </span>
-                              <!-- Tooltip Popup -->
-                              <div class="rtl-tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-1.5 rounded shadow-md z-50 whitespace-normal text-center bg-muted border border-border text-foreground text-[11px] leading-relaxed">
-                                Shortcut: Alt + R
-                                <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0" style="border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid var(--border, #444);"></div>
-                                <div class="absolute top-[calc(100%-1px)] left-1/2 -translate-x-1/2 w-0 h-0" style="border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--muted, #333);"></div>
-                              </div>
-                            </div>
-                          </div>
-                          <button id="rtl-toggle-btn" type="button" role="switch" aria-checked="true" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 bg-accent cursor-pointer">
-                            <span id="rtl-toggle-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${isRTL ? '24px' : '4px'});"></span>
+                      <!-- English Font -->
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">EN Font</span>
+                        <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
+                      </div>
+                      
+                      <!-- Code Font -->
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">Code Font</span>
+                        <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
+                      </div>
+                      
+                      <!-- Line Height -->
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">Line Height</span>
+                        <div class="flex items-center gap-2">
+                          <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="rtl-theme-range w-20 cursor-pointer">
+                          <button id="rtl-lh-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" data-rtl-tooltip="Reset to 1.6" data-rtl-tooltip-pos="left">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                           </button>
                         </div>
-                        
-                        <!-- Grouped Settings -->
-                        <div id="rtl-settings-wrapper" class="flex flex-col gap-2 transition-all duration-300 \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
-                            <!-- Force RTL Toggle -->
-                            <div class="flex items-center justify-between gap-2 px-1 mt-1">
-                              <div class="flex items-center">
-                                <span class="font-medium text-xs opacity-80 whitespace-nowrap">Force RTL</span>
-                                <div class="relative flex items-center rtl-info-icon ml-1">
-                                  <span class="cursor-pointer inline-flex items-center text-muted-foreground hover:text-foreground">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 -960 960 960" fill="currentColor" class="w-3.5 h-3.5"><path d="M450-290h60V-520H450v230Zm52.92-307.75q9.38-9.29 9.38-23.02t-9.29-23.02T480-653.07t-23.02,9.29t-9.29,23.02t9.38,23.02T480-588.46t22.92-9.29ZM480.07-100q-78.84,0-148.2-29.92T211.18-211.13T129.93-331.76T100-479.93t29.92-148.2t81.21-120.68t120.63-81.25T479.93-860t148.2,29.92t120.68,81.21t81.25,120.63T860-480.07t-29.92,148.2T748.87-211.18T628.24-129.93T480.07-100ZM480-160q134,0 227-93t93-227T707-707T480-800T253-707T160-480t93,227t227,93Zm0-320Z"></path></svg>
-                                  </span>
-                                  <!-- Tooltip Popup -->
-                                  <div class="rtl-tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-52 p-2 rounded shadow-md z-50 whitespace-normal text-center bg-muted border border-border text-foreground text-[11px] leading-relaxed">
-                                    Forces Chat and Artifact Viewer to RTL layout, even if the paragraph starts with an English word.
-                                    <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0" style="border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid var(--border, #444);"></div>
-                                    <div class="absolute top-[calc(100%-1px)] left-1/2 -translate-x-1/2 w-0 h-0" style="border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--muted, #333);"></div>
-                                  </div>
-                                </div>
-                              </div>
-                              <button id="rtl-force-btn" type="button" role="switch" aria-checked="\${forceRTL}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${forceRTL ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                <span id="rtl-force-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${forceRTL ? '24px' : '4px'});"></span>
-                              </button>
-                            </div>
-                            
-                            <!-- Separator -->
-                            <div class="h-px bg-border border-opacity-30 w-full my-1"></div>
-                            
-                            <!-- Persian Font -->
-                            <div class="flex items-center justify-between gap-2 px-1">
-                              <span class="font-medium text-xs opacity-80 whitespace-nowrap" title="Persian/Arabic Font (Fallback: Vazirmatn)">FA/AR Font</span>
-                              <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input text-[11px] px-2 py-1 rounded-md w-28 focus:outline-none">
-                            </div>
-                            
-                            <!-- English Font -->
-                            <div class="flex items-center justify-between gap-2 px-1 mt-1">
-                              <span class="font-medium text-xs opacity-80 whitespace-nowrap" title="English Font">EN Font</span>
-                              <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input text-[11px] px-2 py-1 rounded-md w-28 focus:outline-none">
-                            </div>
-                            
-                            <!-- Code Font -->
-                            <div class="flex items-center justify-between gap-2 px-1 mt-1">
-                              <span class="font-medium text-xs opacity-80 whitespace-nowrap" title="Code Font">Code Font</span>
-                              <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input text-[11px] px-2 py-1 rounded-md w-28 focus:outline-none">
-                            </div>
-                            
-                            <!-- Line Height -->
-                            <div class="flex items-center justify-between gap-2 px-1 mt-1">
-                              <span class="font-medium text-xs opacity-80" title="Chat Line Height">Line Height</span>
-                              <div class="flex items-center gap-2">
-                                <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="h-1 w-20 cursor-pointer" style="accent-color: var(--vscode-button-background);">
-                                <button id="rtl-lh-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset to 1.6">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                </button>
-                              </div>
-                            </div>
+                      </div>
 
-                            <!-- Font Size -->
-                            <div class="flex items-center justify-between gap-2 px-1 mt-1 mb-1">
-                              <span class="font-medium text-xs opacity-80" title="Chat Font Size">Font Size</span>
-                              <div class="flex items-center gap-2">
-                                <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="h-1 w-20 cursor-pointer" style="accent-color: var(--vscode-button-background);">
-                                <button id="rtl-fs-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer" title="Reset to 16px">
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-                                </button>
-                              </div>
-                            </div>
-                            
-                            <!-- Separator -->
-                            <div class="h-px bg-border border-opacity-30 w-full my-1"></div>
-
-                            <!-- Fix @ Toggle -->
-                            <div class="flex items-center justify-between gap-2 px-1 mb-1">
-                              <div class="flex items-center">
-                                <span class="font-medium text-xs opacity-80 whitespace-nowrap">Type @ with Shift+2</span>
-                                <div class="relative flex items-center rtl-info-icon ml-1">
-                                  <span class="cursor-pointer inline-flex items-center text-muted-foreground hover:text-foreground">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="-0 -960 960 960" fill="currentColor" class="w-3.5 h-3.5"><path d="M450-290h60V-520H450v230Zm52.92-307.75q9.38-9.29 9.38-23.02t-9.29-23.02T480-653.07t-23.02,9.29t-9.29,23.02t9.38,23.02T480-588.46t22.92-9.29ZM480.07-100q-78.84,0-148.2-29.92T211.18-211.13T129.93-331.76T100-479.93t29.92-148.2t81.21-120.68t120.63-81.25T479.93-860t148.2,29.92t120.68,81.21t81.25,120.63T860-480.07t-29.92,148.2T748.87-211.18T628.24-129.93T480.07-100ZM480-160q134,0 227-93t93-227T707-707T480-800T253-707T160-480t93,227t227,93Zm0-320Z"></path></svg>
-                                  </span>
-                                  <div class="rtl-tooltip absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 rounded shadow-md z-50 whitespace-normal text-center bg-muted border border-border text-foreground text-[11px] leading-relaxed">
-                                    Forces Shift+2 to type '@' instead of '٬' while using the Persian keyboard.
-                                    <div class="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0" style="border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid var(--border, #444);"></div>
-                                    <div class="absolute top-[calc(100%-1px)] left-1/2 -translate-x-1/2 w-0 h-0" style="border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 5px solid var(--muted, #333);"></div>
-                                  </div>
-                                </div>
-                              </div>
-                              <button id="rtl-at-btn" type="button" role="switch" aria-checked="\${fixAtSign}" class="rtl-toggle-btn-reset relative inline-flex items-center rounded-full transition-colors duration-200 ease-in-out shrink-0 h-6 w-11 \${fixAtSign ? 'bg-accent' : 'bg-gray-400 bg-opacity-40'} cursor-pointer">
-                                <span id="rtl-at-knob" class="inline-block rounded-full bg-white transition-transform duration-200 ease-in-out shadow-sm h-4 w-4" style="transform: translateX(\${fixAtSign ? '24px' : '4px'});"></span>
-                              </button>
-                            </div>
-                        </div>
-                        
-                        <div class="h-px bg-card-border w-full"></div>
-                        
-                        <!-- GitHub -->
-                        <a href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" class="rtl-github-link flex items-center justify-center gap-2 text-xs font-semibold opacity-70 no-underline pt-1 pb-0.5">
-                          <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
-                          Star on GitHub
-                        </a>
+                      <!-- Font Size -->
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">Font Size</span>
+                        <div class="flex items-center gap-2">
+                          <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="rtl-theme-range w-20 cursor-pointer">
+                          <button id="rtl-fs-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" data-rtl-tooltip="Reset to 16px" data-rtl-tooltip-pos="left">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                          </button>
                         </div>
                       </div>
                     </div>
+                    
+                    <div class="rtl-separator"></div>
+                    
+                    <!-- GitHub -->
+                    <a href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" class="rtl-github-link flex items-center justify-center gap-2 text-xs font-semibold opacity-70 no-underline pt-1 pb-0.5">
+                      <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
+                      Star on GitHub
+                    </a>
                 \`;
-                document.body.appendChild(widgetWrapper.firstElementChild);
+
+                function attachElements() {
+                    if (!document.getElementById('rtl-topbar-wrapper')) {
+                        const actionsCluster = document.querySelector('[data-testid="titlebar-more-actions"]')?.parentElement
+                            || document.querySelector('[data-testid="install-editor"]')?.parentElement;
+                        if (actionsCluster) {
+                            actionsCluster.appendChild(widgetWrapper);
+                        }
+                    }
+                    if (!document.getElementById('rtl-dropdown-panel')) {
+                        document.body.appendChild(dropdownPanel);
+                    }
+                }
+                attachElements();
+
+                const topbarObserver = new MutationObserver(() => {
+                    if (!document.getElementById('rtl-topbar-wrapper') || !document.getElementById('rtl-dropdown-panel')) {
+                        attachElements();
+                    }
+                });
+                topbarObserver.observe(document.body, { childList: true, subtree: true });
                 
-                const toggleBtn = document.getElementById('rtl-toggle-btn');
-                const toggleKnob = document.getElementById('rtl-toggle-knob');
-                const toggleLabel = document.getElementById('rtl-toggle-label');
-                const settingsWrapper = document.getElementById('rtl-settings-wrapper');
-                const faFontInput = document.getElementById('rtl-fafont-input');
-                const enFontInput = document.getElementById('rtl-enfont-input');
-                const codeFontInput = document.getElementById('rtl-codefont-input');
-                const lhInput = document.getElementById('rtl-lh-input');
-                const lhResetBtn = document.getElementById('rtl-lh-reset');
-                const fsInput = document.getElementById('rtl-fs-input');
-                const fsResetBtn = document.getElementById('rtl-fs-reset');
-                const forceBtn = document.getElementById('rtl-force-btn');
-                const forceKnob = document.getElementById('rtl-force-knob');
-                const atBtn = document.getElementById('rtl-at-btn');
-                const atKnob = document.getElementById('rtl-at-knob');
+                const topbarBtn = widgetWrapper.querySelector('#rtl-topbar-btn');
+                const statusDot = widgetWrapper.querySelector('#rtl-status-dot');
+                const toggleBtn = dropdownPanel.querySelector('#rtl-toggle-btn');
+                const toggleKnob = dropdownPanel.querySelector('#rtl-toggle-knob');
+                const toggleLabel = dropdownPanel.querySelector('#rtl-toggle-label');
+                const settingsWrapper = dropdownPanel.querySelector('#rtl-settings-wrapper');
+                const faFontInput = dropdownPanel.querySelector('#rtl-fafont-input');
+                const enFontInput = dropdownPanel.querySelector('#rtl-enfont-input');
+                const codeFontInput = dropdownPanel.querySelector('#rtl-codefont-input');
+                const lhInput = dropdownPanel.querySelector('#rtl-lh-input');
+                const lhResetBtn = dropdownPanel.querySelector('#rtl-lh-reset');
+                const fsInput = dropdownPanel.querySelector('#rtl-fs-input');
+                const fsResetBtn = dropdownPanel.querySelector('#rtl-fs-reset');
+                const forceBtn = dropdownPanel.querySelector('#rtl-force-btn');
+                const forceKnob = dropdownPanel.querySelector('#rtl-force-knob');
+                const forceRow = dropdownPanel.querySelector('#rtl-force-row');
+
+                function clearRTL() {
+                    if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
+                    document.querySelectorAll('[dir]').forEach(el => {
+                        el.removeAttribute('dir');
+                    });
+                    window.dispatchEvent(new Event('resize'));
+                }
 
                 // Initialize Toggle State
                 if (!isRTL) {
@@ -521,7 +643,10 @@ win.webContents.on('console-message', (event, ...args) => {
                     toggleBtn.classList.remove('bg-accent');
                     toggleBtn.style.backgroundColor = 'rgba(156, 163, 175, 0.4)';
                     toggleKnob.style.transform = 'translateX(4px)';
-                    if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
+                    if (statusDot) statusDot.className = 'absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full hidden';
+                    if (forceRow) forceRow.classList.add('opacity-40', 'pointer-events-none');
+                    settingsWrapper.classList.add('opacity-40', 'pointer-events-none');
+                    clearRTL();
                 } else {
                     updateDir();
                 }
@@ -534,8 +659,7 @@ win.webContents.on('console-message', (event, ...args) => {
                         lh: lhInput.value,
                         fs: fsInput.value,
                         isRTL: isRTL,
-                        forceRTL: forceRTL,
-                        fixAtSign: fixAtSign
+                        forceRTL: forceRTL
                     }));
                 };
 
@@ -546,35 +670,30 @@ win.webContents.on('console-message', (event, ...args) => {
                     
                     if (isRTL) {
                         toggleLabel.innerText = 'Enabled';
+                        if (forceRow) forceRow.classList.remove('opacity-40', 'pointer-events-none');
                         settingsWrapper.classList.remove('opacity-40', 'pointer-events-none');
                         toggleBtn.classList.add('bg-accent');
                         toggleBtn.style.backgroundColor = ''; 
                         toggleKnob.style.transform = 'translateX(24px)';
+                        if (statusDot) statusDot.className = 'absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500';
                         document.head.appendChild(rtlStyle);
-                        updateDir();
                         updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
+                        updateDir();
                     } else {
                         toggleLabel.innerText = 'Disabled';
                         toggleBtn.classList.remove('bg-accent');
                         toggleBtn.style.backgroundColor = 'rgba(156, 163, 175, 0.4)';
                         toggleKnob.style.transform = 'translateX(4px)';
+                        if (statusDot) statusDot.className = 'absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full hidden';
+                        if (forceRow) forceRow.classList.add('opacity-40', 'pointer-events-none');
                         settingsWrapper.classList.add('opacity-40', 'pointer-events-none');
-                        if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
-                        
-                        // Clear dir attributes when disabled
-                        const selectors = [
-                            '.leading-relaxed p', '.leading-relaxed li', '.leading-relaxed h1', '.leading-relaxed h2', '.leading-relaxed h3', '.leading-relaxed h4',
-                            '[data-testid="conversation-view"] p', '[data-testid="conversation-view"] li', '[data-testid="conversation-view"] h1', '[data-testid="conversation-view"] h2', '[data-testid="conversation-view"] h3', '[data-testid="conversation-view"] h4',
-                            '[data-testid="user-input-step"]', '[data-testid="user-input-step"] p', '[data-testid^="convo-pill-"]', '.truncate', '[contenteditable="true"]', '[contenteditable="true"] p'
-                        ];
-                        document.querySelectorAll(selectors.join(', ')).forEach(el => {
-                            if (el.hasAttribute('dir')) el.removeAttribute('dir');
-                        });
+                        clearRTL();
                     }
                 }
 
                 // Force RTL Event
                 forceBtn.addEventListener('click', () => {
+                    if (!isRTL) return;
                     forceRTL = !forceRTL;
                     saveConfig();
                     forceBtn.setAttribute('aria-checked', forceRTL);
@@ -590,23 +709,6 @@ win.webContents.on('console-message', (event, ...args) => {
                     }
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                     updateDir();
-                });
-
-                // At Sign Fix Event
-                atBtn.addEventListener('click', () => {
-                    fixAtSign = !fixAtSign;
-                    saveConfig();
-                    atBtn.setAttribute('aria-checked', fixAtSign);
-                    
-                    if (fixAtSign) {
-                        atBtn.classList.add('bg-accent');
-                        atBtn.classList.remove('bg-gray-400', 'bg-opacity-40');
-                        atKnob.style.transform = 'translateX(24px)';
-                    } else {
-                        atBtn.classList.remove('bg-accent');
-                        atBtn.classList.add('bg-gray-400', 'bg-opacity-40');
-                        atKnob.style.transform = 'translateX(4px)';
-                    }
                 });
 
                 // Event Listeners
@@ -625,24 +727,32 @@ win.webContents.on('console-message', (event, ...args) => {
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
                 
-                lhInput.addEventListener('input', (e) => {
+                const updateSlider = s => s && s.style.setProperty('--range-pct', ((s.value - s.min) / (s.max - s.min) * 100) + '%');
+                updateSlider(lhInput);
+                updateSlider(fsInput);
+
+                lhInput.addEventListener('input', () => {
+                    updateSlider(lhInput);
                     saveConfig();
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
                 
                 lhResetBtn.addEventListener('click', () => {
                     lhInput.value = '1.6';
+                    updateSlider(lhInput);
                     saveConfig();
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
 
-                fsInput.addEventListener('input', (e) => {
+                fsInput.addEventListener('input', () => {
+                    updateSlider(fsInput);
                     saveConfig();
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
                 
                 fsResetBtn.addEventListener('click', () => {
                     fsInput.value = '16';
+                    updateSlider(fsInput);
                     saveConfig();
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
@@ -651,7 +761,85 @@ win.webContents.on('console-message', (event, ...args) => {
                 toggleBtn.addEventListener('click', () => {
                     setRTLActive(!isRTL);
                 });
-`).catch(err => console.error("Failed to inject RTL features:", err));
+
+                // Dropdown Toggle & Click-Outside Handlers
+                function updateDropdownPosition() {
+                    if (!topbarBtn || !dropdownPanel) return;
+                    const rect = topbarBtn.getBoundingClientRect();
+                    dropdownPanel.style.top = (rect.bottom + 6) + 'px';
+                    dropdownPanel.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
+                    dropdownPanel.style.left = 'auto';
+                }
+
+                function toggleDropdown(show) {
+                    if (!dropdownPanel || !topbarBtn) return;
+                    const isVisible = dropdownPanel.classList.contains('scale-100');
+                    const nextState = show !== undefined ? show : !isVisible;
+                    if (nextState) {
+                        updateDropdownPosition();
+                        dropdownPanel.classList.remove('scale-0', 'opacity-0', 'pointer-events-none');
+                        dropdownPanel.classList.add('scale-100', 'opacity-100', 'pointer-events-auto');
+                        topbarBtn.classList.add('bg-secondary');
+                        topbarBtn.setAttribute('aria-expanded', 'true');
+                    } else {
+                        dropdownPanel.classList.remove('scale-100', 'opacity-100', 'pointer-events-auto');
+                        dropdownPanel.classList.add('scale-0', 'opacity-0', 'pointer-events-none');
+                        topbarBtn.classList.remove('bg-secondary');
+                        topbarBtn.setAttribute('aria-expanded', 'false');
+                    }
+                }
+
+                if (topbarBtn) {
+                    topbarBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        toggleDropdown();
+                    });
+                }
+
+                dropdownPanel.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (dropdownPanel && !dropdownPanel.contains(e.target) && topbarBtn && !topbarBtn.contains(e.target)) {
+                        toggleDropdown(false);
+                    }
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') toggleDropdown(false);
+                });
+
+                window.addEventListener('resize', () => {
+                    if (dropdownPanel && dropdownPanel.classList.contains('scale-100')) {
+                        updateDropdownPosition();
+                    }
+                });
+            }
+
+            let isMounted = false;
+            let checkTimer = null;
+            let startupObserver = null;
+
+            function tryMount() {
+                if (isMounted) return;
+                if (isAntigravityReady()) {
+                    isMounted = true;
+                    if (checkTimer) clearInterval(checkTimer);
+                    if (startupObserver) try { startupObserver.disconnect(); } catch (_) {}
+                    init();
+                }
+            }
+
+            tryMount();
+            if (!isMounted) {
+                try {
+                    startupObserver = new MutationObserver(() => tryMount());
+                    startupObserver.observe(document.documentElement || document.body, { childList: true, subtree: true });
+                } catch (_) {}
+                checkTimer = setInterval(tryMount, 250);
+            }
+        })();`).catch(err => console.error("Failed to inject RTL features:", err));
 
         } catch(e) {
             console.error("Failed to read offline font", e);
