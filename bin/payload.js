@@ -257,8 +257,9 @@ win.webContents.on('console-message', (event, ...args) => {
                         
                         /* Custom CSS removed to rely on Tailwind completely */
                         
-                        /* Code Blocks */
-                        pre, code, pre *, code * {
+                        /* Code Blocks & Terminal */
+                        pre, code, pre *, code *,
+                        .xterm, .xterm * {
                             unicode-bidi: isolate !important;
                             direction: ltr !important;
                             text-align: left !important;
@@ -285,6 +286,7 @@ win.webContents.on('console-message', (event, ...args) => {
                             line-height: \${lh} !important;
                         }
                     \`;
+                    window.dispatchEvent(new Event('resize'));
                 };
                 
                 document.head.appendChild(rtlStyle);
