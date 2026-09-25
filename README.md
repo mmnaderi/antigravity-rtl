@@ -6,47 +6,15 @@
 
 A right-to-left and typography patch for the [Antigravity](https://antigravity.google/) desktop app.
 
-<a href="https://github.com/mmnaderi/antigravity-rtl/releases"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/release/mmnaderi/antigravity-rtl.svg?size=xs&amp;mode=dark" />
-  <img alt="Latest release" src="https://www.shieldcn.dev/github/release/mmnaderi/antigravity-rtl.svg?size=xs&amp;mode=light" />
-</picture></a>
-<a href="https://github.com/mmnaderi/antigravity-rtl/releases"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/releases/mmnaderi/antigravity-rtl.svg?variant=ghost&amp;size=xs&amp;mode=dark" />
-  <img alt="Release count" src="https://www.shieldcn.dev/github/releases/mmnaderi/antigravity-rtl.svg?variant=ghost&amp;size=xs&amp;mode=light" />
-</picture></a>
-<a href="https://github.com/mmnaderi/antigravity-rtl/stargazers"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/stars/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;size=xs&amp;mode=dark" />
-  <img alt="GitHub stars" src="https://www.shieldcn.dev/github/stars/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;size=xs&amp;mode=light" />
-</picture></a>
-<a href="https://github.com/mmnaderi/antigravity-rtl/forks"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/forks/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;size=xs&amp;mode=dark" />
-  <img alt="GitHub forks" src="https://www.shieldcn.dev/github/forks/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;size=xs&amp;mode=light" />
-</picture></a>
-<a href="https://www.npmjs.com/package/antigravity-rtl"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/npm/dt/antigravity-rtl.svg?variant=secondary&amp;size=xs&amp;mode=dark" />
-  <img alt="Total npm downloads" src="https://www.shieldcn.dev/npm/dt/antigravity-rtl.svg?variant=secondary&amp;size=xs&amp;mode=light" />
-</picture></a>
+<a href="https://github.com/mmnaderi/antigravity-rtl/releases"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/release/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Release&amp;valueColor=38bdf8&amp;logoColor=38bdf8" /><img alt="Release" src="https://www.shieldcn.dev/github/release/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Release&amp;valueColor=0284c7&amp;logoColor=0284c7" /></picture></a>
+<a href="https://github.com/mmnaderi/antigravity-rtl/stargazers"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/stars/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Stars&amp;valueColor=facc15&amp;logoColor=facc15" /><img alt="Stars" src="https://www.shieldcn.dev/github/stars/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Stars&amp;valueColor=d97706&amp;logoColor=d97706" /></picture></a>
+<a href="https://github.com/mmnaderi/antigravity-rtl/forks"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/forks/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Forks&amp;valueColor=c084fc&amp;logoColor=c084fc" /><img alt="Forks" src="https://www.shieldcn.dev/github/forks/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Forks&amp;valueColor=9333ea&amp;logoColor=9333ea" /></picture></a>
+<a href="https://www.npmjs.com/package/antigravity-rtl"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/npm/dt/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Downloads&amp;valueColor=4ade80&amp;logoColor=4ade80" /><img alt="Downloads" src="https://www.shieldcn.dev/npm/dt/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Downloads&amp;valueColor=16a34a&amp;logoColor=16a34a" /></picture></a>
 
-<a href="https://github.com/mmnaderi/antigravity-rtl/graphs/contributors"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/contributors/mmnaderi/antigravity-rtl.svg?theme=emerald&amp;size=xs&amp;mode=dark" />
-  <img alt="Contributors" src="https://www.shieldcn.dev/github/contributors/mmnaderi/antigravity-rtl.svg?theme=emerald&amp;size=xs&amp;mode=light" />
-</picture></a>
-<a href="https://github.com/mmnaderi/antigravity-rtl/pulls?q=is%3Apr+is%3Aopen"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/open-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;size=xs&amp;mode=dark" />
-  <img alt="Open pull requests" src="https://www.shieldcn.dev/github/open-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;size=xs&amp;mode=light" />
-</picture></a>
-<a href="https://github.com/mmnaderi/antigravity-rtl/pulls?q=is%3Apr+is%3Aclosed"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/closed-prs/mmnaderi/antigravity-rtl.svg?variant=ghost&amp;size=xs&amp;mode=dark" />
-  <img alt="Closed pull requests" src="https://www.shieldcn.dev/github/closed-prs/mmnaderi/antigravity-rtl.svg?variant=ghost&amp;size=xs&amp;mode=light" />
-</picture></a>
-<a href="https://github.com/mmnaderi/antigravity-rtl/pulls?q=is%3Apr+is%3Amerged"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/merged-prs/mmnaderi/antigravity-rtl.svg?variant=ghost&amp;size=xs&amp;mode=dark" />
-  <img alt="Merged pull requests" src="https://www.shieldcn.dev/github/merged-prs/mmnaderi/antigravity-rtl.svg?variant=ghost&amp;size=xs&amp;mode=light" />
-</picture></a>
-<a href="https://github.com/mmnaderi/antigravity-rtl/pulls"><picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/badge/PRs-welcome-green.svg?variant=secondary&amp;size=xs&amp;mode=dark" />
-  <img alt="PRs welcome" src="https://www.shieldcn.dev/badge/PRs-welcome-green.svg?variant=secondary&amp;size=xs&amp;mode=light" />
-</picture></a>
+<a href="https://github.com/mmnaderi/antigravity-rtl/graphs/contributors"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/contributors/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Contributors&amp;valueColor=fb7185&amp;logoColor=fb7185" /><img alt="Contributors" src="https://www.shieldcn.dev/github/contributors/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Contributors&amp;valueColor=e11d48&amp;logoColor=e11d48" /></picture></a>
+<a href="https://github.com/mmnaderi/antigravity-rtl/pulls?q=is%3Apr+is%3Aopen"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/open-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Open+PRs&amp;valueColor=22c55e&amp;logoColor=22c55e" /><img alt="Open PRs" src="https://www.shieldcn.dev/github/open-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Open+PRs&amp;valueColor=15803d&amp;logoColor=15803d" /></picture></a>
+<a href="https://github.com/mmnaderi/antigravity-rtl/pulls?q=is%3Apr+is%3Aclosed"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/closed-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Closed+PRs&amp;valueColor=94a3b8&amp;logoColor=94a3b8" /><img alt="Closed PRs" src="https://www.shieldcn.dev/github/closed-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Closed+PRs&amp;valueColor=64748b&amp;logoColor=64748b" /></picture></a>
+<a href="https://github.com/mmnaderi/antigravity-rtl/pulls?q=is%3Apr+is%3Amerged"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/merged-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Merged+PRs&amp;valueColor=a855f7&amp;logoColor=a855f7" /><img alt="Merged PRs" src="https://www.shieldcn.dev/github/merged-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Merged+PRs&amp;valueColor=7e22ce&amp;logoColor=7e22ce" /></picture></a>
 
 [Features](#features) · [Install](#install) · [Uninstall](#uninstall) · [How it works](#how-it-works) · [Downloads & Stars](#downloads-and-stars) · [فارسی](#فارسی)
 
@@ -147,9 +115,9 @@ Found a bug or want to improve the patch? [Open an issue](https://github.com/mmn
 
 <a href="https://www.npmcharts.com/compare/antigravity-rtl">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?mode=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?mode=light" />
-   <img alt="Weekly npm downloads for antigravity-rtl" src="https://shieldcn.dev/chart/npm/antigravity-rtl.svg" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?theme=slate&amp;mode=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?theme=slate&amp;mode=light" />
+   <img alt="Weekly npm downloads for antigravity-rtl" src="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?theme=slate" />
  </picture>
 </a>
 
@@ -157,9 +125,9 @@ Found a bug or want to improve the patch? [Open an issue](https://github.com/mmn
 
 <a href="https://www.star-history.com/?repos=mmnaderi%2Fantigravity-rtl&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?mode=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?mode=light" />
-   <img alt="GitHub star history for mmnaderi/antigravity-rtl" src="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?theme=slate&amp;mode=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?theme=slate&amp;mode=light" />
+   <img alt="GitHub star history for mmnaderi/antigravity-rtl" src="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?theme=slate" />
  </picture>
 </a>
 
