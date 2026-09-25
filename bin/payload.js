@@ -17,6 +17,11 @@ win.webContents.on('console-message', (event, ...args) => {
     void win.loadURL(url);
     
     win.webContents.on('dom-ready', () => {
+        // Strict Guard: only inject into local application server
+        const currentURL = win.webContents.getURL();
+        if (!currentURL || !/^https?:\/\/127\.0\.0\.1:\d+/i.test(currentURL)) {
+            return;
+        }
         try {
             const fontPath = require('path').join(__dirname, 'Vazirmatn-Variable.woff2');
             const fontBase64 = require('fs').readFileSync(fontPath).toString('base64');
@@ -31,8 +36,26 @@ win.webContents.on('console-message', (event, ...args) => {
             } catch (e) {}
 
             // Unified injection for RTL Toggle, CSS, and JS
-            win.webContents.executeJavaScript(`
-                const fontBase64 = '${fontBase64}';
+            win.webContents.executeJavaScript(`(() => {
+                if (window.__ANTIGRAVITY_RTL_LOADED__) return;
+                window.__ANTIGRAVITY_RTL_LOADED__ = true;
+
+                // 🛡️ True App-Ready Guard: ensures React mounted the UI shell before touching DOM
+                function isAntigravityReady() {
+                    try {
+                        if (!document || !document.body) return false;
+                        const root = document.getElementById('root');
+                        if (!root || !root.children || root.children.length === 0) return false;
+                        return Boolean(document.querySelector('[role="navigation"]') || 
+                                       document.querySelector('[role="main"]') || 
+                                       document.querySelector('[contenteditable="true"]'));
+                    } catch (_) {
+                        return false;
+                    }
+                }
+
+                function init() {
+                    const fontBase64 = '${fontBase64}';
                 const rtlConfig = ${JSON.stringify(rtlConfig)};
                 
                 // 2. Observer Logic
@@ -651,7 +674,31 @@ win.webContents.on('console-message', (event, ...args) => {
                 toggleBtn.addEventListener('click', () => {
                     setRTLActive(!isRTL);
                 });
-`).catch(err => console.error("Failed to inject RTL features:", err));
+            }
+
+            let isMounted = false;
+            let checkTimer = null;
+            let startupObserver = null;
+
+            function tryMount() {
+                if (isMounted) return;
+                if (isAntigravityReady()) {
+                    isMounted = true;
+                    if (checkTimer) clearInterval(checkTimer);
+                    if (startupObserver) try { startupObserver.disconnect(); } catch (_) {}
+                    init();
+                }
+            }
+
+            tryMount();
+            if (!isMounted) {
+                try {
+                    startupObserver = new MutationObserver(() => tryMount());
+                    startupObserver.observe(document.documentElement || document.body, { childList: true, subtree: true });
+                } catch (_) {}
+                checkTimer = setInterval(tryMount, 250);
+            }
+        })();`).catch(err => console.error("Failed to inject RTL features:", err));
 
         } catch(e) {
             console.error("Failed to read offline font", e);
