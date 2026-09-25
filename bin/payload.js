@@ -85,12 +85,23 @@ win.webContents.on('console-message', (event, ...args) => {
                             box-sizing: border-box !important;
                         }
                         .rtl-theme-input {
-                            background-color: var(--muted, var(--input, #27272a)) !important;
+                            font-size: 12px !important;
+                            border-radius: 4px !important;
+                            padding: 4px 8px !important;
+                            height: 24px !important;
+                            background-color: var(--muted, #27272a) !important;
                             color: var(--foreground, #f4f4f5) !important;
                             border: 1px solid var(--border, rgba(255, 255, 255, 0.15)) !important;
+                            box-shadow: none !important;
+                            transition: all 0.15s ease !important;
                         }
                         .rtl-theme-input:focus {
+                            outline: none !important;
+                            box-shadow: none !important;
                             border-color: var(--ring, var(--vscode-button-background, #3b82f6)) !important;
+                        }
+                        .rtl-theme-input::placeholder {
+                            color: var(--placeholder, rgba(255, 255, 255, 0.4)) !important;
                         }
                         /* Missing Tailwind Utilities */
                         .w-11 { width: 44px !important; }
@@ -491,28 +502,29 @@ win.webContents.on('console-message', (event, ...args) => {
                     <div id="rtl-settings-wrapper" class="flex flex-col gap-1.5 transition-all duration-300 \${isRTL ? '' : 'opacity-40 pointer-events-none'}">
                       
                       <!-- Persian Font -->
-                      <div class="flex items-center justify-between gap-2 px-1">
-                        <span class="font-medium text-xs opacity-80 whitespace-nowrap cursor-help" data-rtl-tooltip="Fallback: Vazirmatn">FA/AR Font</span>
-                        <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input text-xs rounded px-2 py-1 w-28">
+                      <!-- Tooltip example if needed later: <span class="font-medium text-xs opacity-80 whitespace-nowrap cursor-help" data-rtl-tooltip="Fallback: Vazirmatn">FA/AR Font</span> -->
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">FA/AR Font</span>
+                        <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
                       </div>
                       
                       <!-- English Font -->
-                      <div class="flex items-center justify-between gap-2 px-1">
-                        <span class="font-medium text-xs opacity-80 whitespace-nowrap cursor-help" data-rtl-tooltip="Fallback: System Font">EN Font</span>
-                        <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input text-xs rounded px-2 py-1 w-28">
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">EN Font</span>
+                        <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
                       </div>
                       
                       <!-- Code Font -->
-                      <div class="flex items-center justify-between gap-2 px-1">
-                        <span class="font-medium text-xs opacity-80 whitespace-nowrap cursor-help" data-rtl-tooltip="Fallback: Monospace">Code Font</span>
-                        <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input text-xs rounded px-2 py-1 w-28">
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">Code Font</span>
+                        <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
                       </div>
                       
                       <!-- Line Height -->
-                      <div class="flex items-center justify-between gap-2 px-1">
-                        <span class="font-medium text-xs opacity-80 whitespace-nowrap cursor-help" data-rtl-tooltip="Paragraph spacing">Line Height</span>
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">Line Height</span>
                         <div class="flex items-center gap-2">
-                          <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="h-1 w-20 cursor-pointer" style="accent-color: var(--vscode-button-background);">
+                          <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="h-1.5 w-20 cursor-pointer" style="accent-color: var(--vscode-button-background);">
                           <button id="rtl-lh-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" data-rtl-tooltip="Reset to 1.6" data-rtl-tooltip-pos="left">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                           </button>
@@ -520,10 +532,10 @@ win.webContents.on('console-message', (event, ...args) => {
                       </div>
 
                       <!-- Font Size -->
-                      <div class="flex items-center justify-between gap-2 px-1">
-                        <span class="font-medium text-xs opacity-80 whitespace-nowrap cursor-help" data-rtl-tooltip="Chat message font size">Font Size</span>
+                      <div class="flex items-center justify-between gap-2 px-1 h-7">
+                        <span class="font-medium text-xs opacity-80 whitespace-nowrap">Font Size</span>
                         <div class="flex items-center gap-2">
-                          <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="h-1 w-20 cursor-pointer" style="accent-color: var(--vscode-button-background);">
+                          <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="h-1.5 w-20 cursor-pointer" style="accent-color: var(--vscode-button-background);">
                           <button id="rtl-fs-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" data-rtl-tooltip="Reset to 16px" data-rtl-tooltip-pos="left">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                           </button>
