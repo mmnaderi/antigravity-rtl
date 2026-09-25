@@ -98,7 +98,7 @@ win.webContents.on('console-message', (event, ...args) => {
                         .rtl-theme-input:focus {
                             outline: none !important;
                             box-shadow: none !important;
-                            border-color: var(--ring, var(--vscode-button-background, #3b82f6)) !important;
+                            border-color: var(--color-primary, var(--ring, var(--vscode-button-background, #3b82f6))) !important;
                         }
                         .rtl-theme-input::placeholder {
                             color: var(--placeholder, rgba(255, 255, 255, 0.4)) !important;
@@ -110,7 +110,46 @@ win.webContents.on('console-message', (event, ...args) => {
                         .h-4 { height: 16px !important; }
                         .translate-x-6 { transform: translateX(20px) !important; }
                         .translate-x-1 { transform: translateX(4px) !important; }
-                        .bg-accent { background-color: var(--vscode-button-background, #2563eb) !important; }
+                        .bg-accent { background-color: var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) !important; }
+                        /* Modern Seamless Range Slider */
+                        .rtl-theme-range {
+                            -webkit-appearance: none !important;
+                            appearance: none !important;
+                            width: 80px !important;
+                            height: 14px !important;
+                            background: transparent !important;
+                            cursor: pointer !important;
+                            outline: none !important;
+                            border: none !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
+                        }
+                        .rtl-theme-range::-webkit-slider-runnable-track {
+                            width: 100% !important;
+                            height: 5px !important;
+                            border-radius: 9999px !important;
+                            border: none !important;
+                            box-shadow: none !important;
+                            background: linear-gradient(
+                                to right,
+                                var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) 0%,
+                                var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) var(--range-pct, 50%),
+                                var(--muted, rgba(255, 255, 255, 0.15)) var(--range-pct, 50%),
+                                var(--muted, rgba(255, 255, 255, 0.15)) 100%
+                            ) !important;
+                        }
+                        .rtl-theme-range::-webkit-slider-thumb {
+                            -webkit-appearance: none !important;
+                            appearance: none !important;
+                            width: 13px !important;
+                            height: 13px !important;
+                            border-radius: 50% !important;
+                            background: var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) !important;
+                            border: 2px solid var(--popover, var(--card, #18181b)) !important;
+                            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+                            cursor: pointer !important;
+                            margin-top: -4px !important;
+                        }
                         
                         /* Toggle Button CSS Reset */
                         .rtl-toggle-btn-reset {
@@ -524,7 +563,7 @@ win.webContents.on('console-message', (event, ...args) => {
                       <div class="flex items-center justify-between gap-2 px-1 h-7">
                         <span class="font-medium text-xs opacity-80 whitespace-nowrap">Line Height</span>
                         <div class="flex items-center gap-2">
-                          <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="h-1.5 w-20 cursor-pointer" style="accent-color: var(--vscode-button-background);">
+                          <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="rtl-theme-range w-20 cursor-pointer">
                           <button id="rtl-lh-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" data-rtl-tooltip="Reset to 1.6" data-rtl-tooltip-pos="left">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                           </button>
@@ -535,7 +574,7 @@ win.webContents.on('console-message', (event, ...args) => {
                       <div class="flex items-center justify-between gap-2 px-1 h-7">
                         <span class="font-medium text-xs opacity-80 whitespace-nowrap">Font Size</span>
                         <div class="flex items-center gap-2">
-                          <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="h-1.5 w-20 cursor-pointer" style="accent-color: var(--vscode-button-background);">
+                          <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="rtl-theme-range w-20 cursor-pointer">
                           <button id="rtl-fs-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" data-rtl-tooltip="Reset to 16px" data-rtl-tooltip-pos="left">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                           </button>
@@ -688,24 +727,32 @@ win.webContents.on('console-message', (event, ...args) => {
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
                 
-                lhInput.addEventListener('input', (e) => {
+                const updateSlider = s => s && s.style.setProperty('--range-pct', ((s.value - s.min) / (s.max - s.min) * 100) + '%');
+                updateSlider(lhInput);
+                updateSlider(fsInput);
+
+                lhInput.addEventListener('input', () => {
+                    updateSlider(lhInput);
                     saveConfig();
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
                 
                 lhResetBtn.addEventListener('click', () => {
                     lhInput.value = '1.6';
+                    updateSlider(lhInput);
                     saveConfig();
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
 
-                fsInput.addEventListener('input', (e) => {
+                fsInput.addEventListener('input', () => {
+                    updateSlider(fsInput);
                     saveConfig();
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
                 
                 fsResetBtn.addEventListener('click', () => {
                     fsInput.value = '16';
+                    updateSlider(fsInput);
                     saveConfig();
                     updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
                 });
