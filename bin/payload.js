@@ -95,36 +95,20 @@ win.webContents.on('console-message', (event, ...args) => {
                             opacity: 1 !important;
                             pointer-events: auto !important;
                         }
-                        /* Theme Colors */
-                        :root {
-                            --rtl-bg: #ffffff;
-                            --rtl-text: #111827;
-                            --rtl-border: #e5e7eb;
-                            --rtl-input-bg: #f3f4f6;
-                        }
-                        :root.dark, .dark {
-                            --rtl-bg: #1e293b;
-                            --rtl-text: #f3f4f6;
-                            --rtl-border: #334155;
-                            --rtl-input-bg: #334155;
-                        }
-                        @media (prefers-color-scheme: dark) {
-                            :root:not(.light) {
-                                --rtl-bg: #1e293b;
-                                --rtl-text: #f3f4f6;
-                                --rtl-border: #334155;
-                                --rtl-input-bg: #334155;
-                            }
-                        }
+                        /* Native Antigravity Theme Tokens */
                         .rtl-theme-panel {
-                            background-color: var(--rtl-bg) !important;
-                            color: var(--rtl-text) !important;
-                            border: 1px solid var(--rtl-border) !important;
+                            background-color: var(--card, #18181b) !important;
+                            color: var(--card-foreground, var(--foreground, #f4f4f5)) !important;
+                            border: 1px solid var(--border, rgba(255, 255, 255, 0.1)) !important;
+                            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5) !important;
                         }
                         .rtl-theme-input {
-                            background-color: var(--rtl-input-bg) !important;
-                            color: var(--rtl-text) !important;
-                            border: 1px solid var(--rtl-border) !important;
+                            background-color: var(--muted, var(--input, #27272a)) !important;
+                            color: var(--foreground, #f4f4f5) !important;
+                            border: 1px solid var(--border, rgba(255, 255, 255, 0.15)) !important;
+                        }
+                        .rtl-theme-input:focus {
+                            border-color: var(--ring, var(--vscode-button-background, #3b82f6)) !important;
                         }
                         /* Missing Tailwind Utilities */
                         .w-11 { width: 44px !important; }
@@ -133,7 +117,7 @@ win.webContents.on('console-message', (event, ...args) => {
                         .h-4 { height: 16px !important; }
                         .translate-x-6 { transform: translateX(20px) !important; }
                         .translate-x-1 { transform: translateX(4px) !important; }
-                        .bg-accent { background-color: #4f46e5 !important; }
+                        .bg-accent { background-color: var(--vscode-button-background, #2563eb) !important; }
                         
                         /* Toggle Button CSS Reset */
                         .rtl-toggle-btn-reset {
@@ -509,7 +493,7 @@ win.webContents.on('console-message', (event, ...args) => {
                             </div>
                         </div>
                         
-                        <div class="h-px bg-card-border w-full"></div>
+                        <div class="h-px bg-border border-opacity-30 w-full my-1"></div>
                         
                         <!-- GitHub -->
                         <a href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" class="rtl-github-link flex items-center justify-center gap-2 text-xs font-semibold opacity-70 no-underline pt-1 pb-0.5">
