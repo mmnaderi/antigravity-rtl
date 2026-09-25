@@ -113,23 +113,11 @@ Found a bug or want to improve the patch? [Open an issue](https://github.com/mmn
 
 **npm downloads**
 
-<a href="https://www.npmcharts.com/compare/antigravity-rtl">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?theme=slate&amp;mode=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?theme=slate&amp;mode=light" />
-   <img alt="Weekly npm downloads for antigravity-rtl" src="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?theme=slate" />
- </picture>
-</a>
+<a href="https://www.npmcharts.com/compare/antigravity-rtl"><img alt="chart" src="https://shieldcn.dev/chart/npm/antigravity-rtl.svg?font=space-grotesk&amp;color=22c55e&amp;fill=22c55e&amp;logo=false&amp;title=Downloads+%E2%80%94+antigravity-rtl" /></a>
 
 **Star history**
 
-<a href="https://www.star-history.com/?repos=mmnaderi%2Fantigravity-rtl&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?theme=slate&amp;mode=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?theme=slate&amp;mode=light" />
-   <img alt="GitHub star history for mmnaderi/antigravity-rtl" src="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?theme=slate" />
- </picture>
-</a>
+<a href="https://www.star-history.com/?repos=mmnaderi%2Fantigravity-rtl&type=date&legend=top-left"><img alt="chart" src="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?font=space-grotesk&amp;color=eab308&amp;fill=eab308&amp;logo=false&amp;title=Stars+%E2%80%94+mmnaderi%2Fantigravity-rtl&amp;icon=ri%3AFaStar" /></a>
 
 ---
 
@@ -225,3 +213,12 @@ npx antigravity-rtl --restore
 برای گزارش مشکل یا پیشنهاد تغییر، [Issue ثبت کنید](https://github.com/mmnaderi/antigravity-rtl/issues) یا [Pull Request بفرستید](https://github.com/mmnaderi/antigravity-rtl/pulls).
 
 </div>
+
+<a href="https://github.com/mmnaderi/antigravity-rtl/graphs/contributors"><img alt="mmnaderi/antigravity-rtl contributors" src="https://shieldcn.dev/contributors/mmnaderi/antigravity-rtl.svg?names=true&mode=dark" /></a>
+
+<div align="center">
+
+<picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/flag/ir.svg?label=Built+in&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk" /><img alt="Built in IRAN" src="https://shieldcn.dev/flag/ir.svg?label=Built+in&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk" /></picture>
+
+</div>
+
