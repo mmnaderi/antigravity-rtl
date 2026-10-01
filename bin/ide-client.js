@@ -317,33 +317,44 @@
             });
         }
 
-        function setSafeHTML(element, htmlString) {
-            try {
-                if (window.trustedTypes && window.trustedTypes.createPolicy) {
-                    if (!window.__rtl_policy) {
-                        try {
-                            window.__rtl_policy = window.trustedTypes.createPolicy('antigravity-rtl-policy', {
-                                createHTML: (s) => s
-                            });
-                        } catch (_) {
-                            window.__rtl_policy = { createHTML: (s) => s };
-                        }
-                    }
-                    element.innerHTML = window.__rtl_policy.createHTML(htmlString);
-                    return;
+        function el(tag, styles, children, attrs) {
+            const element = document.createElement(tag);
+            if (styles) element.style.cssText = styles;
+            if (attrs) {
+                for (const [k, v] of Object.entries(attrs)) {
+                    if (k === 'id') element.id = v;
+                    else if (k === 'type') element.type = v;
+                    else if (k === 'title') element.title = v;
+                    else if (k === 'value') element.value = v;
+                    else if (k === 'placeholder') element.placeholder = v;
+                    else if (k === 'href') element.href = v;
+                    else if (k === 'target') element.target = v;
+                    else if (k === 'min') element.min = v;
+                    else if (k === 'max') element.max = v;
+                    else if (k === 'step') element.step = v;
+                    else element.setAttribute(k, v);
                 }
-            } catch (_) {}
-            element.innerHTML = htmlString;
+            }
+            if (children) {
+                if (typeof children === 'string') {
+                    element.textContent = children;
+                } else if (Array.isArray(children)) {
+                    for (const child of children) {
+                        if (child) element.appendChild(typeof child === 'string' ? document.createTextNode(child) : child);
+                    }
+                } else {
+                    element.appendChild(children);
+                }
+            }
+            return element;
         }
 
-        // Settings Panel Creation
+        // Settings Panel Creation (Pure DOM - immune to Trusted Types & CSP)
         function ensureSettingsPanel() {
             let panel = document.getElementById('antigravity-rtl-settings-panel');
             if (panel) return panel;
 
-            panel = document.createElement('div');
-            panel.id = 'antigravity-rtl-settings-panel';
-            panel.style.cssText = `
+            panel = el('div', `
                 display: none;
                 position: fixed;
                 z-index: 100000;
@@ -361,159 +372,139 @@
                 direction: ltr;
                 box-sizing: border-box;
                 user-select: none;
-            `;
+            `, null, { id: 'antigravity-rtl-settings-panel' });
 
-            setSafeHTML(panel, `
-                <!-- Header -->
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--vscode-widget-border, rgba(255,255,255,0.15));">
-                    <div>
-                        <span style="font-weight:600;font-size:13px;display:block;">Antigravity RTL</span>
-                        <span style="font-size:10px;color:var(--vscode-descriptionForeground,#94a3b8);">Settings & Font Control</span>
-                    </div>
-                    <button id="rtl-panel-close-btn" type="button" style="background:none;border:none;color:inherit;cursor:pointer;font-size:16px;line-height:1;opacity:0.7;padding:4px;" title="Close">✕</button>
-                </div>
+            // 1. Header
+            const headerTitle = el('div', null, [
+                el('span', 'font-weight:600;font-size:13px;display:block;', 'Antigravity RTL'),
+                el('span', 'font-size:10px;color:var(--vscode-descriptionForeground,#94a3b8);', 'Settings & Font Control')
+            ]);
+            const closeBtn = el('button', 'background:none;border:none;color:inherit;cursor:pointer;font-size:16px;line-height:1;opacity:0.7;padding:4px;', '✕', { id: 'rtl-panel-close-btn', type: 'button', title: 'Close' });
+            const header = el('div', 'display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--vscode-widget-border, rgba(255,255,255,0.15));', [headerTitle, closeBtn]);
+            panel.appendChild(header);
 
-                <!-- Master Toggle -->
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
-                    <span id="rtl-panel-toggle-label" style="font-weight:500;font-size:12px;">${state.isRTL ? 'Enabled' : 'Disabled'}</span>
-                    <button id="rtl-panel-master-btn" type="button" style="cursor:pointer;width:40px;height:22px;border-radius:11px;border:none;background:${state.isRTL ? 'var(--vscode-button-background, #3b82f6)' : '#64748b'};position:relative;padding:0;outline:none;transition:background 0.2s;">
-                        <span id="rtl-panel-master-knob" style="display:block;width:16px;height:16px;border-radius:50%;background:#ffffff;position:absolute;top:3px;left:${state.isRTL ? '21px' : '3px'};transition:left 0.2s;"></span>
-                    </button>
-                </div>
+            // 2. Master Toggle
+            const toggleLabel = el('span', 'font-weight:500;font-size:12px;', state.isRTL ? 'Enabled' : 'Disabled', { id: 'rtl-panel-toggle-label' });
+            const masterKnob = el('span', `display:block;width:16px;height:16px;border-radius:50%;background:#ffffff;position:absolute;top:3px;left:${state.isRTL ? '21px' : '3px'};transition:left 0.2s;`, null, { id: 'rtl-panel-master-knob' });
+            const masterBtn = el('button', `cursor:pointer;width:40px;height:22px;border-radius:11px;border:none;background:${state.isRTL ? 'var(--vscode-button-background, #3b82f6)' : '#64748b'};position:relative;padding:0;outline:none;transition:background 0.2s;`, [masterKnob], { id: 'rtl-panel-master-btn', type: 'button' });
+            const masterRow = el('div', 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;', [toggleLabel, masterBtn]);
+            panel.appendChild(masterRow);
 
-                <div id="rtl-panel-body" style="display:flex;flex-direction:column;gap:9px;opacity:${state.isRTL ? '1' : '0.4'};pointer-events:${state.isRTL ? 'auto' : 'none'};transition:opacity 0.2s;">
-                    <!-- Force RTL Toggle -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                        <span style="font-size:11px;color:var(--vscode-descriptionForeground,#94a3b8);" title="Force conversation text to RTL direction">Force RTL</span>
-                        <button id="rtl-panel-force-btn" type="button" style="cursor:pointer;width:34px;height:18px;border-radius:9px;border:none;background:${state.forceRTL ? 'var(--vscode-button-background, #3b82f6)' : '#64748b'};position:relative;padding:0;outline:none;transition:background 0.2s;">
-                            <span id="rtl-panel-force-knob" style="display:block;width:12px;height:12px;border-radius:50%;background:#ffffff;position:absolute;top:3px;left:${state.forceRTL ? '19px' : '3px'};transition:left 0.2s;"></span>
-                        </button>
-                    </div>
+            // 3. Panel Body
+            const panelBody = el('div', `display:flex;flex-direction:column;gap:9px;opacity:${state.isRTL ? '1' : '0.4'};pointer-events:${state.isRTL ? 'auto' : 'none'};transition:opacity 0.2s;`, null, { id: 'rtl-panel-body' });
 
-                    <div style="height:1px;background:var(--vscode-widget-border,rgba(255,255,255,0.1));margin:2px 0;"></div>
+            // Force RTL Toggle
+            const forceLabel = el('span', 'font-size:11px;color:var(--vscode-descriptionForeground,#94a3b8);', 'Force RTL', { title: 'Force conversation text to RTL direction' });
+            const forceKnob = el('span', `display:block;width:12px;height:12px;border-radius:50%;background:#ffffff;position:absolute;top:3px;left:${state.forceRTL ? '19px' : '3px'};transition:left 0.2s;`, null, { id: 'rtl-panel-force-knob' });
+            const forceBtn = el('button', `cursor:pointer;width:34px;height:18px;border-radius:9px;border:none;background:${state.forceRTL ? 'var(--vscode-button-background, #3b82f6)' : '#64748b'};position:relative;padding:0;outline:none;transition:background 0.2s;`, [forceKnob], { id: 'rtl-panel-force-btn', type: 'button' });
+            panelBody.appendChild(el('div', 'display:flex;align-items:center;justify-content:space-between;', [forceLabel, forceBtn]));
 
-                    <!-- FA/AR Font -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                        <span style="font-size:11px;white-space:nowrap;" title="Persian/Arabic Font">FA Font</span>
-                        <input id="rtl-panel-fa-font" type="text" placeholder="Default: Vazirmatn" value="${state.faFont}" style="width:140px;padding:4px 8px;font-size:11px;border-radius:5px;border:1px solid var(--vscode-input-border,#334155);background:var(--vscode-input-background,#0f172a);color:var(--vscode-input-foreground,#f3f4f6);outline:none;">
-                    </div>
+            panelBody.appendChild(el('div', 'height:1px;background:var(--vscode-widget-border,rgba(255,255,255,0.1));margin:2px 0;'));
 
-                    <!-- EN Font -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                        <span style="font-size:11px;white-space:nowrap;" title="English UI Font">EN Font</span>
-                        <input id="rtl-panel-en-font" type="text" placeholder="Default: System" value="${state.enFont}" style="width:140px;padding:4px 8px;font-size:11px;border-radius:5px;border:1px solid var(--vscode-input-border,#334155);background:var(--vscode-input-background,#0f172a);color:var(--vscode-input-foreground,#f3f4f6);outline:none;">
-                    </div>
+            const inputStyle = 'width:140px;padding:4px 8px;font-size:11px;border-radius:5px;border:1px solid var(--vscode-input-border,#334155);background:var(--vscode-input-background,#0f172a);color:var(--vscode-input-foreground,#f3f4f6);outline:none;box-sizing:border-box;';
 
-                    <!-- Code / Terminal Font -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                        <span style="font-size:11px;white-space:nowrap;" title="Monaco Editor & Terminal Font">Code Font</span>
-                        <input id="rtl-panel-code-font" type="text" placeholder="Monaco, Consolas" value="${state.codeFont}" style="width:140px;padding:4px 8px;font-size:11px;border-radius:5px;border:1px solid var(--vscode-input-border,#334155);background:var(--vscode-input-background,#0f172a);color:var(--vscode-input-foreground,#f3f4f6);outline:none;">
-                    </div>
+            // FA Font
+            const faInput = el('input', inputStyle, null, { id: 'rtl-panel-fa-font', type: 'text', placeholder: 'Default: Vazirmatn', value: state.faFont });
+            panelBody.appendChild(el('div', 'display:flex;align-items:center;justify-content:space-between;gap:8px;', [
+                el('span', 'font-size:11px;white-space:nowrap;', 'FA Font', { title: 'Persian/Arabic Font' }),
+                faInput
+            ]));
 
-                    <!-- Line Height -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                        <span style="font-size:11px;">Line Height</span>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <input id="rtl-panel-lh" type="range" min="1.2" max="2.5" step="0.1" value="${state.lh}" style="width:85px;cursor:pointer;">
-                            <button id="rtl-panel-lh-reset" type="button" style="background:none;border:none;color:inherit;opacity:0.6;cursor:pointer;padding:0;font-size:10px;" title="Reset to 1.6">↺</button>
-                        </div>
-                    </div>
+            // EN Font
+            const enInput = el('input', inputStyle, null, { id: 'rtl-panel-en-font', type: 'text', placeholder: 'Default: System', value: state.enFont });
+            panelBody.appendChild(el('div', 'display:flex;align-items:center;justify-content:space-between;gap:8px;', [
+                el('span', 'font-size:11px;white-space:nowrap;', 'EN Font', { title: 'English UI Font' }),
+                enInput
+            ]));
 
-                    <!-- Font Size -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                        <span style="font-size:11px;">Font Size</span>
-                        <div style="display:flex;align-items:center;gap:6px;">
-                            <input id="rtl-panel-fs" type="range" min="11" max="22" step="1" value="${state.fs}" style="width:85px;cursor:pointer;">
-                            <button id="rtl-panel-fs-reset" type="button" style="background:none;border:none;color:inherit;opacity:0.6;cursor:pointer;padding:0;font-size:10px;" title="Reset to 16px">↺</button>
-                        </div>
-                    </div>
+            // Code Font
+            const codeInput = el('input', inputStyle, null, { id: 'rtl-panel-code-font', type: 'text', placeholder: 'Monaco, Consolas', value: state.codeFont });
+            panelBody.appendChild(el('div', 'display:flex;align-items:center;justify-content:space-between;gap:8px;', [
+                el('span', 'font-size:11px;white-space:nowrap;', 'Code Font', { title: 'Monaco Editor & Terminal Font' }),
+                codeInput
+            ]));
 
-                    <div style="height:1px;background:var(--vscode-widget-border,rgba(255,255,255,0.1));margin:2px 0;"></div>
+            // Line Height
+            const lhInput = el('input', 'width:85px;cursor:pointer;', null, { id: 'rtl-panel-lh', type: 'range', min: '1.2', max: '2.5', step: '0.1', value: state.lh });
+            const lhReset = el('button', 'background:none;border:none;color:inherit;opacity:0.6;cursor:pointer;padding:0;font-size:10px;', '↺', { id: 'rtl-panel-lh-reset', type: 'button', title: 'Reset to 1.6' });
+            panelBody.appendChild(el('div', 'display:flex;align-items:center;justify-content:space-between;', [
+                el('span', 'font-size:11px;', 'Line Height'),
+                el('div', 'display:flex;align-items:center;gap:6px;', [lhInput, lhReset])
+            ]));
 
-                    <!-- Shift + 2 for @ -->
-                    <div style="display:flex;align-items:center;justify-content:space-between;">
-                        <span style="font-size:11px;color:var(--vscode-descriptionForeground,#94a3b8);" title="Type @ using Shift+2 in Persian layout">Shift+2 for @</span>
-                        <button id="rtl-panel-at-btn" type="button" style="cursor:pointer;width:34px;height:18px;border-radius:9px;border:none;background:${state.fixAtSign ? 'var(--vscode-button-background, #3b82f6)' : '#64748b'};position:relative;padding:0;outline:none;transition:background 0.2s;">
-                            <span id="rtl-panel-at-knob" style="display:block;width:12px;height:12px;border-radius:50%;background:#ffffff;position:absolute;top:3px;left:${state.fixAtSign ? '19px' : '3px'};transition:left 0.2s;"></span>
-                        </button>
-                    </div>
-                </div>
+            // Font Size
+            const fsInput = el('input', 'width:85px;cursor:pointer;', null, { id: 'rtl-panel-fs', type: 'range', min: '11', max: '22', step: '1', value: state.fs });
+            const fsReset = el('button', 'background:none;border:none;color:inherit;opacity:0.6;cursor:pointer;padding:0;font-size:10px;', '↺', { id: 'rtl-panel-fs-reset', type: 'button', title: 'Reset to 16px' });
+            panelBody.appendChild(el('div', 'display:flex;align-items:center;justify-content:space-between;', [
+                el('span', 'font-size:11px;', 'Font Size'),
+                el('div', 'display:flex;align-items:center;gap:6px;', [fsInput, fsReset])
+            ]));
 
-                <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--vscode-widget-border,rgba(255,255,255,0.1));text-align:center;">
-                    <a href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" style="font-size:10px;color:var(--vscode-textLink-foreground,#38bdf8);text-decoration:none;opacity:0.8;">★ Star Antigravity RTL on GitHub</a>
-                </div>
-            `);
+            panelBody.appendChild(el('div', 'height:1px;background:var(--vscode-widget-border,rgba(255,255,255,0.1));margin:2px 0;'));
+
+            // Shift+2 for @
+            const atLabel = el('span', 'font-size:11px;color:var(--vscode-descriptionForeground,#94a3b8);', 'Shift+2 for @', { title: 'Type @ using Shift+2 in Persian layout' });
+            const atKnob = el('span', `display:block;width:12px;height:12px;border-radius:50%;background:#ffffff;position:absolute;top:3px;left:${state.fixAtSign ? '19px' : '3px'};transition:left 0.2s;`, null, { id: 'rtl-panel-at-knob' });
+            const atBtn = el('button', `cursor:pointer;width:34px;height:18px;border-radius:9px;border:none;background:${state.fixAtSign ? 'var(--vscode-button-background, #3b82f6)' : '#64748b'};position:relative;padding:0;outline:none;transition:background 0.2s;`, [atKnob], { id: 'rtl-panel-at-btn', type: 'button' });
+            panelBody.appendChild(el('div', 'display:flex;align-items:center;justify-content:space-between;', [atLabel, atBtn]));
+
+            panel.appendChild(panelBody);
+
+            // 4. Footer
+            const footerLink = el('a', 'font-size:10px;color:var(--vscode-textLink-foreground,#38bdf8);text-decoration:none;opacity:0.8;', '★ Star Antigravity RTL on GitHub', { href: 'https://github.com/mmnaderi/antigravity-rtl', target: '_blank' });
+            const footer = el('div', 'margin-top:10px;padding-top:8px;border-top:1px solid var(--vscode-widget-border,rgba(255,255,255,0.1));text-align:center;', [footerLink]);
+            panel.appendChild(footer);
 
             document.body.appendChild(panel);
 
-            // Bind panel events
-            const closeBtn = document.getElementById('rtl-panel-close-btn');
-            closeBtn?.addEventListener('click', () => { panel.style.display = 'none'; });
-
-            const masterBtn = document.getElementById('rtl-panel-master-btn');
-            masterBtn?.addEventListener('click', () => { setRTLActive(!state.isRTL); });
-
-            const forceBtn = document.getElementById('rtl-panel-force-btn');
-            forceBtn?.addEventListener('click', () => {
+            // Bind events
+            closeBtn.addEventListener('click', () => { panel.style.display = 'none'; });
+            masterBtn.addEventListener('click', () => { setRTLActive(!state.isRTL); });
+            forceBtn.addEventListener('click', () => {
                 state.forceRTL = !state.forceRTL;
                 saveConfig();
                 updateUI();
             });
-
-            const atBtn = document.getElementById('rtl-panel-at-btn');
-            atBtn?.addEventListener('click', () => {
+            atBtn.addEventListener('click', () => {
                 state.fixAtSign = !state.fixAtSign;
                 saveConfig();
                 updateUI();
             });
 
-            const faInput = document.getElementById('rtl-panel-fa-font');
-            faInput?.addEventListener('input', (e) => {
+            faInput.addEventListener('input', (e) => {
                 state.faFont = e.target.value.trim();
                 saveConfig();
                 updateDynamicCSS();
             });
-
-            const enInput = document.getElementById('rtl-panel-en-font');
-            enInput?.addEventListener('input', (e) => {
+            enInput.addEventListener('input', (e) => {
                 state.enFont = e.target.value.trim();
                 saveConfig();
                 updateDynamicCSS();
             });
-
-            const codeInput = document.getElementById('rtl-panel-code-font');
-            codeInput?.addEventListener('input', (e) => {
+            codeInput.addEventListener('input', (e) => {
                 state.codeFont = e.target.value.trim();
                 saveConfig();
                 updateDynamicCSS();
             });
-
-            const lhInput = document.getElementById('rtl-panel-lh');
-            lhInput?.addEventListener('input', (e) => {
+            lhInput.addEventListener('input', (e) => {
                 state.lh = e.target.value;
                 saveConfig();
                 updateDynamicCSS();
             });
-
-            const lhReset = document.getElementById('rtl-panel-lh-reset');
-            lhReset?.addEventListener('click', () => {
+            lhReset.addEventListener('click', () => {
                 state.lh = '1.6';
-                if (lhInput) lhInput.value = '1.6';
+                lhInput.value = '1.6';
                 saveConfig();
                 updateDynamicCSS();
             });
-
-            const fsInput = document.getElementById('rtl-panel-fs');
-            fsInput?.addEventListener('input', (e) => {
+            fsInput.addEventListener('input', (e) => {
                 state.fs = e.target.value;
                 saveConfig();
                 updateDynamicCSS();
             });
-
-            const fsReset = document.getElementById('rtl-panel-fs-reset');
-            fsReset?.addEventListener('click', () => {
+            fsReset.addEventListener('click', () => {
                 state.fs = '16';
-                if (fsInput) fsInput.value = '16';
+                fsInput.value = '16';
                 saveConfig();
                 updateDynamicCSS();
             });
