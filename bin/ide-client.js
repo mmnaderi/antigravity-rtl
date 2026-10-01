@@ -245,9 +245,6 @@
                 ${codeFontRule}
             }
         `;
-        if (typeof window.dispatchEvent === 'function') {
-            window.dispatchEvent(new Event('resize'));
-        }
     }
 
     function saveConfig() {
@@ -706,8 +703,6 @@
                 toggleBtn.parentElement.appendChild(gearBtn);
             }
         }
-
-        updateUI();
     }
 
     // Insert VS Code Status Bar Item
@@ -730,8 +725,10 @@
             font-size: 11px;
             height: 100%;
             user-select: none;
+            color: ${state.isRTL ? '#38bdf8' : 'inherit'};
         `;
         statusItem.title = 'Antigravity RTL (Click to toggle, right-click for settings)';
+        statusItem.textContent = state.isRTL ? '⇄ RTL: On' : '⇄ RTL: Off';
 
         statusItem.addEventListener('click', () => {
             setRTLActive(!state.isRTL);
@@ -744,7 +741,6 @@
         });
 
         statusBar.appendChild(statusItem);
-        updateUI();
     }
 
     // Outside click & Escape to close settings panel
@@ -787,22 +783,41 @@
         }
     }, { capture: true });
 
-    // Observers and intervals for dynamic UI
-    document.body.addEventListener('input', updateDir, { capture: true });
-    document.body.addEventListener('focusin', updateDir, { capture: true });
+    // Throttled dynamic UI updater
+    let domUpdateTimer = null;
+    let isUpdatingDOM = false;
 
-    const observer = new MutationObserver(() => {
-        updateDir();
-        tryInsertChatHeaderButtons();
-        tryInsertStatusBarItem();
+    function scheduleDOMUpdate() {
+        if (domUpdateTimer) return;
+        domUpdateTimer = setTimeout(() => {
+            domUpdateTimer = null;
+            if (isUpdatingDOM) return;
+            isUpdatingDOM = true;
+            try {
+                updateDir();
+                tryInsertChatHeaderButtons();
+                tryInsertStatusBarItem();
+            } finally {
+                isUpdatingDOM = false;
+            }
+        }, 400);
+    }
+
+    document.body.addEventListener('input', scheduleDOMUpdate, { capture: true });
+    document.body.addEventListener('focusin', scheduleDOMUpdate, { capture: true });
+
+    const observer = new MutationObserver((mutations) => {
+        if (isUpdatingDOM) return;
+        for (const m of mutations) {
+            for (const node of m.addedNodes) {
+                if (node.id && (node.id.startsWith('antigravity-rtl') || node.id === 'antigravity-chat-rtl-header-btn' || node.id === 'antigravity-chat-rtl-gear-btn')) {
+                    return;
+                }
+            }
+        }
+        scheduleDOMUpdate();
     });
     observer.observe(document.body, { childList: true, subtree: true });
-
-    setInterval(() => {
-        updateDir();
-        tryInsertChatHeaderButtons();
-        tryInsertStatusBarItem();
-    }, 600);
 
     // Initial run
     updateUI();
