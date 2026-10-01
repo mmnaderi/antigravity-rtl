@@ -3,11 +3,12 @@
  * Injected into workbench and jetski agent windows
  */
 (function() {
-    if (window.__antigravity_rtl_injected) return;
-    window.__antigravity_rtl_injected = true;
+    try {
+        if (window.__antigravity_rtl_injected) return;
+        window.__antigravity_rtl_injected = true;
 
     const fontBase64 = '__FONT_BASE64__';
-    const rtlConfig = typeof __RTL_CONFIG__ !== 'undefined' ? __RTL_CONFIG__ : {};
+    const rtlConfig = __RTL_CONFIG__;
 
     // In-memory reactive state
     const state = {
@@ -244,7 +245,9 @@
                 ${codeFontRule}
             }
         `;
-        window.dispatchEvent(new Event('resize'));
+        if (typeof window.dispatchEvent === 'function') {
+            window.dispatchEvent(new Event('resize'));
+        }
     }
 
     function saveConfig() {
@@ -748,4 +751,7 @@
     updateUI();
     tryInsertChatHeaderButtons();
     tryInsertStatusBarItem();
+    } catch (e) {
+        console.error('[Antigravity RTL Client Error]', e);
+    }
 })();
