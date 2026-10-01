@@ -11,6 +11,14 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONFIG_FILE = path.join(os.homedir(), '.antigravity-rtl.json');
+const LOG_FILE = '/tmp/antigravity-rtl.log';
+
+function log(...args) {
+    try {
+        const line = `[${new Date().toISOString()}] ` + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ') + '\n';
+        fs.appendFileSync(LOG_FILE, line);
+    } catch (e) {}
+}
 
 let cachedFontBase64 = null;
 function getFontBase64() {
@@ -33,18 +41,20 @@ app.on('browser-window-created', (_event, win) => {
         if (typeof msg === 'string' && msg.startsWith('SAVE_RTL_CONFIG|')) {
             try {
                 fs.writeFileSync(CONFIG_FILE, msg.substring(16), 'utf8');
+                log('Config saved:', msg.substring(16));
             } catch (err) {
-                console.error('[Antigravity RTL] Failed to save config:', err);
+                log('Failed to save config:', err.message);
             }
         }
     });
 
-    // 2. Inject RTL script on dom-ready
-    win.webContents.on('dom-ready', async () => {
+    const injectScript = async (sourceEvent) => {
         try {
             const url = win.webContents.getURL() || '';
-            // Only inject in workbench, jetski, and html windows
-            if (!url.includes('workbench') && !url.includes('jetski') && !url.endsWith('.html')) {
+            log(`[${sourceEvent}] URL:`, url);
+
+            // Filter for workbench and relevant windows
+            if (!url.includes('workbench') && !url.includes('jetski') && !url.endsWith('.html') && url !== '') {
                 return;
             }
 
@@ -75,11 +85,15 @@ app.on('browser-window-created', (_event, win) => {
                 clientCode = clientCode
                     .replace('__FONT_BASE64__', fontBase64)
                     .replace('__RTL_CONFIG__', JSON.stringify(rtlConfig));
-                
+
                 await win.webContents.executeJavaScript(clientCode);
+                log(`[${sourceEvent}] Successfully injected antigravity-rtl-client.js`);
             }
         } catch (err) {
-            console.error('[Antigravity RTL] Failed to inject client script:', err);
+            log(`[${sourceEvent}] Injection error:`, err.message);
         }
-    });
+    };
+
+    // 2. Inject RTL script on dom-ready
+    win.webContents.on('dom-ready', () => injectScript('dom-ready'));
 });
