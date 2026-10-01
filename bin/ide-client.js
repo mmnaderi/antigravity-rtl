@@ -705,42 +705,56 @@
         }
     }
 
-    // Insert VS Code Status Bar Item
+    // Insert VS Code Status Bar Item (Right side)
     function tryInsertStatusBarItem() {
-        if (document.getElementById('antigravity-rtl-statusbar-btn')) return;
-
-        const statusBar = document.querySelector('.part.statusbar .left-items') || 
-                          document.querySelector('.part.statusbar') || 
-                          document.querySelector('footer');
+        const statusBar = document.querySelector('.part.statusbar .right-items') || 
+                          document.querySelector('.part.statusbar .items-container.right-items') ||
+                          document.querySelector('.part.statusbar');
         if (!statusBar) return;
 
-        const statusItem = document.createElement('div');
-        statusItem.id = 'antigravity-rtl-statusbar-btn';
-        statusItem.className = 'statusbar-item left';
-        statusItem.style.cssText = `
-            cursor: pointer;
-            padding: 0 8px;
-            display: inline-flex;
-            align-items: center;
-            font-size: 11px;
-            height: 100%;
-            user-select: none;
-            color: ${state.isRTL ? '#38bdf8' : 'inherit'};
-        `;
-        statusItem.title = 'Antigravity RTL (Click to toggle, right-click for settings)';
-        statusItem.textContent = state.isRTL ? '⇄ RTL: On' : '⇄ RTL: Off';
+        let statusItem = document.getElementById('antigravity-rtl-statusbar-btn');
+        if (!statusItem) {
+            statusItem = document.createElement('a');
+            statusItem.id = 'antigravity-rtl-statusbar-btn';
+            statusItem.className = 'statusbar-item right';
+            statusItem.href = '#';
+            statusItem.style.cssText = `
+                cursor: pointer;
+                padding: 0 8px;
+                display: inline-flex;
+                align-items: center;
+                font-size: 11px;
+                height: 100%;
+                user-select: none;
+                text-decoration: none;
+                color: ${state.isRTL ? '#38bdf8' : 'inherit'};
+            `;
+            statusItem.title = 'Antigravity RTL (Click to toggle, right-click for settings)';
+            statusItem.textContent = state.isRTL ? '⇄ RTL: On' : '⇄ RTL: Off';
 
-        statusItem.addEventListener('click', () => {
-            setRTLActive(!state.isRTL);
-        });
+            statusItem.addEventListener('click', (e) => {
+                e.preventDefault();
+                setRTLActive(!state.isRTL);
+            });
 
-        statusItem.addEventListener('contextmenu', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            toggleSettingsPanel(statusItem);
-        });
+            statusItem.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleSettingsPanel(statusItem);
+            });
 
-        statusBar.appendChild(statusItem);
+            if (statusBar.firstChild) {
+                statusBar.insertBefore(statusItem, statusBar.firstChild);
+            } else {
+                statusBar.appendChild(statusItem);
+            }
+        } else if (statusItem.parentElement !== statusBar) {
+            if (statusBar.firstChild) {
+                statusBar.insertBefore(statusItem, statusBar.firstChild);
+            } else {
+                statusBar.appendChild(statusItem);
+            }
+        }
     }
 
     // Outside click & Escape to close settings panel
