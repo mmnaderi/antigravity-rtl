@@ -600,32 +600,45 @@
             if (oldGear) oldGear.remove();
         }
 
+        function getStatusBarTarget() {
+            return document.querySelector('.part.statusbar .right-items') || 
+                   document.querySelector('.part.statusbar .items-container.right-items') ||
+                   document.querySelector('[id="workbench.parts.statusbar"] .right-items') ||
+                   document.querySelector('.part.statusbar') ||
+                   document.querySelector('[id="workbench.parts.statusbar"]');
+        }
+
         // Insert VS Code Status Bar Item (Right side)
         function tryInsertStatusBarItem() {
             cleanupOldChatButtons();
 
-            const statusBar = document.querySelector('.part.statusbar .right-items') || 
-                              document.querySelector('.part.statusbar .items-container.right-items') ||
-                              document.querySelector('.part.statusbar');
+            const statusBar = getStatusBarTarget();
             if (!statusBar) return;
 
             let statusItem = document.getElementById('antigravity-rtl-statusbar-btn');
             if (!statusItem) {
-                statusItem = document.createElement('div');
+                statusItem = document.createElement('a');
                 statusItem.id = 'antigravity-rtl-statusbar-btn';
                 statusItem.className = 'statusbar-item right';
-                
-                const link = document.createElement('a');
-                link.id = 'antigravity-rtl-statusbar-link';
-                link.className = 'statusbar-item-label';
-                link.role = 'button';
-                link.tabIndex = 0;
-                link.title = 'Antigravity RTL (Click to open settings, Alt+R to toggle)';
-                link.textContent = state.isRTL ? '⇄ RTL: On' : '⇄ RTL: Off';
-                if (state.isRTL) {
-                    link.style.color = '#38bdf8';
-                }
-                statusItem.appendChild(link);
+                statusItem.href = '#';
+                statusItem.style.cssText = `
+                    cursor: pointer !important;
+                    padding: 0 8px !important;
+                    display: inline-flex !important;
+                    align-items: center !important;
+                    justify-content: center !important;
+                    font-size: 11px !important;
+                    height: 100% !important;
+                    line-height: 22px !important;
+                    user-select: none !important;
+                    text-decoration: none !important;
+                    white-space: nowrap !important;
+                    color: ${state.isRTL ? '#38bdf8' : 'inherit'} !important;
+                    opacity: 0.95;
+                    box-sizing: border-box !important;
+                `;
+                statusItem.title = 'Antigravity RTL (Click to open settings, Alt+R to toggle)';
+                statusItem.textContent = state.isRTL ? '⇄ RTL: On' : '⇄ RTL: Off';
 
                 statusItem.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -633,16 +646,27 @@
                     toggleSettingsPanel();
                 });
 
+                statusItem.addEventListener('mouseenter', () => {
+                    statusItem.style.backgroundColor = 'var(--vscode-statusBarItem-hoverBackground, rgba(255,255,255,0.12))';
+                });
+                statusItem.addEventListener('mouseleave', () => {
+                    statusItem.style.backgroundColor = 'transparent';
+                });
+
                 if (statusBar.firstChild) {
                     statusBar.insertBefore(statusItem, statusBar.firstChild);
                 } else {
                     statusBar.appendChild(statusItem);
                 }
-            } else if (statusItem.parentElement !== statusBar) {
-                if (statusBar.firstChild) {
+            } else {
+                if (statusItem.parentElement !== statusBar) {
+                    if (statusBar.firstChild) {
+                        statusBar.insertBefore(statusItem, statusBar.firstChild);
+                    } else {
+                        statusBar.appendChild(statusItem);
+                    }
+                } else if (statusBar.firstChild !== statusItem) {
                     statusBar.insertBefore(statusItem, statusBar.firstChild);
-                } else {
-                    statusBar.appendChild(statusItem);
                 }
             }
         }
@@ -711,20 +735,42 @@
 
         const observer = new MutationObserver((mutations) => {
             if (isUpdatingDOM) return;
+            let hasExternal = false;
             for (const m of mutations) {
                 for (const node of m.addedNodes) {
-                    if (node.id && (node.id.startsWith('antigravity-rtl') || node.id === 'antigravity-chat-rtl-header-btn')) {
-                        return;
+                    if (!node.id || (!node.id.startsWith('antigravity-rtl') && node.id !== 'antigravity-chat-rtl-header-btn')) {
+                        hasExternal = true;
+                        break;
                     }
                 }
+                if (hasExternal) break;
             }
-            scheduleDOMUpdate();
+            if (hasExternal) {
+                scheduleDOMUpdate();
+            }
         });
         observer.observe(document.body, { childList: true, subtree: true });
 
         // Initial run
         updateUI();
         tryInsertStatusBarItem();
+
+        // Startup retry loop ensures insertion when workbench statusbar appears
+        let initRetries = 0;
+        const initInterval = setInterval(() => {
+            initRetries++;
+            tryInsertStatusBarItem();
+            const btn = document.getElementById('antigravity-rtl-statusbar-btn');
+            const target = getStatusBarTarget();
+            if (btn && target && btn.parentElement === target && target.classList.contains('right-items')) {
+                if (initRetries > 8) {
+                    clearInterval(initInterval);
+                }
+            }
+            if (initRetries >= 25) {
+                clearInterval(initInterval);
+            }
+        }, 300);
 
     } catch (e) {
         console.error('[Antigravity RTL Client Error]', e);
