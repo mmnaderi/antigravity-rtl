@@ -2,7 +2,7 @@
 
 # Antigravity Smart RTL Patcher
 
-**Read and write naturally in Persian and Arabic, without disrupting English or code.**
+**Read and write naturally in Persian, Arabic, and Hebrew, without disrupting English or code.**
 
 A right-to-left and typography patch for the [Antigravity](https://antigravity.google/) desktop app and **Antigravity IDE** (VS Code Edition).
 
@@ -184,6 +184,10 @@ npx antigravity-rtl --restore
 
 <div align="center">
 
+<picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Built%20by-a%20human.svg?logo=%F0%9F%91%A8%E2%80%8D%F0%9F%92%BB&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk"><img alt="Built by a Human" src="https://shieldcn.dev/badge/Built%20by-a%20human.svg?logo=%F0%9F%91%A8%E2%80%8D%F0%9F%92%BB&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk"></picture>
+&nbsp;
 <picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/flag/ir.svg?label=Built+in&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk" /><img alt="Built in IRAN" src="https://shieldcn.dev/flag/ir.svg?label=Built+in&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk" /></picture>
+&nbsp;
+<picture><source media="(prefers-color-scheme: dark)" srcset="https://shieldcn.dev/badge/Buy%20me%20a%20coffee.svg?logo=buymeacoffee&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk"><img alt="Buy me a coffee" src="https://shieldcn.dev/badge/Buy%20me%20a%20coffee.svg?logo=buymeacoffee&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk"></picture>
 
 </div>
