@@ -589,26 +589,57 @@
         updateUI();
     }
 
-    // Insert Chat Header Buttons (Toggle + Settings Gear)
+    // Insert Chat Header Unified Button Group (Toggle + Settings Gear)
     function tryInsertChatHeaderButtons() {
         const newChatBtn = document.querySelector('a[data-tooltip-id="new-conversation-tooltip"]');
         if (!newChatBtn || !newChatBtn.parentElement) return;
 
-        // 1. Toggle Button
-        if (!document.getElementById('antigravity-chat-rtl-header-btn')) {
-            const toggleBtn = document.createElement('a');
+        let group = document.getElementById('antigravity-rtl-btn-group');
+        if (!group) {
+            // Remove any loose leftover button if present
+            const oldBtn = document.getElementById('antigravity-chat-rtl-header-btn');
+            if (oldBtn && oldBtn.parentElement && !oldBtn.closest('#antigravity-rtl-btn-group')) {
+                oldBtn.remove();
+            }
+
+            group = document.createElement('div');
+            group.id = 'antigravity-rtl-btn-group';
+            group.style.cssText = `
+                display: inline-flex;
+                align-items: center;
+                border: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.18));
+                background: var(--vscode-editorWidget-background, rgba(30, 41, 59, 0.7));
+                border-radius: 6px;
+                height: 24px;
+                margin: 0 4px;
+                user-select: none;
+                box-sizing: border-box;
+                overflow: hidden;
+            `;
+
+            // Toggle Button (⇄)
+            const toggleBtn = document.createElement('button');
             toggleBtn.id = 'antigravity-chat-rtl-header-btn';
-            toggleBtn.className = newChatBtn.className.replace(/cursor-not-allowed|opacity-\d+/g, '').trim();
-            toggleBtn.href = '#';
+            toggleBtn.type = 'button';
             toggleBtn.textContent = '⇄';
-            toggleBtn.style.margin = '0 2px';
-            toggleBtn.style.display = 'inline-flex';
-            toggleBtn.style.alignItems = 'center';
-            toggleBtn.style.justifyContent = 'center';
-            toggleBtn.style.fontWeight = 'bold';
-            toggleBtn.style.fontSize = '14px';
-            toggleBtn.style.cursor = 'pointer';
-            toggleBtn.style.userSelect = 'none';
+            toggleBtn.title = 'Antigravity RTL (Click: toggle, Right-click: settings)';
+            toggleBtn.style.cssText = `
+                background: none;
+                border: none;
+                border-right: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.15));
+                color: ${state.isRTL ? '#38bdf8' : 'inherit'};
+                opacity: ${state.isRTL ? '1' : '0.45'};
+                cursor: pointer;
+                padding: 0 6px;
+                font-weight: bold;
+                font-size: 13px;
+                line-height: 1;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                outline: none;
+            `;
 
             toggleBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -616,38 +647,46 @@
                 setRTLActive(!state.isRTL);
             });
 
-            newChatBtn.parentElement.insertBefore(toggleBtn, newChatBtn.nextSibling);
-        }
+            toggleBtn.addEventListener('contextmenu', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleSettingsPanel(group);
+            });
 
-        // 2. Settings Gear Button
-        if (!document.getElementById('antigravity-chat-rtl-gear-btn')) {
-            const toggleBtn = document.getElementById('antigravity-chat-rtl-header-btn');
-            const gearBtn = document.createElement('a');
+            // Settings Gear Button (SVG)
+            const gearBtn = document.createElement('button');
             gearBtn.id = 'antigravity-chat-rtl-gear-btn';
-            gearBtn.className = newChatBtn.className.replace(/cursor-not-allowed|opacity-\d+/g, '').trim();
-            gearBtn.href = '#';
-            gearBtn.innerHTML = '⚙';
+            gearBtn.type = 'button';
             gearBtn.title = 'Antigravity RTL Settings';
-            gearBtn.style.margin = '0 2px';
-            gearBtn.style.display = 'inline-flex';
-            gearBtn.style.alignItems = 'center';
-            gearBtn.style.justifyContent = 'center';
-            gearBtn.style.fontSize = '12px';
-            gearBtn.style.opacity = '0.75';
-            gearBtn.style.cursor = 'pointer';
-            gearBtn.style.userSelect = 'none';
+            gearBtn.style.cssText = `
+                background: none;
+                border: none;
+                color: inherit;
+                opacity: 0.75;
+                cursor: pointer;
+                padding: 0 5px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                outline: none;
+            `;
+            gearBtn.innerHTML = `
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;pointer-events:none;">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            `;
 
             gearBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                toggleSettingsPanel(gearBtn);
+                toggleSettingsPanel(group);
             });
 
-            if (toggleBtn && toggleBtn.nextSibling) {
-                toggleBtn.parentElement.insertBefore(gearBtn, toggleBtn.nextSibling);
-            } else if (toggleBtn) {
-                toggleBtn.parentElement.appendChild(gearBtn);
-            }
+            group.appendChild(toggleBtn);
+            group.appendChild(gearBtn);
+            newChatBtn.parentElement.insertBefore(group, newChatBtn.nextSibling);
         }
 
         updateUI();
