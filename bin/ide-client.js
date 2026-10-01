@@ -319,6 +319,25 @@
         });
     }
 
+    function setSafeHTML(element, htmlString) {
+        try {
+            if (window.trustedTypes && window.trustedTypes.createPolicy) {
+                if (!window.__rtl_policy) {
+                    try {
+                        window.__rtl_policy = window.trustedTypes.createPolicy('antigravity-rtl-policy', {
+                            createHTML: (s) => s
+                        });
+                    } catch (_) {
+                        window.__rtl_policy = { createHTML: (s) => s };
+                    }
+                }
+                element.innerHTML = window.__rtl_policy.createHTML(htmlString);
+                return;
+            }
+        } catch (_) {}
+        element.innerHTML = htmlString;
+    }
+
     // Settings Panel Creation
     function ensureSettingsPanel() {
         let panel = document.getElementById('antigravity-rtl-settings-panel');
@@ -344,7 +363,7 @@
             user-select: none;
         `;
 
-        panel.innerHTML = `
+        setSafeHTML(panel, `
             <!-- Header -->
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--vscode-widget-border, rgba(255,255,255,0.15));">
                 <div>
@@ -423,7 +442,7 @@
             <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--vscode-widget-border,rgba(255,255,255,0.1));text-align:center;">
                 <a href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" style="font-size:10px;color:var(--vscode-textLink-foreground,#38bdf8);text-decoration:none;opacity:0.8;">★ Star Antigravity RTL on GitHub</a>
             </div>
-        `;
+        `);
 
         document.body.appendChild(panel);
 
@@ -589,57 +608,58 @@
         updateUI();
     }
 
-    // Insert Chat Header Unified Button Group (Toggle + Settings Gear)
+    function createGearSvg(size = 14) {
+        const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('width', String(size));
+        svg.setAttribute('height', String(size));
+        svg.setAttribute('viewBox', '0 0 24 24');
+        svg.setAttribute('fill', 'none');
+        svg.setAttribute('stroke', 'currentColor');
+        svg.setAttribute('stroke-width', '2');
+        svg.setAttribute('stroke-linecap', 'round');
+        svg.setAttribute('stroke-linejoin', 'round');
+        svg.style.display = 'block';
+        svg.style.pointerEvents = 'none';
+
+        const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circle.setAttribute('cx', '12');
+        circle.setAttribute('cy', '12');
+        circle.setAttribute('r', '3');
+        svg.appendChild(circle);
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', 'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z');
+        svg.appendChild(path);
+
+        return svg;
+    }
+
+    // Insert Chat Header Buttons (Toggle + Settings Gear)
     function tryInsertChatHeaderButtons() {
         const newChatBtn = document.querySelector('a[data-tooltip-id="new-conversation-tooltip"]');
         if (!newChatBtn || !newChatBtn.parentElement) return;
 
-        let group = document.getElementById('antigravity-rtl-btn-group');
-        if (!group) {
-            // Remove any loose leftover button if present
-            const oldBtn = document.getElementById('antigravity-chat-rtl-header-btn');
-            if (oldBtn && oldBtn.parentElement && !oldBtn.closest('#antigravity-rtl-btn-group')) {
-                oldBtn.remove();
-            }
+        // Clean up failed group if present
+        const oldGroup = document.getElementById('antigravity-rtl-btn-group');
+        if (oldGroup) oldGroup.remove();
 
-            group = document.createElement('div');
-            group.id = 'antigravity-rtl-btn-group';
-            group.style.cssText = `
-                display: inline-flex;
-                align-items: center;
-                border: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.18));
-                background: var(--vscode-editorWidget-background, rgba(30, 41, 59, 0.7));
-                border-radius: 6px;
-                height: 24px;
-                margin: 0 4px;
-                user-select: none;
-                box-sizing: border-box;
-                overflow: hidden;
-            `;
-
-            // Toggle Button (⇄)
-            const toggleBtn = document.createElement('button');
+        // 1. Toggle Button (⇄)
+        let toggleBtn = document.getElementById('antigravity-chat-rtl-header-btn');
+        if (!toggleBtn) {
+            toggleBtn = document.createElement('a');
             toggleBtn.id = 'antigravity-chat-rtl-header-btn';
-            toggleBtn.type = 'button';
+            toggleBtn.className = newChatBtn.className.replace(/cursor-not-allowed|opacity-\d+/g, '').trim();
+            toggleBtn.href = '#';
             toggleBtn.textContent = '⇄';
             toggleBtn.title = 'Antigravity RTL (Click: toggle, Right-click: settings)';
-            toggleBtn.style.cssText = `
-                background: none;
-                border: none;
-                border-right: 1px solid var(--vscode-widget-border, rgba(255,255,255,0.15));
-                color: ${state.isRTL ? '#38bdf8' : 'inherit'};
-                opacity: ${state.isRTL ? '1' : '0.45'};
-                cursor: pointer;
-                padding: 0 6px;
-                font-weight: bold;
-                font-size: 13px;
-                line-height: 1;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100%;
-                outline: none;
-            `;
+            toggleBtn.style.margin = '0 2px';
+            toggleBtn.style.display = 'inline-flex';
+            toggleBtn.style.alignItems = 'center';
+            toggleBtn.style.justifyContent = 'center';
+            toggleBtn.style.fontWeight = 'bold';
+            toggleBtn.style.fontSize = '14px';
+            toggleBtn.style.cursor = 'pointer';
+            toggleBtn.style.userSelect = 'none';
 
             toggleBtn.addEventListener('click', (e) => {
                 e.preventDefault();
@@ -650,43 +670,41 @@
             toggleBtn.addEventListener('contextmenu', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                toggleSettingsPanel(group);
+                toggleSettingsPanel(toggleBtn);
             });
 
-            // Settings Gear Button (SVG)
-            const gearBtn = document.createElement('button');
+            newChatBtn.parentElement.insertBefore(toggleBtn, newChatBtn.nextSibling);
+        }
+
+        // 2. Settings Gear Button (⚙)
+        let gearBtn = document.getElementById('antigravity-chat-rtl-gear-btn');
+        if (!gearBtn) {
+            gearBtn = document.createElement('a');
             gearBtn.id = 'antigravity-chat-rtl-gear-btn';
-            gearBtn.type = 'button';
+            gearBtn.className = newChatBtn.className.replace(/cursor-not-allowed|opacity-\d+/g, '').trim();
+            gearBtn.href = '#';
             gearBtn.title = 'Antigravity RTL Settings';
-            gearBtn.style.cssText = `
-                background: none;
-                border: none;
-                color: inherit;
-                opacity: 0.75;
-                cursor: pointer;
-                padding: 0 5px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                height: 100%;
-                outline: none;
-            `;
-            gearBtn.innerHTML = `
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block;pointer-events:none;">
-                    <circle cx="12" cy="12" r="3"></circle>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-                </svg>
-            `;
+            gearBtn.style.margin = '0 2px';
+            gearBtn.style.display = 'inline-flex';
+            gearBtn.style.alignItems = 'center';
+            gearBtn.style.justifyContent = 'center';
+            gearBtn.style.cursor = 'pointer';
+            gearBtn.style.opacity = '0.75';
+            gearBtn.style.userSelect = 'none';
+
+            gearBtn.appendChild(createGearSvg(14));
 
             gearBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                toggleSettingsPanel(group);
+                toggleSettingsPanel(gearBtn);
             });
 
-            group.appendChild(toggleBtn);
-            group.appendChild(gearBtn);
-            newChatBtn.parentElement.insertBefore(group, newChatBtn.nextSibling);
+            if (toggleBtn && toggleBtn.nextSibling) {
+                toggleBtn.parentElement.insertBefore(gearBtn, toggleBtn.nextSibling);
+            } else if (toggleBtn) {
+                toggleBtn.parentElement.appendChild(gearBtn);
+            }
         }
 
         updateUI();
