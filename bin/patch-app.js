@@ -43,7 +43,7 @@ export function getDefaultAppPath() {
     return candidates[0] || '';
 }
 
-export async function getAppAsarPath(customPath) {
+export function detectAppAsarPath(customPath) {
     if (customPath) {
         if (fs.existsSync(customPath)) {
             let p = customPath;
@@ -52,15 +52,28 @@ export async function getAppAsarPath(customPath) {
             }
             if (fs.existsSync(p)) return p;
         }
+        return null;
     }
 
     const candidates = getAppCandidatePaths();
     for (const c of candidates) {
         if (fs.existsSync(c)) {
-            console.log(blue(`ℹ Found Antigravity installation at:`));
-            console.log(`  ${c}\n`);
             return c;
         }
+    }
+    return null;
+}
+
+export function hasAppBackup(asarPath) {
+    return asarPath ? fs.existsSync(asarPath + '.bak') : false;
+}
+
+export async function getAppAsarPath(customPath) {
+    const detected = detectAppAsarPath(customPath);
+    if (detected) {
+        console.log(blue(`ℹ Found Antigravity installation at:`));
+        console.log(`  ${detected}\n`);
+        return detected;
     }
 
     console.log(yellow(`⚠ Could not find Antigravity (App) at default location.`));
@@ -77,26 +90,30 @@ export async function getAppAsarPath(customPath) {
     return response.customPath;
 }
 
-export async function restoreApp(asarPath) {
+export async function restoreApp(asarPath, { exitOnError = true } = {}) {
     const backupPath = asarPath + '.bak';
     if (!fs.existsSync(backupPath)) {
-        console.error(red('✖ No backup found to restore.\n'));
-        process.exit(1);
+        console.error(red('✖ No backup found for Antigravity (App) to restore.\n'));
+        if (exitOnError) process.exit(1);
+        return false;
     }
-    const spinner = ora('Restoring original app.asar...').start();
+    const spinner = ora('Restoring original Antigravity app.asar...').start();
     try {
         fs.copyFileSync(backupPath, asarPath);
+        fs.unlinkSync(backupPath);
         spinner.succeed('Successfully restored original Antigravity!\n');
+        return true;
     } catch (e) {
-        spinner.fail('Failed to restore.');
+        spinner.fail('Failed to restore Antigravity.');
         console.error(red(e.message));
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 }
 
-export async function patchApp(asarPath) {
+export async function patchApp(asarPath, { exitOnError = true } = {}) {
     const backupPath = asarPath + '.bak';
-    const spinner = ora('Checking permissions and backing up...').start();
+    const spinner = ora('Checking permissions and backing up Antigravity App...').start();
     try {
         fs.accessSync(path.dirname(asarPath), fs.constants.W_OK);
         if (!fs.existsSync(backupPath)) {
@@ -115,7 +132,8 @@ export async function patchApp(asarPath) {
         } else {
             console.error(yellow('\nPlease run this command with sudo.\n'));
         }
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
     
     const extractDir = path.join(path.dirname(asarPath), 'app-extracted-rtl-temp');
@@ -128,7 +146,8 @@ export async function patchApp(asarPath) {
     } catch (e) {
         spinner.fail('Failed to extract ASAR.');
         console.error(red(e.message));
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 
     spinner.text = 'Injecting RTL features...';
@@ -148,7 +167,7 @@ export async function patchApp(asarPath) {
                 spinner.succeed('Antigravity is already patched!');
                 fs.rmSync(extractDir, { recursive: true, force: true });
                 console.log(green('\n✨ Enjoy your RTL experience!\n'));
-                return;
+                return true;
             }
         }
 
@@ -175,7 +194,8 @@ export async function patchApp(asarPath) {
         spinner.fail('Injection failed.');
         console.error(red(e.message));
         if (fs.existsSync(extractDir)) fs.rmSync(extractDir, { recursive: true, force: true });
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 
     spinner.text = 'Repacking app.asar (almost done)...';
@@ -183,10 +203,13 @@ export async function patchApp(asarPath) {
         await asar.createPackage(extractDir, asarPath);
         fs.rmSync(extractDir, { recursive: true, force: true });
         spinner.succeed('Successfully patched Antigravity!');
-        console.log(green('\n✨ RTL Features have been enabled. Please restart Antigravity to see the changes.\n'));
+        console.log(green('\n✨ RTL Features have been enabled for Antigravity (Standalone App).'));
+        console.log(green('✨ Please restart Antigravity to see the changes.\n'));
+        return true;
     } catch (e) {
         spinner.fail('Failed to repack ASAR.');
         console.error(red(e.message));
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 }

@@ -6,12 +6,25 @@ import picocolors from 'picocolors';
 import prompts from 'prompts';
 import figlet from 'figlet';
 
-import { patchApp, restoreApp, getAppAsarPath, getDefaultAppPath, getAppCandidatePaths } from './patch-app.js';
-import { patchIde, restoreIde, getIdeAppPath, getIdeCandidatePaths, resolveIdeAppDir } from './patch-ide.js';
+import {
+    patchApp,
+    restoreApp,
+    getAppAsarPath,
+    detectAppAsarPath,
+    hasAppBackup
+} from './patch-app.js';
+import {
+    patchIde,
+    restoreIde,
+    getIdeAppPath,
+    detectIdeAppPath,
+    resolveIdeAppDir,
+    hasIdeBackup
+} from './patch-ide.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const { cyan, bold } = picocolors;
+const { cyan, bold, blue, green, yellow } = picocolors;
 
 const pkgPath = path.join(__dirname, '..', 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
@@ -77,19 +90,29 @@ if (args.includes('--help') || args.includes('-h')) {
   npx antigravity-rtl [options] [path]
 
 Options:
-  --ide              Patch or restore Antigravity IDE (VS Code Edition)
-  --app              Patch or restore Antigravity Standalone App
-  --restore          Revert changes and restore original backup files
+  --ide              Patch or restore Antigravity IDE only (VS Code Edition)
+  --app              Patch or restore Antigravity Standalone App only
+  -r, --restore      Revert changes and restore original backup files
   --path <dir/file>  Specify custom path to IDE directory or app.asar
   -h, --help         Show this help message
 
-Supported Platforms:
-  Windows, macOS, Linux
+Default Behavior:
+  Running without --app or --ide will auto-detect installed applications:
+  • If both Antigravity and Antigravity IDE are found, both will be patched.
+  • If only one is found, that one will be patched.
+  • Running with --restore will restore all detected applications with backups.
+
+Examples:
+  npx antigravity-rtl               # Auto-detect and patch both/available apps
+  npx antigravity-rtl --ide         # Patch only Antigravity IDE
+  npx antigravity-rtl --app         # Patch only Antigravity Standalone App
+  npx antigravity-rtl --restore     # Restore all detected patched apps
+  npx antigravity-rtl -r --ide      # Restore only Antigravity IDE
 `);
     process.exit(0);
 }
 
-const isRestore = args.includes('--restore');
+const isRestore = args.includes('--restore') || args.includes('-r');
 const forceIde = args.includes('--ide');
 const forceApp = args.includes('--app');
 
@@ -99,71 +122,154 @@ const pathArgIdx = args.indexOf('--path');
 if (pathArgIdx !== -1 && args[pathArgIdx + 1]) {
     customPath = args[pathArgIdx + 1];
 } else {
-    const nonFlags = args.filter(a => !a.startsWith('--'));
+    const nonFlags = args.filter(a => !a.startsWith('-'));
     if (nonFlags.length > 0) {
         customPath = nonFlags[0];
     }
 }
 
-async function determineTarget() {
-    if (forceIde) return 'ide';
-    if (forceApp) return 'app';
+async function main() {
+    if (isRestore) {
+        if (customPath) {
+            if (forceIde || resolveIdeAppDir(customPath)) {
+                const ideDir = resolveIdeAppDir(customPath) || customPath;
+                await restoreIde(ideDir);
+            } else {
+                await restoreApp(customPath);
+            }
+            return;
+        }
 
+        if (forceApp && !forceIde) {
+            const appPath = await getAppAsarPath();
+            await restoreApp(appPath);
+            return;
+        }
+
+        if (forceIde && !forceApp) {
+            const ideDir = await getIdeAppPath();
+            await restoreIde(ideDir);
+            return;
+        }
+
+        // Auto-detect targets to restore
+        const appPath = detectAppAsarPath();
+        const ideDir = detectIdeAppPath();
+
+        if (!appPath && !ideDir) {
+            console.log(yellow('⚠ Could not automatically locate Antigravity or Antigravity IDE.'));
+            const response = await prompts({
+                type: 'select',
+                name: 'target',
+                message: 'Which application would you like to restore?',
+                choices: [
+                    { title: 'Antigravity IDE (VS Code Edition)', value: 'ide' },
+                    { title: 'Antigravity (Standalone App)', value: 'app' }
+                ],
+                initial: 0
+            });
+            if (!response.target) process.exit(0);
+            if (response.target === 'ide') {
+                const p = await getIdeAppPath();
+                await restoreIde(p);
+            } else {
+                const p = await getAppAsarPath();
+                await restoreApp(p);
+            }
+            return;
+        }
+
+        const appHasBak = hasAppBackup(appPath);
+        const ideHasBak = hasIdeBackup(ideDir);
+
+        if (!appHasBak && !ideHasBak) {
+            console.log(yellow('⚠ No backup files found to restore for detected application(s).\n'));
+            return;
+        }
+
+        if (appHasBak) {
+            console.log(blue('ℹ Found backup for Antigravity (Standalone App). Restoring...'));
+            await restoreApp(appPath, { exitOnError: false });
+        }
+        if (ideHasBak) {
+            console.log(blue('ℹ Found backup for Antigravity IDE. Restoring...'));
+            await restoreIde(ideDir, { exitOnError: false });
+        }
+        return;
+    }
+
+    // Patch Mode
     if (customPath) {
-        if (resolveIdeAppDir(customPath)) return 'ide';
-        return 'app';
+        if (forceIde || resolveIdeAppDir(customPath)) {
+            const ideDir = resolveIdeAppDir(customPath) || customPath;
+            await patchIde(ideDir);
+        } else {
+            await patchApp(customPath);
+        }
+        return;
     }
 
-    // Auto-detect installed apps
-    const ideCandidates = getIdeCandidatePaths();
-    let hasIde = ideCandidates.some(c => resolveIdeAppDir(c) !== null);
-
-    const defaultAppCandidates = getAppCandidatePaths();
-    let hasApp = defaultAppCandidates.some(c => fs.existsSync(c));
-
-    if (hasIde && !hasApp) {
-        return 'ide';
-    }
-    if (hasApp && !hasIde) {
-        return 'app';
+    if (forceApp && !forceIde) {
+        const appPath = await getAppAsarPath();
+        await patchApp(appPath);
+        return;
     }
 
-    // If both or neither found, ask the user
-    const actionLabel = isRestore ? 'restore' : 'patch';
+    if (forceIde && !forceApp) {
+        const ideDir = await getIdeAppPath();
+        await patchIde(ideDir);
+        return;
+    }
+
+    // Auto-detect installed applications
+    const appPath = detectAppAsarPath();
+    const ideDir = detectIdeAppPath();
+
+    if (appPath && ideDir) {
+        console.log(bold(cyan('ℹ Found both Antigravity (Standalone App) and Antigravity IDE!')));
+        console.log(bold(cyan('  Patching both applications...\n')));
+        console.log(bold('--- 1/2: Antigravity (Standalone App) ---'));
+        const okApp = await patchApp(appPath, { exitOnError: false });
+        console.log('');
+        console.log(bold('--- 2/2: Antigravity IDE ---'));
+        const okIde = await patchIde(ideDir, { exitOnError: false });
+        if (okApp || okIde) {
+            console.log(bold(green('\n✨ Done! Please restart your application(s) to enjoy RTL.\n')));
+        }
+        return;
+    }
+
+    if (appPath) {
+        console.log(blue('ℹ Found Antigravity (Standalone App). Patching...\n'));
+        await patchApp(appPath);
+        return;
+    }
+
+    if (ideDir) {
+        console.log(blue('ℹ Found Antigravity IDE. Patching...\n'));
+        await patchIde(ideDir);
+        return;
+    }
+
+    // Neither detected automatically
+    console.log(yellow('⚠ Could not automatically locate Antigravity or Antigravity IDE.'));
     const response = await prompts({
         type: 'select',
         name: 'target',
-        message: `Which application would you like to ${actionLabel}?`,
+        message: 'Which application would you like to patch?',
         choices: [
             { title: 'Antigravity IDE (VS Code Edition)', value: 'ide' },
             { title: 'Antigravity (Standalone App)', value: 'app' }
         ],
         initial: 0
     });
-
-    if (!response.target) {
-        process.exit(0);
-    }
-    return response.target;
-}
-
-async function main() {
-    const target = await determineTarget();
-
-    if (target === 'ide') {
-        const ideAppDir = await getIdeAppPath(customPath);
-        if (isRestore) {
-            await restoreIde(ideAppDir);
-        } else {
-            await patchIde(ideAppDir);
-        }
+    if (!response.target) process.exit(0);
+    if (response.target === 'ide') {
+        const p = await getIdeAppPath();
+        await patchIde(p);
     } else {
-        const appAsarPath = await getAppAsarPath(customPath);
-        if (isRestore) {
-            await restoreApp(appAsarPath);
-        } else {
-            await patchApp(appAsarPath);
-        }
+        const p = await getAppAsarPath();
+        await patchApp(p);
     }
 }
 

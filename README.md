@@ -77,22 +77,24 @@ Follow the steps for your operating system. Node.js **22.12 or newer** is requir
 
 | Command | Description |
 | :--- | :--- |
-| `npx antigravity-rtl` | Interactive mode (auto-detects or prompts to choose IDE vs App) |
-| `npx antigravity-rtl --ide` | Directly patch Antigravity IDE |
-| `npx antigravity-rtl --app` | Directly patch Antigravity Standalone App |
-| `npx antigravity-rtl --restore` | Revert changes and restore original backup |
+| `npx antigravity-rtl` | **Auto-detect & patch**: patches both Antigravity & Antigravity IDE if found, or the installed one |
+| `npx antigravity-rtl --ide` | Directly patch Antigravity IDE only |
+| `npx antigravity-rtl --app` | Directly patch Antigravity Standalone App only |
+| `npx antigravity-rtl --restore` | Revert changes and restore original backups for all detected apps |
+| `npx antigravity-rtl --restore --ide` | Revert changes and restore Antigravity IDE only |
+| `npx antigravity-rtl --restore --app` | Revert changes and restore Antigravity Standalone App only |
 | `npx antigravity-rtl --path "/path/to/app"` | Specify a custom installation directory or app.asar |
 
 <a id="uninstall"></a>
 
 ## Uninstall / Revert the patch
 
-Quit the app and run the command with `--restore`:
+Quit the app(s) and run with `--restore` (or `-r`):
 
 ```bash
 npx antigravity-rtl --restore
 ```
-*(Or specify `npx antigravity-rtl --ide --restore` to restore Antigravity IDE directly)*
+*(Or specify `--ide` or `--app` to restore only one: `npx antigravity-rtl --restore --ide`)*
 
 ## How it works
 
@@ -138,10 +140,12 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 
 | دستور | توضیحات |
 | :--- | :--- |
-| `npx antigravity-rtl` | حالت تعاملی (تشخیص خودکار یا انتخاب بین نسخه IDE و اپلیکیشن) |
-| `npx antigravity-rtl --ide` | پچ مستقیم Antigravity IDE |
-| `npx antigravity-rtl --app` | پچ مستقیم نسخه مستقل Antigravity |
-| `npx antigravity-rtl --restore` | بازگردانی کامل به حالت اولیه (قبل از پچ) |
+| `npx antigravity-rtl` | **تشخیص و پچ خودکار**: در صورت وجود هر دو برنامه، هر دو پچ می‌شوند؛ در غیر این صورت برنامهٔ موجود پچ می‌شود |
+| `npx antigravity-rtl --ide` | فقط پچ مستقیم نسخهٔ Antigravity IDE |
+| `npx antigravity-rtl --app` | فقط پچ مستقیم نسخهٔ مستقل Antigravity |
+| `npx antigravity-rtl --restore` | بازگردانی به نسخه اصلی برای تمام برنامه‌های شناسایی‌شده |
+| `npx antigravity-rtl --restore --ide` | فقط بازگردانی Antigravity IDE به نسخه اصلی |
+| `npx antigravity-rtl --restore --app` | فقط بازگردانی نسخه مستقل Antigravity به نسخه اصلی |
 | `npx antigravity-rtl --path "/path/to/app"` | مشخص کردن مسیر دلخواه نصب برنامه |
 
 ### نصب
@@ -165,10 +169,12 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 
 ### بازگردانی به حالت اولیه (Uninstall)
 
+برنامه‌ها را ببندید و فلگ `--restore` (یا `-r`) را اجرا کنید:
+
 ```bash
 npx antigravity-rtl --restore
 ```
-*(یا برای بازگردانی مستقیم نسخه IDE: `npx antigravity-rtl --ide --restore`)*
+*(یا برای بازگردانی فقط یک برنامهٔ خاص: `npx antigravity-rtl --restore --ide`)*
 
 برای گزارش مشکل یا پیشنهاد تغییر، [Issue ثبت کنید](https://github.com/mmnaderi/antigravity-rtl/issues) یا [Pull Request بفرستید](https://github.com/mmnaderi/antigravity-rtl/pulls).
 

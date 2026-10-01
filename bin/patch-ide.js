@@ -68,24 +68,43 @@ export function resolveIdeAppDir(inputPath) {
     return null;
 }
 
-export async function getIdeAppPath(customPath) {
+export function detectIdeAppPath(customPath) {
     if (customPath) {
-        const resolved = resolveIdeAppDir(customPath);
-        if (resolved) {
-            console.log(blue(`ℹ Using specified Antigravity IDE at:`));
-            console.log(`  ${resolved}\n`);
-            return resolved;
-        }
+        return resolveIdeAppDir(customPath);
     }
-
     const candidates = getIdeCandidatePaths();
     for (const c of candidates) {
         const resolved = resolveIdeAppDir(c);
         if (resolved) {
-            console.log(blue(`ℹ Found Antigravity IDE installation at:`));
-            console.log(`  ${resolved}\n`);
             return resolved;
         }
+    }
+    return null;
+}
+
+export function hasIdeBackup(appDir) {
+    if (!appDir) return false;
+    const outDir = path.join(appDir, 'out');
+    const mainJsBak = path.join(outDir, 'main.js.rtl-bak');
+    const workbenchHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench.html.rtl-bak');
+    const jetskiHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench-jetski-agent.html.rtl-bak');
+    const mainJsPath = path.join(outDir, 'main.js');
+    let hasImport = false;
+    if (fs.existsSync(mainJsPath)) {
+        try {
+            const code = fs.readFileSync(mainJsPath, 'utf8');
+            hasImport = code.includes("import './antigravity-rtl-main.js';");
+        } catch (_) {}
+    }
+    return fs.existsSync(mainJsBak) || fs.existsSync(workbenchHtmlBak) || fs.existsSync(jetskiHtmlBak) || hasImport;
+}
+
+export async function getIdeAppPath(customPath) {
+    const detected = detectIdeAppPath(customPath);
+    if (detected) {
+        console.log(blue(`ℹ Found Antigravity IDE installation at:`));
+        console.log(`  ${detected}\n`);
+        return detected;
     }
 
     console.log(yellow(`⚠ Could not automatically find Antigravity IDE.`));
@@ -109,7 +128,7 @@ export async function getIdeAppPath(customPath) {
     return resolved;
 }
 
-export async function restoreIde(appDir) {
+export async function restoreIde(appDir, { exitOnError = true } = {}) {
     const outDir = path.join(appDir, 'out');
     const mainJsPath = path.join(outDir, 'main.js');
     const mainJsBak = path.join(outDir, 'main.js.rtl-bak');
@@ -117,6 +136,12 @@ export async function restoreIde(appDir) {
     const workbenchHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench.html.rtl-bak');
     const jetskiHtml = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench-jetski-agent.html');
     const jetskiHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench-jetski-agent.html.rtl-bak');
+
+    if (!hasIdeBackup(appDir)) {
+        console.error(red('✖ No backup found to restore for Antigravity IDE.\n'));
+        if (exitOnError) process.exit(1);
+        return false;
+    }
 
     const spinner = ora('Restoring original Antigravity IDE files...').start();
     try {
@@ -157,14 +182,16 @@ export async function restoreIde(appDir) {
         }
 
         spinner.succeed('Successfully restored original Antigravity IDE!\n');
+        return true;
     } catch (e) {
         spinner.fail('Failed to restore Antigravity IDE.');
         console.error(red(e.message));
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 }
 
-export async function patchIde(appDir) {
+export async function patchIde(appDir, { exitOnError = true } = {}) {
     const outDir = path.join(appDir, 'out');
     const mainJsPath = path.join(outDir, 'main.js');
     const mainJsBak = path.join(outDir, 'main.js.rtl-bak');
@@ -187,7 +214,8 @@ export async function patchIde(appDir) {
         } else {
             console.error(yellow('\nPlease run this command with sudo.\n'));
         }
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 
     try {
@@ -204,7 +232,8 @@ export async function patchIde(appDir) {
     } catch (e) {
         spinner.fail('Failed to create backup.');
         console.error(red(e.message));
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 
     spinner.text = 'Copying RTL assets and injection scripts...';
@@ -231,7 +260,8 @@ export async function patchIde(appDir) {
     } catch (e) {
         spinner.fail('Failed to copy RTL assets.');
         console.error(red(e.message));
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 
     spinner.text = 'Injecting RTL hook into main.js...';
@@ -261,10 +291,12 @@ export async function patchIde(appDir) {
         spinner.succeed('Successfully patched Antigravity IDE!');
         console.log(green('\n✨ RTL Features have been enabled for Antigravity IDE.'));
         console.log(green('✨ Please restart Antigravity IDE to see the changes.\n'));
+        return true;
 
     } catch (e) {
         spinner.fail('Injection into Antigravity IDE failed.');
         console.error(red(e.message));
-        process.exit(1);
+        if (exitOnError) process.exit(1);
+        return false;
     }
 }
