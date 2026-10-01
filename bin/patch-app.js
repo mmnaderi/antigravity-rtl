@@ -141,10 +141,15 @@ export async function patchApp(asarPath) {
         let utilsCode = fs.readFileSync(utilsPath, 'utf8');
         
         if (utilsCode.includes('/* ANTIGRAVITY RTL PATCH */')) {
-            spinner.succeed('Antigravity is already patched!');
-            fs.rmSync(extractDir, { recursive: true, force: true });
-            console.log(green('\n✨ Enjoy your RTL experience!\n'));
-            return;
+            if (fs.existsSync(backupPath)) {
+                spinner.text = 'Updating existing RTL patch to latest version...';
+                utilsCode = asar.extractFile(backupPath, 'dist/utils.js').toString('utf8');
+            } else {
+                spinner.succeed('Antigravity is already patched!');
+                fs.rmSync(extractDir, { recursive: true, force: true });
+                console.log(green('\n✨ Enjoy your RTL experience!\n'));
+                return;
+            }
         }
 
         const payloadPath = path.join(__dirname, 'payload.js');

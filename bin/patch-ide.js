@@ -249,8 +249,8 @@ export async function patchIde(appDir) {
             if (!fs.existsSync(filePath)) return;
             let content = fs.readFileSync(filePath, 'utf8');
             // If font-src does not have data:, add it
-            if (content.includes("font-src") && !content.includes("font-src\n\t\t\t\t\t'self'\n\t\t\t\t\tdata:")) {
-                content = content.replace("font-src\n\t\t\t\t\t'self'", "font-src\n\t\t\t\t\t'self'\n\t\t\t\t\tdata:");
+            if (content.includes("font-src") && !/font-src[^;]*\bdata:/.test(content)) {
+                content = content.replace(/(font-src[\s\S]*?'self')/i, "$1\n\t\t\t\t\tdata:");
                 fs.writeFileSync(filePath, content, 'utf8');
             }
         };

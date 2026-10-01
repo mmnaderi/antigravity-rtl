@@ -140,7 +140,7 @@
         }
         
         let enFontStr = enFont ? `'${enFont}', ui-sans-serif, system-ui, sans-serif` : 'ui-sans-serif, system-ui, sans-serif';
-        let codeFontStr = codeFont ? `'${codeFont}', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace` : 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+        let codeFontRule = codeFont ? `font-family: '${codeFont}', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;` : '';
         
         const fontStack = `${faFontName}, 'Vazirmatn', ${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`;
 
@@ -308,13 +308,15 @@
             .monaco-editor, .monaco-editor *,
             .monaco-diff-editor, .monaco-diff-editor *,
             .part.terminal, .part.terminal *,
-            .terminal-wrapper, .terminal-wrapper * {
+            .terminal-wrapper, .terminal-wrapper *,
+            .xterm, .xterm * {
                 direction: ltr !important;
                 text-align: left !important;
                 unicode-bidi: normal !important;
-                font-family: ${codeFontStr} !important;
+                ${codeFontRule}
             }
         `;
+        window.dispatchEvent(new Event('resize'));
     };
 
     document.head.appendChild(rtlStyle);

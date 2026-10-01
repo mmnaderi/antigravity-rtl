@@ -12,6 +12,15 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONFIG_FILE = path.join(os.homedir(), '.antigravity-rtl.json');
 
+let cachedFontBase64 = null;
+function getFontBase64() {
+    if (cachedFontBase64 === null) {
+        const fontPath = path.join(__dirname, 'Vazirmatn-Variable.woff2');
+        cachedFontBase64 = fs.existsSync(fontPath) ? fs.readFileSync(fontPath).toString('base64') : '';
+    }
+    return cachedFontBase64;
+}
+
 app.on('browser-window-created', (_event, win) => {
     // 1. Listen for console messages to save settings
     win.webContents.on('console-message', (_e, ...args) => {
@@ -39,12 +48,7 @@ app.on('browser-window-created', (_event, win) => {
                 return;
             }
 
-            // Read font file as base64
-            const fontPath = path.join(__dirname, 'Vazirmatn-Variable.woff2');
-            let fontBase64 = '';
-            if (fs.existsSync(fontPath)) {
-                fontBase64 = fs.readFileSync(fontPath).toString('base64');
-            }
+            const fontBase64 = getFontBase64();
 
             // Read user config
             let rtlConfig = {
