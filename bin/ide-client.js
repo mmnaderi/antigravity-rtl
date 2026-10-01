@@ -18,6 +18,60 @@
         let widgetStyle = document.createElement('style');
         widgetStyle.id = 'rtl-widget-style';
         widgetStyle.textContent = `
+            .rtl-widget-container {
+                position: fixed !important;
+                bottom: 28px !important;
+                right: 16px !important;
+                width: 36px !important;
+                height: 36px !important;
+                z-index: 999999 !important;
+                direction: ltr !important;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            }
+            .rtl-widget-trigger {
+                width: 36px !important;
+                height: 36px !important;
+                border-radius: 50% !important;
+                background-color: var(--vscode-button-background, #3b82f6) !important;
+                color: var(--vscode-button-foreground, #ffffff) !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                cursor: pointer !important;
+                box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4) !important;
+                transition: transform 0.2s ease, opacity 0.2s ease !important;
+                border: 1px solid rgba(255, 255, 255, 0.2) !important;
+                opacity: 0.85 !important;
+            }
+            .rtl-widget-trigger:hover {
+                transform: scale(1.08) !important;
+                opacity: 1 !important;
+            }
+            .rtl-widget-panel {
+                position: absolute !important;
+                bottom: 0 !important;
+                right: 0 !important;
+                width: 270px !important;
+                border-radius: 12px !important;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+                transform: scale(0);
+                opacity: 0;
+                pointer-events: none;
+                transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease !important;
+                transform-origin: bottom right;
+                overflow: hidden !important;
+            }
+            .rtl-widget-container:hover .rtl-widget-panel,
+            .rtl-widget-container.rtl-open .rtl-widget-panel {
+                transform: scale(1) !important;
+                opacity: 1 !important;
+                pointer-events: auto !important;
+            }
+            .rtl-widget-container:hover .rtl-widget-trigger,
+            .rtl-widget-container.rtl-open .rtl-widget-trigger {
+                opacity: 0 !important;
+                pointer-events: none !important;
+            }
             .rtl-tooltip {
                 visibility: hidden;
                 opacity: 0;
@@ -28,62 +82,61 @@
                 visibility: visible;
                 opacity: 1;
             }
-            .rtl-widget-panel {
-                transform: scale(0);
-                opacity: 0;
-                pointer-events: none;
-                transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-                transform-origin: bottom right;
-            }
-            .rtl-widget-container:hover .rtl-widget-trigger {
-                opacity: 0 !important;
-                transform: scale(0.5) !important;
-                pointer-events: none !important;
-            }
-            .rtl-widget-container:hover .rtl-widget-panel {
-                transform: scale(1) !important;
-                opacity: 1 !important;
-                pointer-events: auto !important;
-            }
-            /* Theme Colors */
-            :root {
-                --rtl-bg: #ffffff;
-                --rtl-text: #111827;
-                --rtl-border: #e5e7eb;
-                --rtl-input-bg: #f3f4f6;
-            }
-            :root.dark, .dark, body.vscode-dark {
-                --rtl-bg: #1e293b;
-                --rtl-text: #f3f4f6;
-                --rtl-border: #334155;
-                --rtl-input-bg: #334155;
-            }
-            @media (prefers-color-scheme: dark) {
-                :root:not(.light) {
-                    --rtl-bg: #1e293b;
-                    --rtl-text: #f3f4f6;
-                    --rtl-border: #334155;
-                    --rtl-input-bg: #334155;
-                }
-            }
+            /* Self-contained styling for widget panel */
             .rtl-theme-panel {
-                background-color: var(--rtl-bg) !important;
-                color: var(--rtl-text) !important;
-                border: 1px solid var(--rtl-border) !important;
-                box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.3) !important;
+                background-color: var(--vscode-editorWidget-background, #1e293b) !important;
+                color: var(--vscode-editorWidget-foreground, #f3f4f6) !important;
+                border: 1px solid var(--vscode-widget-border, #334155) !important;
             }
             .rtl-theme-input {
-                background-color: var(--rtl-input-bg) !important;
-                color: var(--rtl-text) !important;
-                border: 1px solid var(--rtl-border) !important;
+                background-color: var(--vscode-input-background, #0f172a) !important;
+                color: var(--vscode-input-foreground, #f3f4f6) !important;
+                border: 1px solid var(--vscode-input-border, #334155) !important;
+                box-sizing: border-box !important;
             }
+            .rtl-theme-input:focus {
+                border-color: var(--vscode-focusBorder, #3b82f6) !important;
+                outline: none !important;
+            }
+            .rtl-widget-panel * {
+                box-sizing: border-box !important;
+            }
+            .rtl-widget-panel .flex { display: flex !important; }
+            .rtl-widget-panel .flex-col { flex-direction: column !important; }
+            .rtl-widget-panel .items-center { align-items: center !important; }
+            .rtl-widget-panel .justify-between { justify-content: space-between !important; }
+            .rtl-widget-panel .justify-center { justify-content: center !important; }
+            .rtl-widget-panel .gap-1 { gap: 4px !important; }
+            .rtl-widget-panel .gap-2 { gap: 8px !important; }
+            .rtl-widget-panel .gap-4 { gap: 16px !important; }
+            .rtl-widget-panel .p-3 { padding: 12px !important; }
+            .rtl-widget-panel .px-1 { padding-left: 4px !important; padding-right: 4px !important; }
+            .rtl-widget-panel .px-2 { padding-left: 8px !important; padding-right: 8px !important; }
+            .rtl-widget-panel .py-1 { padding-top: 4px !important; padding-bottom: 4px !important; }
+            .rtl-widget-panel .w-full { width: 100% !important; }
+            .rtl-widget-panel .w-28 { width: 110px !important; }
+            .rtl-widget-panel .w-20 { width: 80px !important; }
+            .rtl-widget-panel .h-px { height: 1px !important; }
+            .rtl-widget-panel .text-xs { font-size: 11px !important; }
+            .rtl-widget-panel .text-sm { font-size: 13px !important; }
+            .rtl-widget-panel .text-base { font-size: 14px !important; font-weight: 600 !important; }
+            .rtl-widget-panel .font-medium { font-weight: 500 !important; }
+            .rtl-widget-panel .font-semibold { font-weight: 600 !important; }
+            .rtl-widget-panel .rounded-md { border-radius: 6px !important; }
+            .rtl-widget-panel .rounded-full { border-radius: 9999px !important; }
+            .rtl-widget-panel .text-muted-foreground { color: var(--vscode-descriptionForeground, #94a3b8) !important; }
+            .rtl-widget-panel .bg-border { background-color: var(--vscode-widget-border, rgba(255,255,255,0.15)) !important; }
+            .rtl-widget-panel .bg-muted { background-color: var(--vscode-editorWidget-background, #1e293b) !important; }
+            .rtl-widget-panel .border-border { border-color: var(--vscode-widget-border, rgba(255,255,255,0.15)) !important; }
+            .rtl-widget-panel .text-foreground { color: var(--vscode-foreground, #f3f4f6) !important; }
+            
             .w-11 { width: 44px !important; }
             .h-6 { height: 24px !important; }
             .w-4 { width: 16px !important; }
             .h-4 { height: 16px !important; }
             .translate-x-6 { transform: translateX(20px) !important; }
             .translate-x-1 { transform: translateX(4px) !important; }
-            .bg-accent { background-color: #4f46e5 !important; }
+            .bg-accent { background-color: var(--vscode-button-background, #3b82f6) !important; }
             
             .rtl-toggle-btn-reset {
                 padding: 0 !important;
@@ -97,6 +150,7 @@
             
             .rtl-github-link {
                 transition: all 0.1s ease-in-out !important;
+                color: var(--vscode-textLink-foreground, #38bdf8) !important;
             }
             .rtl-github-link:hover {
                 color: #eab308 !important;
@@ -376,9 +430,15 @@
 
     document.body.addEventListener('input', updateDir, { capture: true });
     document.body.addEventListener('focusin', updateDir, { capture: true });
-    const observer = new MutationObserver(updateDir);
+    const observer = new MutationObserver(() => {
+        updateDir();
+        tryInsertChatHeaderBtn();
+    });
     observer.observe(document.body, { childList: true, subtree: true });
-    setInterval(updateDir, 500);
+    setInterval(() => {
+        updateDir();
+        tryInsertChatHeaderBtn();
+    }, 500);
 
     // Keyboard layout shortcuts
     document.addEventListener('keydown', (e) => {
@@ -616,6 +676,12 @@
                 if (el.hasAttribute('dir')) el.removeAttribute('dir');
             });
         }
+
+        const headerBtn = document.getElementById('antigravity-chat-rtl-header-btn');
+        if (headerBtn) {
+            headerBtn.style.color = isRTL ? 'var(--vscode-button-background, #3b82f6)' : 'inherit';
+            headerBtn.style.opacity = isRTL ? '1' : '0.6';
+        }
     }
 
     // Force RTL Event
@@ -695,4 +761,67 @@
     toggleBtn.addEventListener('click', () => {
         setRTLActive(!isRTL);
     });
+
+    // Trigger click & outside click management
+    const trigger = document.querySelector('.rtl-widget-trigger');
+    const container = document.querySelector('.rtl-widget-container');
+    if (trigger && container) {
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            container.classList.toggle('rtl-open');
+        });
+    }
+    document.addEventListener('click', (e) => {
+        if (container && !container.contains(e.target)) {
+            container.classList.remove('rtl-open');
+        }
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && container) {
+            container.classList.remove('rtl-open');
+        }
+    });
+
+    // Top Header Button in Agent Chat Panel
+    function tryInsertChatHeaderBtn() {
+        if (document.getElementById('antigravity-chat-rtl-header-btn')) return;
+        const newChatBtn = document.querySelector('a[data-tooltip-id="new-conversation-tooltip"]');
+        if (!newChatBtn || !newChatBtn.parentElement) return;
+
+        const btn = document.createElement('a');
+        btn.id = 'antigravity-chat-rtl-header-btn';
+        btn.className = newChatBtn.className.replace(/cursor-not-allowed|opacity-\d+/g, '').trim();
+        btn.href = '#';
+        btn.textContent = '⇄';
+        btn.title = 'Antigravity RTL (Click: toggle, Right-click: settings)';
+        btn.style.margin = '0 2px';
+        btn.style.display = 'inline-flex';
+        btn.style.alignItems = 'center';
+        btn.style.justifyContent = 'center';
+        btn.style.fontWeight = 'bold';
+        btn.style.cursor = 'pointer';
+
+        const updateBtn = () => {
+            btn.style.color = isRTL ? 'var(--vscode-button-background, #3b82f6)' : 'inherit';
+            btn.style.opacity = isRTL ? '1' : '0.6';
+        };
+        updateBtn();
+
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setRTLActive(!isRTL);
+            updateBtn();
+        });
+
+        btn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (container) container.classList.toggle('rtl-open');
+        });
+
+        newChatBtn.parentElement.insertBefore(btn, newChatBtn.nextSibling);
+    }
+
+    tryInsertChatHeaderBtn();
 })();
