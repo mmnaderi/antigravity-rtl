@@ -83,8 +83,8 @@ app.on('browser-window-created', (_event, win) => {
             if (fs.existsSync(clientPath)) {
                 let clientCode = fs.readFileSync(clientPath, 'utf8');
                 clientCode = clientCode
-                    .replace('__FONT_BASE64__', fontBase64)
-                    .replace('__RTL_CONFIG__', JSON.stringify(rtlConfig));
+                    .replaceAll('__FONT_BASE64__', fontBase64)
+                    .replaceAll('__RTL_CONFIG__', JSON.stringify(rtlConfig));
 
                 await win.webContents.executeJavaScript(clientCode);
                 log(`[${sourceEvent}] Successfully injected antigravity-rtl-client.js`);

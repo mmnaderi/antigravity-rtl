@@ -7,8 +7,9 @@
         if (window.__antigravity_rtl_injected) return;
         window.__antigravity_rtl_injected = true;
 
+
         const fontBase64 = '__FONT_BASE64__';
-        const rtlConfig = typeof __RTL_CONFIG__ !== 'undefined' ? __RTL_CONFIG__ : {};
+        const rtlConfig = __RTL_CONFIG__;
 
         // In-memory reactive state
         const state = {
