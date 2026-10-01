@@ -40,8 +40,16 @@ app.on('browser-window-created', (_event, win) => {
         }
         if (typeof msg === 'string' && msg.startsWith('SAVE_RTL_CONFIG|')) {
             try {
-                fs.writeFileSync(CONFIG_FILE, msg.substring(16), 'utf8');
-                log('Config saved:', msg.substring(16));
+                const newConfig = JSON.parse(msg.substring(16));
+                let merged = newConfig;
+                if (fs.existsSync(CONFIG_FILE)) {
+                    try {
+                        const existing = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+                        merged = { ...existing, ...newConfig };
+                    } catch (_) {}
+                }
+                fs.writeFileSync(CONFIG_FILE, JSON.stringify(merged, null, 2), 'utf8');
+                log('Config saved:', JSON.stringify(merged));
             } catch (err) {
                 log('Failed to save config:', err.message);
             }

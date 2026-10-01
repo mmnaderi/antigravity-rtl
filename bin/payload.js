@@ -10,7 +10,14 @@ win.webContents.on('console-message', (event, ...args) => {
             try {
                 const data = message.substring(16);
                 const configPath = require('path').join(require('os').homedir(), '.antigravity-rtl.json');
-                require('fs').writeFileSync(configPath, data);
+                let merged = JSON.parse(data);
+                if (require('fs').existsSync(configPath)) {
+                    try {
+                        const existing = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+                        merged = { ...existing, ...merged };
+                    } catch (_) {}
+                }
+                require('fs').writeFileSync(configPath, JSON.stringify(merged, null, 2));
             } catch (e) {}
         }
     });
