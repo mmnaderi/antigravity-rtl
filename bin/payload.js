@@ -33,7 +33,7 @@ win.webContents.on('console-message', (event, ...args) => {
             const fontPath = require('path').join(__dirname, 'Vazirmatn-Variable.woff2');
             const fontBase64 = require('fs').readFileSync(fontPath).toString('base64');
             // Read config
-            let rtlConfig = { faFont: '', enFont: '', codeFont: '', lh: '1.6', isRTL: true, forceRTL: false };
+            let rtlConfig = { faFont: '', enFont: '', codeFont: '', lh: '1.6', fs: '16', isRTL: true, forceRTL: false, starred: false, snoozeUntil: 0, toastStage: 0, cachedStars: '129' };
             try {
                 const configPath = require('path').join(require('os').homedir(), '.antigravity-rtl.json');
                 if (require('fs').existsSync(configPath)) {
@@ -66,8 +66,12 @@ win.webContents.on('console-message', (event, ...args) => {
                 const rtlConfig = ${JSON.stringify(rtlConfig)};
                 
                 // 2. Observer Logic
-                let isRTL = rtlConfig.isRTL;
-                let forceRTL = rtlConfig.forceRTL || false;
+                let isRTL = rtlConfig.isRTL !== false;
+                let forceRTL = Boolean(rtlConfig.forceRTL);
+                let isStarred = Boolean(rtlConfig.starred) || (typeof localStorage !== 'undefined' && localStorage.getItem('rtl_starred') === '1');
+                let snoozeUntil = parseInt(rtlConfig.snoozeUntil || (typeof localStorage !== 'undefined' && localStorage.getItem('rtl_snooze_until')) || '0', 10);
+                let toastStage = parseInt(rtlConfig.toastStage || (typeof localStorage !== 'undefined' && localStorage.getItem('rtl_toast_stage')) || '0', 10);
+                let cachedStars = (typeof localStorage !== 'undefined' && localStorage.getItem('rtl_cached_stars')) || rtlConfig.cachedStars || '129';
                 
                 // Inject permanent widget styles
                 if (!document.getElementById('rtl-widget-style')) {
@@ -113,6 +117,8 @@ win.webContents.on('console-message', (event, ...args) => {
                         /* Missing Tailwind Utilities */
                         .w-11 { width: 44px !important; }
                         .h-6 { height: 24px !important; }
+                        .h-7 { height: 28px !important; }
+                        .px-2\.5 { padding-left: 10px !important; padding-right: 10px !important; }
                         .w-4 { width: 16px !important; }
                         .h-4 { height: 16px !important; }
                         .translate-x-6 { transform: translateX(20px) !important; }
@@ -255,13 +261,109 @@ win.webContents.on('console-message', (event, ...args) => {
                             transform: translateY(0) !important;
                         }
                         
-                        /* GitHub Link Hover */
-                        .rtl-github-link {
-                            transition: all 0.1s ease-in-out !important;
+                        /* Minimal Star Button in Dropdown Panel */
+                        .rtl-star-btn {
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            justify-content: space-between !important;
+                            width: 100% !important;
+                            height: 32px !important;
+                            padding: 0 10px !important;
+                            border-radius: 6px !important;
+                            border: 1px solid var(--border, rgba(255, 255, 255, 0.12)) !important;
+                            background-color: transparent !important;
+                            color: var(--secondary-foreground, #f4f4f5) !important;
+                            text-decoration: none !important;
+                            transition: background-color 0.15s ease, border-color 0.15s ease !important;
                         }
-                        .rtl-github-link:hover {
-                            color: #eab308 !important; /* Tailwind yellow-500 */
-                            opacity: 1 !important;
+                        .rtl-star-btn:hover {
+                            background-color: var(--secondary, #2a2c33) !important;
+                            border-color: var(--border, rgba(255, 255, 255, 0.22)) !important;
+                        }
+                        .rtl-star-badge {
+                            display: inline-flex !important;
+                            align-items: center !important;
+                            font-size: 12px !important;
+                            font-weight: 600 !important;
+                            color: #fbbf24 !important;
+                            background: transparent !important;
+                            border: none !important;
+                            padding: 0 2px !important;
+                            line-height: 1 !important;
+                            letter-spacing: 0.2px !important;
+                            transition: color 0.15s ease !important;
+                        }
+                        .rtl-star-btn:hover .rtl-star-badge {
+                            color: #f59e0b !important;
+                        }
+                        #rtl-toast-star {
+                            background-color: #f59e0b !important;
+                            color: #000000 !important;
+                            border: 1px solid rgba(245, 158, 11, 0.6) !important;
+                            transition: all 0.15s ease !important;
+                        }
+                        #rtl-toast-star:hover {
+                            background-color: #fbbf24 !important;
+                            box-shadow: 0 0 14px rgba(245, 158, 11, 0.45) !important;
+                            transform: translateY(-0.5px);
+                        }
+                        #rtl-toast-star svg, #rtl-toast-star span {
+                            color: #000000 !important;
+                            fill: #000000 !important;
+                        }
+                        /* Eye-catching Golden Star Twinkle Pulse */
+                        @keyframes rtl-star-twinkle {
+                            0%, 70%, 100% {
+                                transform: scale(1) rotate(0deg);
+                                filter: drop-shadow(0 0 0px transparent);
+                                opacity: 0.85;
+                            }
+                            78% {
+                                transform: scale(1.4) rotate(-12deg);
+                                filter: drop-shadow(0 0 5px #f59e0b) drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
+                                opacity: 1;
+                            }
+                            86% {
+                                transform: scale(1.05) rotate(0deg);
+                                filter: drop-shadow(0 0 1px #f59e0b);
+                                opacity: 0.9;
+                            }
+                            92% {
+                                transform: scale(1.3) rotate(8deg);
+                                filter: drop-shadow(0 0 6px #f59e0b) drop-shadow(0 0 10px rgba(245, 158, 11, 0.5));
+                                opacity: 1;
+                            }
+                        }
+                        .rtl-star-pulse {
+                            animation: rtl-star-twinkle 3.2s infinite ease-in-out;
+                            display: inline-flex !important;
+                            align-items: center;
+                            justify-content: center;
+                            transform-origin: center;
+                        }
+                        @keyframes rtl-toast-in {
+                            from { opacity: 0; transform: translateY(12px) scale(0.96); }
+                            to { opacity: 1; transform: translateY(0) scale(1); }
+                        }
+                        @keyframes rtl-sparkle-pop {
+                            0% {
+                                transform: translate(0, 0) scale(0.3);
+                                opacity: 1;
+                            }
+                            60% {
+                                opacity: 1;
+                            }
+                            100% {
+                                transform: translate(var(--tx), var(--ty)) scale(1.1) rotate(var(--rot));
+                                opacity: 0;
+                            }
+                        }
+                        .rtl-sparkle-p {
+                            position: fixed;
+                            z-index: 99999999;
+                            pointer-events: none;
+                            user-select: none;
+                            animation: rtl-sparkle-pop 0.9s cubic-bezier(0.12, 0.8, 0.32, 1) forwards;
                         }
                     \`;
                     document.head.appendChild(widgetStyle);
@@ -512,7 +614,7 @@ win.webContents.on('console-message', (event, ...args) => {
                 widgetWrapper.style.appRegion = 'no-drag';
                 widgetWrapper.innerHTML = \`
                     <!-- Topbar Button (Twin of Install IDE button) -->
-                    <button id="rtl-topbar-btn" type="button" class="inline-flex items-center font-medium transition-colors select-none outline-none cursor-pointer justify-center border border-border bg-transparent text-secondary-foreground hover:text-foreground hover:bg-secondary h-6 text-[13px] rounded-md gap-1.5 px-2 whitespace-nowrap" style="app-region: no-drag;" title="Antigravity RTL (\${isMac ? '⌥R' : 'Alt+R'})"><span class="relative flex items-center justify-center shrink-0" style="width: 14px; height: 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg><span id="rtl-status-dot" class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full \${isRTL ? 'bg-emerald-500' : 'hidden'}"></span></span><span>RTL</span></button>
+                    <button id="rtl-topbar-btn" type="button" class="inline-flex items-center font-medium transition-colors select-none outline-none cursor-pointer justify-center disabled:opacity-50 border border-border bg-transparent text-secondary-foreground hover:text-foreground hover:bg-secondary h-7 text-[13px] rounded-md gap-1.5 px-2.5 whitespace-nowrap" style="app-region: no-drag;" title="Antigravity RTL (\${isMac ? '⌥R' : 'Alt+R'})"><span class="relative flex items-center justify-center shrink-0" style="width: 14px; height: 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg><span id="rtl-status-dot" class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full \${isRTL ? 'bg-emerald-500' : 'hidden'}"></span></span><span>RTL</span>\${!isStarred ? '<span id="rtl-topbar-star" class="rtl-star-pulse ml-0.5 leading-none" title="Star on GitHub"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="text-amber-400 shrink-0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>' : ''}</button>
                 \`;
 
                 // 4. Create Dropdown Panel (Portaled to document.body to escape topbar overflow:hidden)
@@ -603,10 +705,13 @@ win.webContents.on('console-message', (event, ...args) => {
                     
                     <div class="rtl-separator"></div>
                     
-                    <!-- GitHub -->
-                    <a href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" class="rtl-github-link flex items-center justify-center gap-2 text-xs font-semibold opacity-70 no-underline pt-1 pb-0.5">
-                      <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
-                      Star on GitHub
+                    <!-- GitHub Star Button (Minimal & Single Star) -->
+                    <a id="rtl-github-star" href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" class="rtl-star-btn group">
+                      <div class="flex items-center gap-2">
+                        <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor" class="text-muted-foreground group-hover:text-foreground transition-colors shrink-0"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
+                        <span class="text-xs font-medium text-secondary-foreground group-hover:text-foreground">Star on GitHub</span>
+                      </div>
+                      <span id="rtl-star-num" class="rtl-star-badge">★ \${cachedStars}</span>
                     </a>
                 \`;
 
@@ -670,17 +775,45 @@ win.webContents.on('console-message', (event, ...args) => {
                     updateDir();
                 }
 
-                const saveConfig = () => {
-                    console.log("SAVE_RTL_CONFIG|" + JSON.stringify({
-                        faFont: faFontInput.value.trim(),
-                        enFont: enFontInput.value.trim(),
-                        codeFont: codeFontInput.value.trim(),
-                        lh: lhInput.value,
-                        fs: fsInput.value,
-                        isRTL: isRTL,
-                        forceRTL: forceRTL
-                    }));
-                };
+                function saveConfig() {
+                    try {
+                        const cfgObj = {
+                            faFont: faFontInput ? faFontInput.value.trim() : (rtlConfig.faFont || ''),
+                            enFont: enFontInput ? enFontInput.value.trim() : (rtlConfig.enFont || ''),
+                            codeFont: codeFontInput ? codeFontInput.value.trim() : (rtlConfig.codeFont || ''),
+                            lh: lhInput ? lhInput.value : (rtlConfig.lh || '1.6'),
+                            fs: fsInput ? fsInput.value : (rtlConfig.fs || '16'),
+                            isRTL: isRTL,
+                            forceRTL: forceRTL,
+                            starred: isStarred,
+                            snoozeUntil: snoozeUntil,
+                            toastStage: toastStage
+                        };
+                        console.log("SAVE_RTL_CONFIG|" + JSON.stringify(cfgObj));
+                    } catch (_) {}
+                }
+
+                const SNOOZE_DAYS = [2, 3, 5, 8, 12, 16, 21];
+                function getNextSnoozeMs(stageIndex) {
+                    const days = SNOOZE_DAYS[Math.min(Math.max(0, stageIndex), SNOOZE_DAYS.length - 1)];
+                    return days * 24 * 60 * 60 * 1000;
+                }
+
+                function markStarred() {
+                    isStarred = true;
+                    toastStage = Math.max(toastStage + 1, 3);
+                    snoozeUntil = Date.now() + getNextSnoozeMs(toastStage);
+                    try {
+                        localStorage.setItem('rtl_starred', '1');
+                        localStorage.setItem('rtl_toast_stage', toastStage.toString());
+                        localStorage.setItem('rtl_snooze_until', snoozeUntil.toString());
+                    } catch (_) {}
+                    saveConfig();
+                    const badge = document.getElementById('rtl-topbar-star');
+                    if (badge) badge.remove();
+                    const numEl = document.getElementById('rtl-star-num');
+                    if (numEl) numEl.textContent = '★ Starred!';
+                }
 
                 function setRTLActive(active) {
                     isRTL = active;
@@ -800,6 +933,20 @@ win.webContents.on('console-message', (event, ...args) => {
                         dropdownPanel.classList.add('scale-100', 'opacity-100', 'pointer-events-auto');
                         topbarBtn.classList.add('bg-secondary');
                         topbarBtn.setAttribute('aria-expanded', 'true');
+
+                        // Fire celebratory star sparkle once per app session!
+                        if (!sessionStorage.getItem('rtl_sparkle_seen')) {
+                            sessionStorage.setItem('rtl_sparkle_seen', '1');
+                            setTimeout(() => {
+                                const starCta = dropdownPanel.querySelector('#rtl-github-star');
+                                if (starCta) {
+                                    const rect = starCta.getBoundingClientRect();
+                                    const x = rect.left > 0 ? (rect.left + rect.width / 2) : (window.innerWidth - 120);
+                                    const y = rect.top > 0 ? (rect.top + rect.height / 2) : 250;
+                                    triggerPanelCelebration(x, y);
+                                }
+                            }, 180);
+                        }
                     } else {
                         dropdownPanel.classList.remove('scale-100', 'opacity-100', 'pointer-events-auto');
                         dropdownPanel.classList.add('scale-0', 'opacity-0', 'pointer-events-none');
@@ -834,6 +981,172 @@ win.webContents.on('console-message', (event, ...args) => {
                         updateDropdownPosition();
                     }
                 });
+
+                // 5. GitHub Star Handling, Live Count & Panel Open Celebration
+                function triggerPanelCelebration(originX, originY) {
+                    const colors = ['#fbbf24', '#f59e0b', '#38bdf8', '#a855f7', '#34d399', '#f43f5e'];
+                    const shapes = ['★', '✦', '⭐', '◆'];
+                    const x = originX || (window.innerWidth - 120);
+                    const y = originY || 200;
+                    for (let i = 0; i < 24; i++) {
+                        const p = document.createElement('span');
+                        const color = colors[i % colors.length];
+                        const shape = shapes[i % shapes.length];
+                        const rad = (Math.PI * 2 * i) / 24 + (Math.random() - 0.5) * 0.3;
+                        const dist = 35 + Math.random() * 70;
+                        const tx = Math.round(Math.cos(rad) * dist);
+                        const ty = Math.round(Math.sin(rad) * dist - 18);
+                        const rot = Math.round(Math.random() * 180 - 90);
+
+                        p.className = 'rtl-sparkle-p';
+                        p.textContent = shape;
+                        p.style.setProperty('--tx', tx + 'px');
+                        p.style.setProperty('--ty', ty + 'px');
+                        p.style.setProperty('--rot', rot + 'deg');
+                        p.style.left = x + 'px';
+                        p.style.top = y + 'px';
+                        p.style.color = color;
+                        p.style.fontSize = (shape === '⭐' ? 14 : 12) + 'px';
+                        document.body.appendChild(p);
+
+                        setTimeout(() => p.remove(), 950);
+                    }
+                }
+
+                const starCta = dropdownPanel.querySelector('#rtl-github-star');
+                if (starCta) {
+                    starCta.addEventListener('click', () => {
+                        markStarred();
+                    });
+                }
+
+                // Fetch Live GitHub Stars
+                try {
+                    fetch('https://api.github.com/repos/mmnaderi/antigravity-rtl')
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d && typeof d.stargazers_count === 'number') {
+                                cachedStars = d.stargazers_count.toString();
+                                try {
+                                    localStorage.setItem('rtl_cached_stars', cachedStars);
+                                } catch (_) {}
+                                const numEl = document.getElementById('rtl-star-num');
+                                if (numEl && numEl.textContent !== '★ Starred!') {
+                                    numEl.textContent = '★ ' + d.stargazers_count;
+                                }
+                            }
+                        }).catch(() => {});
+                } catch (_) {}
+
+                // Periodic Reminder & Community Toast (Gentle slope: 2 -> 3 -> 5 -> 8 -> 12 -> 16 -> 21 days)
+                const now = Date.now();
+                if (now >= snoozeUntil) {
+                    setTimeout(() => {
+                        if (Date.now() < snoozeUntil) return;
+                        if (document.getElementById('rtl-star-toast')) return;
+
+                        let stage = toastStage;
+                        let curTitle = '';
+                        let curDesc = '';
+                        let buttonsHtml = '';
+
+                        if (!isStarred) {
+                            const unstarredTitles = [
+                                'از فارسی‌نویسی راضی هستید؟',
+                                'همچنان همراه Antigravity RTL هستید؟',
+                                'یک ثانیه وقت برای حمایت از RTL؟'
+                            ];
+                            const unstarredDescriptions = [
+                                'حمایت شما با ثبت یک استار در گیت‌هاب، به توسعه و بهبود این افزونه انرژی میده!',
+                                'اگر این افزونه براتون مفید بوده، ثبت یک ستاره در گیت‌هاب خستگی رو از تنمون درمیاره!',
+                                'با ثبت یک ستاره در مخزن گیت‌هاب، به توسعه و به‌روزرسانی مداوم افزونه کمک کنید.'
+                            ];
+                            curTitle = unstarredTitles[stage % unstarredTitles.length];
+                            curDesc = unstarredDescriptions[stage % unstarredDescriptions.length];
+                            buttonsHtml = \`
+                                <a id="rtl-toast-star" href="https://github.com/mmnaderi/antigravity-rtl" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold no-underline transition-all shadow-sm cursor-pointer" style="background-color: #f59e0b !important; color: #000000 !important; border: 1px solid rgba(245, 158, 11, 0.6) !important;">
+                                    <svg height="12" width="12" viewBox="0 0 16 16" fill="#000000" class="shrink-0" style="color: #000000 !important;"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
+                                    <span style="color: #000000 !important; font-weight: 700 !important;">ثبت استار در گیت‌هاب</span>
+                                </a>
+                                <button id="rtl-toast-already" class="px-2.5 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer">قبلاً استار دادم</button>
+                            \`;
+                        } else {
+                            const starredTitles = [
+                                'ممنون که Star دادی!',
+                                'مشکلی در نمایش متن‌ها می‌بینی؟',
+                                'پیشنهادی برای بهبود Antigravity RTL داری؟'
+                            ];
+                            const starredDescriptions = [
+                                'پیشنهادی برای بهبود فونت‌ها یا RTL داری؟ خوشحال میشیم نظرت رو با ما در میان بذاری.',
+                                'به گفتگوی توسعه‌دهندگان در گیت‌هاب ملحق شو و نظراتت رو با ما به اشتراک بذار!',
+                                'گزارش‌های شما به سریع‌تر شدن روند رفع اشکالات و آپدیت‌های افزونه کمک می‌کنه.'
+                            ];
+                            curTitle = starredTitles[stage % starredTitles.length];
+                            curDesc = starredDescriptions[stage % starredDescriptions.length];
+                            buttonsHtml = \`
+                                <a id="rtl-toast-feedback" href="https://github.com/mmnaderi/antigravity-rtl/issues" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-bold no-underline transition-all shadow-sm cursor-pointer" style="background-color: var(--color-primary, var(--primary, #3b82f6)) !important; color: #ffffff !important;">
+                                    <svg height="12" width="12" viewBox="0 0 16 16" fill="#ffffff" class="shrink-0"><path d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0ZM1.5 8a6.5 6.5 0 1 0 13 0 6.5 6.5 0 0 0-13 0Zm7-3.25a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0v-3.5a.75.75 0 0 1 .75-.75Zm0 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>
+                                    <span style="color: #ffffff !important; font-weight: 700 !important;">ثبت نظر یا پیشنهاد</span>
+                                </a>
+                                <button id="rtl-toast-ok" class="px-2.5 py-1.5 rounded-md text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer">عالیه، ممنون</button>
+                            \`;
+                        }
+
+                        const toast = document.createElement('div');
+                        toast.id = 'rtl-star-toast';
+                        toast.className = 'rtl-theme-panel fixed bottom-4 right-4 z-[999999] flex flex-col gap-2.5 p-3.5 rounded-xl border border-border shadow-xl bg-card text-foreground transition-all duration-300';
+                        toast.style.cssText = 'direction: rtl; width: 310px; animation: rtl-toast-in 0.35s cubic-bezier(0.16, 1, 0.3, 1);';
+                        toast.innerHTML = \`
+                            <div class="flex items-start justify-between gap-2">
+                                <span class="font-bold text-xs">\${curTitle}</span>
+                                <button id="rtl-toast-close" class="text-xs text-muted-foreground hover:text-foreground cursor-pointer p-0.5 leading-none transition-colors" title="بعداً">✕</button>
+                            </div>
+                            <div class="text-[11px] opacity-80 leading-relaxed">
+                                \${curDesc}
+                            </div>
+                            <div class="flex items-center justify-start gap-2 pt-1">
+                                \${buttonsHtml}
+                            </div>
+                        \`;
+                        document.body.appendChild(toast);
+
+                        const closeToastAndSnooze = () => {
+                            toastStage = stage + 1;
+                            snoozeUntil = Date.now() + getNextSnoozeMs(toastStage);
+                            try {
+                                localStorage.setItem('rtl_toast_stage', toastStage.toString());
+                                localStorage.setItem('rtl_snooze_until', snoozeUntil.toString());
+                            } catch (_) {}
+                            saveConfig();
+                            toast.remove();
+                        };
+
+                        const closeBtn = toast.querySelector('#rtl-toast-close');
+                        if (closeBtn) closeBtn.addEventListener('click', closeToastAndSnooze);
+
+                        const alreadyBtn = toast.querySelector('#rtl-toast-already');
+                        if (alreadyBtn) {
+                            alreadyBtn.addEventListener('click', () => {
+                                markStarred();
+                                toast.remove();
+                            });
+                        }
+
+                        const toastStar = toast.querySelector('#rtl-toast-star');
+                        if (toastStar) {
+                            toastStar.addEventListener('click', () => {
+                                markStarred();
+                                toast.remove();
+                            });
+                        }
+
+                        const feedbackBtn = toast.querySelector('#rtl-toast-feedback');
+                        if (feedbackBtn) feedbackBtn.addEventListener('click', closeToastAndSnooze);
+
+                        const okBtn = toast.querySelector('#rtl-toast-ok');
+                        if (okBtn) okBtn.addEventListener('click', closeToastAndSnooze);
+                    }, 35000);
+                }
             }
 
             let isMounted = false;

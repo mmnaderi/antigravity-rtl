@@ -22,12 +22,57 @@ import {
     hasIdeBackup
 } from './patch-ide.js';
 
+import { exec } from 'child_process';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { cyan, bold, blue, green, yellow } = picocolors;
 
 const pkgPath = path.join(__dirname, '..', 'package.json');
 const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+async function promptForStar() {
+    const width = 60;
+    const pad = (content, len) => content + ' '.repeat(Math.max(0, width - len));
+    const yellowCol = '\x1b[38;2;255;190;11m';
+    const goldCol = '\x1b[38;2;255;215;0m';
+    const cyanCol = '\x1b[38;2;56;189;248m';
+    const reset = '\x1b[0m';
+    const boldText = '\x1b[1m';
+    const dimText = '\x1b[2m';
+
+    const lines = [
+        pad(`  ${boldText}${goldCol}WAS ANTIGRAVITY RTL HELPFUL TO YOU?${reset}`, 37),
+        pad('', 0),
+        pad(`  ${dimText}If this tool made your workflow easier, consider giving${reset}`, 57),
+        pad(`  ${dimText}a star on GitHub to support ongoing updates!${reset}`, 46),
+        pad('', 0),
+        pad(`  ${cyanCol}${boldText}GitHub:${reset} ${cyanCol}\x1b[4mhttps://github.com/mmnaderi/antigravity-rtl${reset}`, 53)
+    ];
+
+    console.log('\n  ' + yellowCol + '╭' + '─'.repeat(width) + '╮' + reset);
+    for (const line of lines) {
+        console.log('  ' + yellowCol + '│' + reset + line + yellowCol + '│' + reset);
+    }
+    console.log('  ' + yellowCol + '╰' + '─'.repeat(width) + '╯' + reset + '\n');
+
+    if (process.stdout.isTTY) {
+        try {
+            const { openRepo } = await prompts({
+                type: 'confirm',
+                name: 'openRepo',
+                message: 'Was Antigravity RTL helpful? Open GitHub to star the repo?',
+                initial: true
+            });
+            if (openRepo) {
+                const repoUrl = 'https://github.com/mmnaderi/antigravity-rtl';
+                const openCmd = process.platform === 'darwin' ? `open "${repoUrl}"` : process.platform === 'win32' ? `start "" "${repoUrl}"` : `xdg-open "${repoUrl}"`;
+                exec(openCmd);
+                console.log('\n  ' + green('✨ Thank you so much for your support! Enjoy RTL in Antigravity!\n'));
+            }
+        } catch (_) {}
+    }
+}
 
 function printBanner() {
     try {
@@ -199,77 +244,70 @@ async function main() {
     }
 
     // Patch Mode
+    let patchedAny = false;
+
     if (customPath) {
         if (forceIde || resolveIdeAppDir(customPath)) {
             const ideDir = resolveIdeAppDir(customPath) || customPath;
-            await patchIde(ideDir);
+            patchedAny = await patchIde(ideDir);
         } else {
-            await patchApp(customPath);
+            patchedAny = await patchApp(customPath);
         }
-        return;
-    }
-
-    if (forceApp && !forceIde) {
+    } else if (forceApp && !forceIde) {
         const appPath = await getAppAsarPath();
-        await patchApp(appPath);
-        return;
-    }
-
-    if (forceIde && !forceApp) {
+        patchedAny = await patchApp(appPath);
+    } else if (forceIde && !forceApp) {
         const ideDir = await getIdeAppPath();
-        await patchIde(ideDir);
-        return;
-    }
-
-    // Auto-detect installed applications
-    const appPath = detectAppAsarPath();
-    const ideDir = detectIdeAppPath();
-
-    if (appPath && ideDir) {
-        console.log(bold(cyan('ℹ Found both Antigravity (Standalone App) and Antigravity IDE!')));
-        console.log(bold(cyan('  Patching both applications...\n')));
-        console.log(bold('--- 1/2: Antigravity (Standalone App) ---'));
-        const okApp = await patchApp(appPath, { exitOnError: false });
-        console.log('');
-        console.log(bold('--- 2/2: Antigravity IDE ---'));
-        const okIde = await patchIde(ideDir, { exitOnError: false });
-        if (okApp || okIde) {
-            console.log(bold(green('\n✨ Done! Please restart your application(s) to enjoy RTL.\n')));
-        }
-        return;
-    }
-
-    if (appPath) {
-        console.log(blue('ℹ Found Antigravity (Standalone App). Patching...\n'));
-        await patchApp(appPath);
-        return;
-    }
-
-    if (ideDir) {
-        console.log(blue('ℹ Found Antigravity IDE. Patching...\n'));
-        await patchIde(ideDir);
-        return;
-    }
-
-    // Neither detected automatically
-    console.log(yellow('⚠ Could not automatically locate Antigravity or Antigravity IDE.'));
-    const response = await prompts({
-        type: 'select',
-        name: 'target',
-        message: 'Which application would you like to patch?',
-        choices: [
-            { title: 'Antigravity IDE (VS Code Edition)', value: 'ide' },
-            { title: 'Antigravity (Standalone App)', value: 'app' }
-        ],
-        initial: 0
-    });
-    if (!response.target) process.exit(0);
-    if (response.target === 'ide') {
-        const p = await getIdeAppPath();
-        await patchIde(p);
+        patchedAny = await patchIde(ideDir);
     } else {
-        const p = await getAppAsarPath();
-        await patchApp(p);
+        // Auto-detect installed applications
+        const appPath = detectAppAsarPath();
+        const ideDir = detectIdeAppPath();
+
+        if (appPath && ideDir) {
+            console.log(bold(cyan('ℹ Found both Antigravity (Standalone App) and Antigravity IDE!')));
+            console.log(bold(cyan('  Patching both applications...\n')));
+            console.log(bold('--- 1/2: Antigravity (Standalone App) ---'));
+            const okApp = await patchApp(appPath, { exitOnError: false });
+            console.log('');
+            console.log(bold('--- 2/2: Antigravity IDE ---'));
+            const okIde = await patchIde(ideDir, { exitOnError: false });
+            if (okApp || okIde) {
+                console.log(bold(green('\n✨ Done! Please restart your application(s) to enjoy RTL.\n')));
+                patchedAny = true;
+            }
+        } else if (appPath) {
+            console.log(blue('ℹ Found Antigravity (Standalone App). Patching...\n'));
+            patchedAny = await patchApp(appPath);
+        } else if (ideDir) {
+            console.log(blue('ℹ Found Antigravity IDE. Patching...\n'));
+            patchedAny = await patchIde(ideDir);
+        } else {
+            // Neither detected automatically
+            console.log(yellow('⚠ Could not automatically locate Antigravity or Antigravity IDE.'));
+            const response = await prompts({
+                type: 'select',
+                name: 'target',
+                message: 'Which application would you like to patch?',
+                choices: [
+                    { title: 'Antigravity IDE (VS Code Edition)', value: 'ide' },
+                    { title: 'Antigravity (Standalone App)', value: 'app' }
+                ],
+                initial: 0
+            });
+            if (!response.target) process.exit(0);
+            if (response.target === 'ide') {
+                const p = await getIdeAppPath();
+                patchedAny = await patchIde(p);
+            } else {
+                const p = await getAppAsarPath();
+                patchedAny = await patchApp(p);
+            }
+        }
+    }
+
+    if (patchedAny) {
+        await promptForStar();
     }
 }
 
