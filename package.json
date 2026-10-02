@@ -31,6 +31,6 @@
   },
   "type": "module",
   "bin": {
-    "antigravity-rtl": "./bin/index.js"
+    "antigravity-rtl": "bin/index.js"
   }
 }
