@@ -84,7 +84,7 @@
             }
 
             const enFontStr = state.enFont ? `'${state.enFont}', ui-sans-serif, system-ui, sans-serif` : 'ui-sans-serif, system-ui, sans-serif';
-            const fontStack = `${faFontName}, 'Vazirmatn', ${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`;
+            const fontStack = `${faFontName}, ${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"`;
             const codeFontRule = state.codeFont ? `font-family: '${state.codeFont}', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;` : '';
 
             const forceRtlStyle = state.forceRTL ? `
@@ -113,14 +113,6 @@
                          url('data:font/woff2;base64,${fontBase64}') format('woff2');
                     font-weight: 100 900;
                     unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
-                }
-                @font-face {
-                    font-family: 'Vazirmatn';
-                    src: local('Vazirmatn'), local('Vazirmatn Variable'), local('Vazir'),
-                         url('./Vazirmatn-Variable.woff2') format('woff2'),
-                         url('../../../../Vazirmatn-Variable.woff2') format('woff2'),
-                         url('data:font/woff2;base64,${fontBase64}') format('woff2');
-                    font-weight: 100 900;
                 }
 
                 :root {

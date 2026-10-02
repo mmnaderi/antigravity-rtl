@@ -81,6 +81,10 @@ win.webContents.on('console-message', (event, ...args) => {
                         #rtl-dropdown-panel {
                             transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
                         }
+                        #rtl-topbar-btn {
+                            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+                            line-height: 1 !important;
+                        }
                         /* Native Antigravity Theme Tokens */
                         .rtl-theme-panel {
                             background-color: var(--popover, var(--card, #18181b)) !important;
@@ -429,20 +433,15 @@ win.webContents.on('console-message', (event, ...args) => {
                             font-weight: 100 900;
                             unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
                         }
-                        @font-face {
-                            font-family: 'Vazirmatn';
-                            src: url('data:font/woff2;base64,\${fontBase64}') format('woff2');
-                            font-weight: 100 900;
-                        }
                         :root, :host, html, body {
-                            font-family: \${faFontName}, 'Vazirmatn', \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+                            font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
                         }
                         [dir="rtl"], [dir="rtl"] *:not(pre):not(code),
                         .prose, .prose *, [data-testid="chat-message"], [data-testid="chat-message"] *,
                         .markdown-body, .markdown-body *, .leading-relaxed, .leading-relaxed *,
                         [contenteditable="true"], [contenteditable="true"] *, [data-lexical-text="true"],
                         label[for^="ask-opt-"], textarea[data-testid="ask-question-writein"] {
-                            font-family: \${faFontName}, 'Vazirmatn', \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
+                            font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
                         }
                         .prose, [data-testid="chat-message"], .markdown-body, .leading-relaxed, [contenteditable="true"], [contenteditable="true"] p {
                             font-size: \${fs}px !important;
@@ -614,7 +613,7 @@ win.webContents.on('console-message', (event, ...args) => {
                 widgetWrapper.style.appRegion = 'no-drag';
                 widgetWrapper.innerHTML = \`
                     <!-- Topbar Button (Twin of Install IDE button) -->
-                    <button id="rtl-topbar-btn" type="button" class="inline-flex items-center font-medium transition-colors select-none outline-none cursor-pointer justify-center disabled:opacity-50 border border-border bg-transparent text-secondary-foreground hover:text-foreground hover:bg-secondary h-7 text-[13px] rounded-md gap-1.5 px-2.5 whitespace-nowrap" style="app-region: no-drag;" title="Antigravity RTL (\${isMac ? '⌥R' : 'Alt+R'})"><span class="relative flex items-center justify-center shrink-0" style="width: 14px; height: 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg><span id="rtl-status-dot" class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full \${isRTL ? 'bg-emerald-500' : 'hidden'}"></span></span><span>RTL</span>\${!isStarred ? '<span id="rtl-topbar-star" class="rtl-star-pulse ml-0.5 leading-none" title="Star on GitHub"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="text-amber-400 shrink-0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>' : ''}</button>
+                    <button id="rtl-topbar-btn" type="button" class="inline-flex items-center font-medium transition-colors select-none outline-none cursor-pointer justify-center disabled:opacity-50 border border-border bg-transparent text-secondary-foreground hover:text-foreground hover:bg-secondary h-7 rounded-md gap-1.5 px-2.5 text-[13px] whitespace-nowrap" style="app-region: no-drag;" title="Antigravity RTL (\${isMac ? '⌥R' : 'Alt+R'})"><div class="relative flex items-center justify-center shrink-0 w-[14px] h-[14px]" style="width: 14px; height: 14px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0"><circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg><span id="rtl-status-dot" class="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full \${isRTL ? 'bg-emerald-500' : 'hidden'}"></span></div><span>RTL</span>\${!isStarred ? '<span id="rtl-topbar-star" class="rtl-star-pulse ml-0.5 leading-none" title="Star on GitHub"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" class="text-amber-400 shrink-0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg></span>' : ''}</button>
                 \`;
 
                 // 4. Create Dropdown Panel (Portaled to document.body to escape topbar overflow:hidden)

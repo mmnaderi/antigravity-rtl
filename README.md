@@ -16,7 +16,7 @@ A right-to-left and typography patch for the [Antigravity](https://antigravity.g
 <a href="https://github.com/mmnaderi/antigravity-rtl/pulls?q=is%3Apr+is%3Aclosed"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/closed-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Closed+PRs&amp;valueColor=94a3b8&amp;logoColor=94a3b8" /><img alt="Closed PRs" src="https://www.shieldcn.dev/github/closed-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Closed+PRs&amp;valueColor=64748b&amp;logoColor=64748b" /></picture></a>
 <a href="https://github.com/mmnaderi/antigravity-rtl/pulls?q=is%3Apr+is%3Amerged"><picture><source media="(prefers-color-scheme: dark)" srcset="https://www.shieldcn.dev/github/merged-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=dark&amp;font=space-grotesk&amp;label=Merged+PRs&amp;valueColor=a855f7&amp;logoColor=a855f7" /><img alt="Merged PRs" src="https://www.shieldcn.dev/github/merged-prs/mmnaderi/antigravity-rtl.svg?variant=secondary&amp;theme=slate&amp;size=xs&amp;mode=light&amp;font=space-grotesk&amp;label=Merged+PRs&amp;valueColor=7e22ce&amp;logoColor=7e22ce" /></picture></a>
 
-[Features](#features) · [Install](#install) · [CLI Options](#cli-options--flags) · [Uninstall](#uninstall) · [How it works](#how-it-works) · [Downloads & Stars](#downloads-and-stars) · [فارسی](#فارسی)
+[Features](#features) · [Install](#install) · [CLI Options](#cli-options--flags) · [Uninstall](#uninstall) · [How it works](#how-it-works) · [Downloads & Stars](#downloads-and-stars) · [Inspired by this Project](#projects-inspired-by-antigravity-rtl) · [فارسی](#فارسی)
 
 </div>
 
@@ -115,6 +115,13 @@ npx antigravity-rtl --restore
 
 <a href="https://www.star-history.com/?repos=mmnaderi%2Fantigravity-rtl&type=date&legend=top-left"><img alt="chart" src="https://shieldcn.dev/chart/github/stars/mmnaderi/antigravity-rtl.svg?font=space-grotesk&amp;color=eab308&amp;fill=eab308&amp;logo=false&amp;title=Stars+%E2%80%94+mmnaderi%2Fantigravity-rtl&amp;icon=ri%3AFaStar" /></a>
 
+## Projects Inspired by Antigravity RTL
+
+Open-source tools and community projects inspired by or adapted from this project:
+
+- [**qoder-rtl**](https://github.com/Pezhm4n/qoder-rtl) — Persian/Arabic RTL patcher for Qoder desktop chat, inspired by Antigravity RTL.
+- [**MarkdownRTL**](https://github.com/mahdiasd/MarkdownRTL) — JetBrains IDE plugin for seamless Persian & Arabic Markdown preview, adopting this project's UI and floating controller concept.
+
 ---
 
 <div dir="rtl">
@@ -175,6 +182,13 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 npx antigravity-rtl --restore
 ```
 *(یا برای بازگردانی فقط یک برنامهٔ خاص: `npx antigravity-rtl --restore --ide`)*
+
+### پروژه‌های الهام‌گرفته از این پروژه
+
+ابزارها و افزونه‌های متن‌بازی که از ایده، کد یا رابط کاربری Antigravity RTL الهام گرفته و اقتباس کرده‌اند:
+
+- [**qoder-rtl**](https://github.com/Pezhm4n/qoder-rtl): ابزار راست‌چین‌سازی چت دسکتاپ Qoder با الهام از Antigravity RTL.
+- [**MarkdownRTL**](https://github.com/mahdiasd/MarkdownRTL): افزونهٔ محیط‌های توسعه JetBrains برای پیش‌نمایش متون راست‌چین Markdown با اقتباس از کنترلر شناور و طراحی این پروژه.
 
 برای گزارش مشکل یا پیشنهاد تغییر، [Issue ثبت کنید](https://github.com/mmnaderi/antigravity-rtl/issues) یا [Pull Request بفرستید](https://github.com/mmnaderi/antigravity-rtl/pulls).
 
