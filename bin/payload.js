@@ -68,10 +68,10 @@ win.webContents.on('console-message', (event, ...args) => {
                 // 2. Observer Logic
                 let isRTL = rtlConfig.isRTL !== false;
                 let forceRTL = Boolean(rtlConfig.forceRTL);
-                let isStarred = Boolean(rtlConfig.starred) || (typeof localStorage !== 'undefined' && localStorage.getItem('rtl_starred') === '1');
-                let snoozeUntil = parseInt(rtlConfig.snoozeUntil || (typeof localStorage !== 'undefined' && localStorage.getItem('rtl_snooze_until')) || '0', 10);
-                let toastStage = parseInt(rtlConfig.toastStage || (typeof localStorage !== 'undefined' && localStorage.getItem('rtl_toast_stage')) || '0', 10);
-                let cachedStars = (typeof localStorage !== 'undefined' && localStorage.getItem('rtl_cached_stars')) || rtlConfig.cachedStars || '129';
+                let isStarred = Boolean(rtlConfig.starred);
+                let snoozeUntil = Number(rtlConfig.snoozeUntil) || 0;
+                let toastStage = Number(rtlConfig.toastStage) || 0;
+                let cachedStars = rtlConfig.cachedStars || '129';
                 
                 // Inject permanent widget styles
                 if (!document.getElementById('rtl-widget-style')) {
@@ -122,11 +122,8 @@ win.webContents.on('console-message', (event, ...args) => {
                         .w-11 { width: 44px !important; }
                         .h-6 { height: 24px !important; }
                         .h-7 { height: 28px !important; }
-                        .px-2\.5 { padding-left: 10px !important; padding-right: 10px !important; }
                         .w-4 { width: 16px !important; }
                         .h-4 { height: 16px !important; }
-                        .translate-x-6 { transform: translateX(20px) !important; }
-                        .translate-x-1 { transform: translateX(4px) !important; }
                         .bg-accent { background-color: var(--color-primary, var(--primary, var(--vscode-button-background, #2563eb))) !important; }
                         /* Modern Seamless Range Slider */
                         .rtl-theme-range {
@@ -751,6 +748,7 @@ win.webContents.on('console-message', (event, ...args) => {
                 const forceBtn = dropdownPanel.querySelector('#rtl-force-btn');
                 const forceKnob = dropdownPanel.querySelector('#rtl-force-knob');
                 const forceRow = dropdownPanel.querySelector('#rtl-force-row');
+                const refreshCSS = () => updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
 
                 function clearRTL() {
                     if (rtlStyle.parentNode) rtlStyle.parentNode.removeChild(rtlStyle);
@@ -777,16 +775,17 @@ win.webContents.on('console-message', (event, ...args) => {
                 function saveConfig() {
                     try {
                         const cfgObj = {
-                            faFont: faFontInput ? faFontInput.value.trim() : (rtlConfig.faFont || ''),
-                            enFont: enFontInput ? enFontInput.value.trim() : (rtlConfig.enFont || ''),
-                            codeFont: codeFontInput ? codeFontInput.value.trim() : (rtlConfig.codeFont || ''),
-                            lh: lhInput ? lhInput.value : (rtlConfig.lh || '1.6'),
-                            fs: fsInput ? fsInput.value : (rtlConfig.fs || '16'),
+                            faFont: faFontInput.value.trim(),
+                            enFont: enFontInput.value.trim(),
+                            codeFont: codeFontInput.value.trim(),
+                            lh: lhInput.value,
+                            fs: fsInput.value,
                             isRTL: isRTL,
                             forceRTL: forceRTL,
                             starred: isStarred,
                             snoozeUntil: snoozeUntil,
-                            toastStage: toastStage
+                            toastStage: toastStage,
+                            cachedStars: cachedStars
                         };
                         console.log("SAVE_RTL_CONFIG|" + JSON.stringify(cfgObj));
                     } catch (_) {}
@@ -802,11 +801,6 @@ win.webContents.on('console-message', (event, ...args) => {
                     isStarred = true;
                     toastStage = Math.max(toastStage + 1, 3);
                     snoozeUntil = Date.now() + getNextSnoozeMs(toastStage);
-                    try {
-                        localStorage.setItem('rtl_starred', '1');
-                        localStorage.setItem('rtl_toast_stage', toastStage.toString());
-                        localStorage.setItem('rtl_snooze_until', snoozeUntil.toString());
-                    } catch (_) {}
                     saveConfig();
                     const badge = document.getElementById('rtl-topbar-star');
                     if (badge) badge.remove();
@@ -828,7 +822,7 @@ win.webContents.on('console-message', (event, ...args) => {
                         toggleKnob.style.transform = 'translateX(24px)';
                         if (statusDot) statusDot.className = 'absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full bg-emerald-500';
                         document.head.appendChild(rtlStyle);
-                        updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
+                        refreshCSS();
                         updateDir();
                     } else {
                         toggleLabel.innerText = 'Disabled';
@@ -858,54 +852,34 @@ win.webContents.on('console-message', (event, ...args) => {
                         forceBtn.classList.add('bg-gray-400', 'bg-opacity-40');
                         forceKnob.style.transform = 'translateX(4px)';
                     }
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
+                    refreshCSS();
                     updateDir();
                 });
 
                 // Event Listeners
-                faFontInput.addEventListener('input', (e) => {
-                    saveConfig();
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
+                [faFontInput, enFontInput, codeFontInput].forEach(input => {
+                    input.addEventListener('input', () => {
+                        saveConfig();
+                        refreshCSS();
+                    });
                 });
-                
-                enFontInput.addEventListener('input', (e) => {
-                    saveConfig();
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
-                });
-                
-                codeFontInput.addEventListener('input', (e) => {
-                    saveConfig();
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
-                });
-                
+
                 const updateSlider = s => s && s.style.setProperty('--range-pct', ((s.value - s.min) / (s.max - s.min) * 100) + '%');
                 updateSlider(lhInput);
                 updateSlider(fsInput);
 
-                lhInput.addEventListener('input', () => {
-                    updateSlider(lhInput);
-                    saveConfig();
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
-                });
-                
-                lhResetBtn.addEventListener('click', () => {
-                    lhInput.value = '1.6';
-                    updateSlider(lhInput);
-                    saveConfig();
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
-                });
-
-                fsInput.addEventListener('input', () => {
-                    updateSlider(fsInput);
-                    saveConfig();
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
-                });
-                
-                fsResetBtn.addEventListener('click', () => {
-                    fsInput.value = '16';
-                    updateSlider(fsInput);
-                    saveConfig();
-                    updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
+                [[lhInput, lhResetBtn, '1.6'], [fsInput, fsResetBtn, '16']].forEach(([input, resetBtn, defaultValue]) => {
+                    input.addEventListener('input', () => {
+                        updateSlider(input);
+                        saveConfig();
+                        refreshCSS();
+                    });
+                    resetBtn.addEventListener('click', () => {
+                        input.value = defaultValue;
+                        updateSlider(input);
+                        saveConfig();
+                        refreshCSS();
+                    });
                 });
                 
                 // Toggle Event
@@ -1026,9 +1000,7 @@ win.webContents.on('console-message', (event, ...args) => {
                         .then(d => {
                             if (d && typeof d.stargazers_count === 'number') {
                                 cachedStars = d.stargazers_count.toString();
-                                try {
-                                    localStorage.setItem('rtl_cached_stars', cachedStars);
-                                } catch (_) {}
+                                saveConfig();
                                 const numEl = document.getElementById('rtl-star-num');
                                 if (numEl && numEl.textContent !== '★ Starred!') {
                                     numEl.textContent = '★ ' + d.stargazers_count;
@@ -1112,10 +1084,6 @@ win.webContents.on('console-message', (event, ...args) => {
                         const closeToastAndSnooze = () => {
                             toastStage = stage + 1;
                             snoozeUntil = Date.now() + getNextSnoozeMs(toastStage);
-                            try {
-                                localStorage.setItem('rtl_toast_stage', toastStage.toString());
-                                localStorage.setItem('rtl_snooze_until', snoozeUntil.toString());
-                            } catch (_) {}
                             saveConfig();
                             toast.remove();
                         };
