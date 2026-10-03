@@ -11,7 +11,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { blue, green, red, yellow } = picocolors;
 
-export function getAppCandidatePaths() {
+function getAppCandidatePaths() {
     const candidates = [];
     const platform = os.platform();
 
@@ -38,38 +38,16 @@ export function getAppCandidatePaths() {
     return candidates;
 }
 
-export function getDefaultAppPath() {
-    const candidates = getAppCandidatePaths();
-    return candidates[0] || '';
-}
-
-export function detectAppAsarPath(customPath) {
-    if (customPath) {
-        if (fs.existsSync(customPath)) {
-            let p = customPath;
-            if (fs.statSync(p).isDirectory()) {
-                p = path.join(p, 'resources', 'app.asar');
-            }
-            if (fs.existsSync(p)) return p;
-        }
-        return null;
-    }
-
-    const candidates = getAppCandidatePaths();
-    for (const c of candidates) {
-        if (fs.existsSync(c)) {
-            return c;
-        }
-    }
-    return null;
+export function detectAppAsarPath() {
+    return getAppCandidatePaths().find(c => fs.existsSync(c)) || null;
 }
 
 export function hasAppBackup(asarPath) {
     return asarPath ? fs.existsSync(asarPath + '.bak') : false;
 }
 
-export async function getAppAsarPath(customPath) {
-    const detected = detectAppAsarPath(customPath);
+export async function getAppAsarPath() {
+    const detected = detectAppAsarPath();
     if (detected) {
         console.log(blue(`ℹ Found Antigravity installation at:`));
         console.log(`  ${detected}\n`);
@@ -113,52 +91,29 @@ export async function restoreApp(asarPath, { exitOnError = true } = {}) {
 
 export async function patchApp(asarPath, { exitOnError = true } = {}) {
     const backupPath = asarPath + '.bak';
+    const extractDir = path.join(path.dirname(asarPath), 'app-extracted-rtl-temp');
     const spinner = ora('Checking permissions and backing up Antigravity App...').start();
+    let failLabel = 'Permission Denied.';
     try {
         fs.accessSync(path.dirname(asarPath), fs.constants.W_OK);
         if (!fs.existsSync(backupPath)) {
             fs.copyFileSync(asarPath, backupPath);
         }
-    } catch (e) {
-        spinner.fail('Permission Denied.');
-        console.error(red('\nSystem Error: ' + e.message));
-        if (os.platform() === 'win32') {
-            console.error(yellow('\nPlease run your terminal (PowerShell/CMD) as Administrator and try again.\n'));
-        } else if (os.platform() === 'darwin') {
-            console.error(yellow('\nPlease ensure you run this command with sudo.'));
-            console.error(yellow('If you are using sudo, macOS requires your terminal to have "App Management" permission.'));
-            console.error(yellow('Go to: System Settings > Privacy & Security > App Management'));
-            console.error(yellow('And enable the toggle for your terminal, then try again.\n'));
-        } else {
-            console.error(yellow('\nPlease run this command with sudo.\n'));
-        }
-        if (exitOnError) process.exit(1);
-        return false;
-    }
-    
-    const extractDir = path.join(path.dirname(asarPath), 'app-extracted-rtl-temp');
-    spinner.text = 'Extracting app.asar (this may take a few seconds)...';
-    try {
-        if (fs.existsSync(extractDir)) {
-            fs.rmSync(extractDir, { recursive: true, force: true });
-        }
-        asar.extractAll(asarPath, extractDir);
-    } catch (e) {
-        spinner.fail('Failed to extract ASAR.');
-        console.error(red(e.message));
-        if (exitOnError) process.exit(1);
-        return false;
-    }
 
-    spinner.text = 'Injecting RTL features...';
-    try {
+        failLabel = 'Failed to extract ASAR.';
+        spinner.text = 'Extracting app.asar (this may take a few seconds)...';
+        fs.rmSync(extractDir, { recursive: true, force: true });
+        asar.extractAll(asarPath, extractDir);
+
+        failLabel = 'Injection failed.';
+        spinner.text = 'Injecting RTL features...';
         const utilsPath = path.join(extractDir, 'dist', 'utils.js');
         if (!fs.existsSync(utilsPath)) {
             throw new Error('dist/utils.js not found in ASAR. Unsupported Antigravity version.');
         }
 
         let utilsCode = fs.readFileSync(utilsPath, 'utf8');
-        
+
         if (utilsCode.includes('/* ANTIGRAVITY RTL PATCH */')) {
             if (fs.existsSync(backupPath)) {
                 spinner.text = 'Updating existing RTL patch to latest version...';
@@ -171,35 +126,20 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
             }
         }
 
-        const payloadPath = path.join(__dirname, 'payload.js');
-        const payload = fs.readFileSync(payloadPath, 'utf8');
-
+        const payload = fs.readFileSync(path.join(__dirname, 'payload.js'), 'utf8');
         const anchor = 'void win.loadURL(url);';
         if (!utilsCode.includes(anchor)) {
             throw new Error('Injection anchor not found. The app version might be unsupported.');
         }
-
         utilsCode = utilsCode.replace(anchor, payload);
         // Force-enable DevTools in packaged app
         utilsCode = utilsCode.replace(/devTools:\s*!electron_1?\.app\.isPackaged/g, 'devTools: true');
         fs.writeFileSync(utilsPath, utilsCode);
 
-        const fontSource = path.join(__dirname, 'Vazirmatn-Variable.woff2');
-        const fontDest = path.join(extractDir, 'dist', 'Vazirmatn-Variable.woff2');
-        if (fs.existsSync(fontSource)) {
-            fs.copyFileSync(fontSource, fontDest);
-        }
+        fs.copyFileSync(path.join(__dirname, 'Vazirmatn-Variable.woff2'), path.join(extractDir, 'dist', 'Vazirmatn-Variable.woff2'));
 
-    } catch (e) {
-        spinner.fail('Injection failed.');
-        console.error(red(e.message));
-        if (fs.existsSync(extractDir)) fs.rmSync(extractDir, { recursive: true, force: true });
-        if (exitOnError) process.exit(1);
-        return false;
-    }
-
-    spinner.text = 'Repacking app.asar (almost done)...';
-    try {
+        failLabel = 'Failed to repack ASAR.';
+        spinner.text = 'Repacking app.asar (almost done)...';
         await asar.createPackage(extractDir, asarPath);
         fs.rmSync(extractDir, { recursive: true, force: true });
         spinner.succeed('Successfully patched Antigravity!');
@@ -207,8 +147,23 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
         console.log(green('✨ Please restart Antigravity to see the changes.\n'));
         return true;
     } catch (e) {
-        spinner.fail('Failed to repack ASAR.');
-        console.error(red(e.message));
+        spinner.fail(failLabel);
+        if (failLabel === 'Permission Denied.') {
+            console.error(red('\nSystem Error: ' + e.message));
+            if (os.platform() === 'win32') {
+                console.error(yellow('\nPlease run your terminal (PowerShell/CMD) as Administrator and try again.\n'));
+            } else if (os.platform() === 'darwin') {
+                console.error(yellow('\nPlease ensure you run this command with sudo.'));
+                console.error(yellow('If you are using sudo, macOS requires your terminal to have "App Management" permission.'));
+                console.error(yellow('Go to: System Settings > Privacy & Security > App Management'));
+                console.error(yellow('And enable the toggle for your terminal, then try again.\n'));
+            } else {
+                console.error(yellow('\nPlease run this command with sudo.\n'));
+            }
+        } else {
+            console.error(red(e.message));
+            fs.rmSync(extractDir, { recursive: true, force: true });
+        }
         if (exitOnError) process.exit(1);
         return false;
     }

@@ -10,7 +10,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { blue, green, red, yellow } = picocolors;
 
-export function getIdeCandidatePaths() {
+function idePaths(appDir) {
+    const outDir = path.join(appDir, 'out');
+    const wbDir = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench');
+    const mainJsPath = path.join(outDir, 'main.js');
+    const workbenchHtml = path.join(wbDir, 'workbench.html');
+    const jetskiHtml = path.join(wbDir, 'workbench-jetski-agent.html');
+    return {
+        outDir, wbDir, mainJsPath, workbenchHtml, jetskiHtml,
+        mainJsBak: mainJsPath + '.rtl-bak',
+        workbenchHtmlBak: workbenchHtml + '.rtl-bak',
+        jetskiHtmlBak: jetskiHtml + '.rtl-bak'
+    };
+}
+
+function getIdeCandidatePaths() {
     const candidates = [];
     const platform = os.platform();
 
@@ -68,27 +82,17 @@ export function resolveIdeAppDir(inputPath) {
     return null;
 }
 
-export function detectIdeAppPath(customPath) {
-    if (customPath) {
-        return resolveIdeAppDir(customPath);
-    }
-    const candidates = getIdeCandidatePaths();
-    for (const c of candidates) {
+export function detectIdeAppPath() {
+    for (const c of getIdeCandidatePaths()) {
         const resolved = resolveIdeAppDir(c);
-        if (resolved) {
-            return resolved;
-        }
+        if (resolved) return resolved;
     }
     return null;
 }
 
 export function hasIdeBackup(appDir) {
     if (!appDir) return false;
-    const outDir = path.join(appDir, 'out');
-    const mainJsBak = path.join(outDir, 'main.js.rtl-bak');
-    const workbenchHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench.html.rtl-bak');
-    const jetskiHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench-jetski-agent.html.rtl-bak');
-    const mainJsPath = path.join(outDir, 'main.js');
+    const { mainJsPath, mainJsBak, workbenchHtmlBak, jetskiHtmlBak } = idePaths(appDir);
     let hasImport = false;
     if (fs.existsSync(mainJsPath)) {
         try {
@@ -99,8 +103,8 @@ export function hasIdeBackup(appDir) {
     return fs.existsSync(mainJsBak) || fs.existsSync(workbenchHtmlBak) || fs.existsSync(jetskiHtmlBak) || hasImport;
 }
 
-export async function getIdeAppPath(customPath) {
-    const detected = detectIdeAppPath(customPath);
+export async function getIdeAppPath() {
+    const detected = detectIdeAppPath();
     if (detected) {
         console.log(blue(`ℹ Found Antigravity IDE installation at:`));
         console.log(`  ${detected}\n`);
@@ -129,13 +133,7 @@ export async function getIdeAppPath(customPath) {
 }
 
 export async function restoreIde(appDir, { exitOnError = true } = {}) {
-    const outDir = path.join(appDir, 'out');
-    const mainJsPath = path.join(outDir, 'main.js');
-    const mainJsBak = path.join(outDir, 'main.js.rtl-bak');
-    const workbenchHtml = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench.html');
-    const workbenchHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench.html.rtl-bak');
-    const jetskiHtml = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench-jetski-agent.html');
-    const jetskiHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench-jetski-agent.html.rtl-bak');
+    const { outDir, wbDir, mainJsPath, mainJsBak, workbenchHtml, workbenchHtmlBak, jetskiHtml, jetskiHtmlBak } = idePaths(appDir);
 
     if (!hasIdeBackup(appDir)) {
         console.error(red('✖ No backup found to restore for Antigravity IDE.\n'));
@@ -173,12 +171,10 @@ export async function restoreIde(appDir, { exitOnError = true } = {}) {
             path.join(outDir, 'antigravity-rtl-main.js'),
             path.join(outDir, 'antigravity-rtl-client.js'),
             path.join(outDir, 'Vazirmatn-Variable.woff2'),
-            path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'Vazirmatn-Variable.woff2')
+            path.join(wbDir, 'Vazirmatn-Variable.woff2')
         ];
         for (const f of filesToClean) {
-            if (fs.existsSync(f)) {
-                fs.unlinkSync(f);
-            }
+            fs.rmSync(f, { force: true });
         }
 
         spinner.succeed('Successfully restored original Antigravity IDE!\n');
@@ -192,34 +188,15 @@ export async function restoreIde(appDir, { exitOnError = true } = {}) {
 }
 
 export async function patchIde(appDir, { exitOnError = true } = {}) {
-    const outDir = path.join(appDir, 'out');
-    const mainJsPath = path.join(outDir, 'main.js');
-    const mainJsBak = path.join(outDir, 'main.js.rtl-bak');
-    const workbenchHtml = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench.html');
-    const workbenchHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench.html.rtl-bak');
-    const jetskiHtml = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench-jetski-agent.html');
-    const jetskiHtmlBak = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'workbench-jetski-agent.html.rtl-bak');
+    const { outDir, mainJsPath, mainJsBak, workbenchHtml, workbenchHtmlBak, jetskiHtml, jetskiHtmlBak } = idePaths(appDir);
 
     const spinner = ora('Checking permissions and backing up IDE files...').start();
-
-    // Check write permissions
+    let failLabel = 'Permission Denied.';
     try {
         fs.accessSync(outDir, fs.constants.W_OK);
         fs.accessSync(mainJsPath, fs.constants.W_OK);
-    } catch (e) {
-        spinner.fail('Permission Denied.');
-        console.error(red('\nSystem Error: ' + e.message));
-        if (os.platform() === 'win32') {
-            console.error(yellow('\nPlease run your terminal as Administrator and try again.\n'));
-        } else {
-            console.error(yellow('\nPlease run this command with sudo.\n'));
-        }
-        if (exitOnError) process.exit(1);
-        return false;
-    }
 
-    try {
-        // Backup original files if not already backed up
+        failLabel = 'Failed to create backup.';
         if (!fs.existsSync(mainJsBak) && fs.existsSync(mainJsPath)) {
             fs.copyFileSync(mainJsPath, mainJsBak);
         }
@@ -229,43 +206,15 @@ export async function patchIde(appDir, { exitOnError = true } = {}) {
         if (!fs.existsSync(jetskiHtmlBak) && fs.existsSync(jetskiHtml)) {
             fs.copyFileSync(jetskiHtml, jetskiHtmlBak);
         }
-    } catch (e) {
-        spinner.fail('Failed to create backup.');
-        console.error(red(e.message));
-        if (exitOnError) process.exit(1);
-        return false;
-    }
 
-    spinner.text = 'Copying RTL assets and injection scripts...';
-    try {
-        // Copy font
-        const fontSource = path.join(__dirname, 'Vazirmatn-Variable.woff2');
-        const fontDest = path.join(outDir, 'Vazirmatn-Variable.woff2');
-        const fontWorkbenchDest = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench', 'Vazirmatn-Variable.woff2');
-        if (fs.existsSync(fontSource)) {
-            fs.copyFileSync(fontSource, fontDest);
-            fs.copyFileSync(fontSource, fontWorkbenchDest);
-        }
+        failLabel = 'Failed to copy RTL assets.';
+        spinner.text = 'Copying RTL assets and injection scripts...';
+        fs.copyFileSync(path.join(__dirname, 'Vazirmatn-Variable.woff2'), path.join(outDir, 'Vazirmatn-Variable.woff2'));
+        fs.copyFileSync(path.join(__dirname, 'ide-client.js'), path.join(outDir, 'antigravity-rtl-client.js'));
+        fs.copyFileSync(path.join(__dirname, 'ide-main.js'), path.join(outDir, 'antigravity-rtl-main.js'));
 
-        // Copy client payload
-        const clientSource = path.join(__dirname, 'ide-client.js');
-        const clientDest = path.join(outDir, 'antigravity-rtl-client.js');
-        fs.copyFileSync(clientSource, clientDest);
-
-        // Copy main process hook
-        const mainSource = path.join(__dirname, 'ide-main.js');
-        const mainDest = path.join(outDir, 'antigravity-rtl-main.js');
-        fs.copyFileSync(mainSource, mainDest);
-
-    } catch (e) {
-        spinner.fail('Failed to copy RTL assets.');
-        console.error(red(e.message));
-        if (exitOnError) process.exit(1);
-        return false;
-    }
-
-    spinner.text = 'Injecting RTL hook into main.js...';
-    try {
+        failLabel = 'Injection into Antigravity IDE failed.';
+        spinner.text = 'Injecting RTL hook into main.js...';
         let mainCode = fs.readFileSync(mainJsPath, 'utf8');
         const importHook = "import './antigravity-rtl-main.js';\n";
 
@@ -292,10 +241,16 @@ export async function patchIde(appDir, { exitOnError = true } = {}) {
         console.log(green('\n✨ RTL Features have been enabled for Antigravity IDE.'));
         console.log(green('✨ Please restart Antigravity IDE to see the changes.\n'));
         return true;
-
     } catch (e) {
-        spinner.fail('Injection into Antigravity IDE failed.');
-        console.error(red(e.message));
+        spinner.fail(failLabel);
+        if (failLabel === 'Permission Denied.') {
+            console.error(red('\nSystem Error: ' + e.message));
+            console.error(yellow(os.platform() === 'win32'
+                ? '\nPlease run your terminal as Administrator and try again.\n'
+                : '\nPlease run this command with sudo.\n'));
+        } else {
+            console.error(red(e.message));
+        }
         if (exitOnError) process.exit(1);
         return false;
     }
