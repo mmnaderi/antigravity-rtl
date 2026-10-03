@@ -108,8 +108,6 @@
                 @font-face {
                     font-family: 'PersianOnlyFont';
                     src: local('Vazirmatn'), local('Vazirmatn Variable'), local('Vazir'),
-                         url('./Vazirmatn-Variable.woff2') format('woff2'),
-                         url('../../../../Vazirmatn-Variable.woff2') format('woff2'),
                          url('data:font/woff2;base64,${fontBase64}') format('woff2');
                     font-weight: 100 900;
                     unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
@@ -312,21 +310,7 @@
         function el(tag, styles, children, attrs) {
             const element = document.createElement(tag);
             if (styles) element.style.cssText = styles;
-            if (attrs) {
-                for (const [k, v] of Object.entries(attrs)) {
-                    if (k === 'id') element.id = v;
-                    else if (k === 'type') element.type = v;
-                    else if (k === 'title') element.title = v;
-                    else if (k === 'value') element.value = v;
-                    else if (k === 'placeholder') element.placeholder = v;
-                    else if (k === 'href') element.href = v;
-                    else if (k === 'target') element.target = v;
-                    else if (k === 'min') element.min = v;
-                    else if (k === 'max') element.max = v;
-                    else if (k === 'step') element.step = v;
-                    else element.setAttribute(k, v);
-                }
-            }
+            if (attrs) Object.assign(element, attrs);
             if (children) {
                 if (typeof children === 'string') {
                     element.textContent = children;
@@ -519,7 +503,7 @@
             updateDir();
 
             // Update Status Bar Item
-            const statusLink = document.getElementById('antigravity-rtl-statusbar-link') || document.getElementById('antigravity-rtl-statusbar-btn');
+            const statusLink = document.getElementById('antigravity-rtl-statusbar-btn');
             if (statusLink) {
                 statusLink.textContent = state.isRTL ? '⇄ RTL: On' : '⇄ RTL: Off';
                 statusLink.style.color = state.isRTL ? '#38bdf8' : 'inherit';
@@ -555,33 +539,12 @@
                 atBtn.style.background = state.fixAtSign ? 'var(--vscode-button-background, #3b82f6)' : '#64748b';
                 atKnob.style.left = state.fixAtSign ? '19px' : '3px';
             }
-
-            const faInput = document.getElementById('rtl-panel-fa-font');
-            if (faInput && document.activeElement !== faInput) faInput.value = state.faFont || '';
-            const enInput = document.getElementById('rtl-panel-en-font');
-            if (enInput && document.activeElement !== enInput) enInput.value = state.enFont || '';
-            const codeInput = document.getElementById('rtl-panel-code-font');
-            if (codeInput && document.activeElement !== codeInput) codeInput.value = state.codeFont || '';
-            const lhInput = document.getElementById('rtl-panel-lh');
-            if (lhInput && document.activeElement !== lhInput) lhInput.value = state.lh;
-            const fsInput = document.getElementById('rtl-panel-fs');
-            if (fsInput && document.activeElement !== fsInput) fsInput.value = state.fs;
         }
 
         function setRTLActive(active) {
             state.isRTL = active;
             saveConfig();
             updateUI();
-        }
-
-        // Clean up any remnants from previous chat header experiments
-        function cleanupOldChatButtons() {
-            const oldGroup = document.getElementById('antigravity-rtl-btn-group');
-            if (oldGroup) oldGroup.remove();
-            const oldBtn = document.getElementById('antigravity-chat-rtl-header-btn');
-            if (oldBtn) oldBtn.remove();
-            const oldGear = document.getElementById('antigravity-chat-rtl-gear-btn');
-            if (oldGear) oldGear.remove();
         }
 
         function getStatusBarTarget() {
@@ -594,8 +557,6 @@
 
         // Insert VS Code Status Bar Item (Right side)
         function tryInsertStatusBarItem() {
-            cleanupOldChatButtons();
-
             const statusBar = getStatusBarTarget();
             if (!statusBar) return;
 
@@ -636,23 +597,8 @@
                 statusItem.addEventListener('mouseleave', () => {
                     statusItem.style.backgroundColor = 'transparent';
                 });
-
-                if (statusBar.firstChild) {
-                    statusBar.insertBefore(statusItem, statusBar.firstChild);
-                } else {
-                    statusBar.appendChild(statusItem);
-                }
-            } else {
-                if (statusItem.parentElement !== statusBar) {
-                    if (statusBar.firstChild) {
-                        statusBar.insertBefore(statusItem, statusBar.firstChild);
-                    } else {
-                        statusBar.appendChild(statusItem);
-                    }
-                } else if (statusBar.firstChild !== statusItem) {
-                    statusBar.insertBefore(statusItem, statusBar.firstChild);
-                }
             }
+            if (statusBar.firstChild !== statusItem) statusBar.prepend(statusItem);
         }
 
         // Outside click & Escape to close settings panel
@@ -697,20 +643,13 @@
 
         // Throttled dynamic UI updater
         let domUpdateTimer = null;
-        let isUpdatingDOM = false;
 
         function scheduleDOMUpdate() {
             if (domUpdateTimer) return;
             domUpdateTimer = setTimeout(() => {
                 domUpdateTimer = null;
-                if (isUpdatingDOM) return;
-                isUpdatingDOM = true;
-                try {
-                    updateDir();
-                    tryInsertStatusBarItem();
-                } finally {
-                    isUpdatingDOM = false;
-                }
+                updateDir();
+                tryInsertStatusBarItem();
             }, 400);
         }
 
@@ -718,43 +657,14 @@
         document.body.addEventListener('focusin', scheduleDOMUpdate, { capture: true });
 
         const observer = new MutationObserver((mutations) => {
-            if (isUpdatingDOM) return;
-            let hasExternal = false;
-            for (const m of mutations) {
-                for (const node of m.addedNodes) {
-                    if (!node.id || (!node.id.startsWith('antigravity-rtl') && node.id !== 'antigravity-chat-rtl-header-btn')) {
-                        hasExternal = true;
-                        break;
-                    }
-                }
-                if (hasExternal) break;
-            }
-            if (hasExternal) {
-                scheduleDOMUpdate();
-            }
+            const hasExternal = mutations.some(m => [...m.addedNodes].some(node => !node.id || !node.id.startsWith('antigravity-rtl')));
+            if (hasExternal) scheduleDOMUpdate();
         });
         observer.observe(document.body, { childList: true, subtree: true });
 
         // Initial run
         updateUI();
         tryInsertStatusBarItem();
-
-        // Startup retry loop ensures insertion when workbench statusbar appears
-        let initRetries = 0;
-        const initInterval = setInterval(() => {
-            initRetries++;
-            tryInsertStatusBarItem();
-            const btn = document.getElementById('antigravity-rtl-statusbar-btn');
-            const target = getStatusBarTarget();
-            if (btn && target && btn.parentElement === target && target.classList.contains('right-items')) {
-                if (initRetries > 8) {
-                    clearInterval(initInterval);
-                }
-            }
-            if (initRetries >= 25) {
-                clearInterval(initInterval);
-            }
-        }, 300);
 
     } catch (e) {
         console.error('[Antigravity RTL Client Error]', e);
