@@ -11,6 +11,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { blue, green, red, yellow } = picocolors;
 
+const PATCH_START = '/* ANTIGRAVITY RTL PATCH */';
+const PATCH_END = '/* END ANTIGRAVITY RTL PATCH */';
+const ANCHOR = 'void win.loadURL(url);';
+const PATCH_BLOCK = /\/\* ANTIGRAVITY RTL PATCH \*\/[\s\S]*?\/\* END ANTIGRAVITY RTL PATCH \*\//;
+const LEGACY_PATCH_ERROR = 'This Antigravity install was patched by an older version of antigravity-rtl and no clean backup exists. Reinstall Antigravity, then run this command again.';
+
+function readUtils(asarFile) {
+    asar.uncache(asarFile);
+    return asar.extractFile(asarFile, 'dist/utils.js').toString('utf8');
+}
+
+function stripPatch(code) {
+    return PATCH_BLOCK.test(code) ? code.replace(PATCH_BLOCK, ANCHOR) : null;
+}
+
 function getAppCandidatePaths() {
     const candidates = [];
     const platform = os.platform();
@@ -75,9 +90,15 @@ export async function restoreApp(asarPath, { exitOnError = true } = {}) {
         if (exitOnError) process.exit(1);
         return false;
     }
+    if (readUtils(backupPath).includes(PATCH_START)) {
+        console.error(red('✖ The backup is itself patched, so restoring would not remove RTL. Run the patcher once to rebuild a clean backup, or reinstall Antigravity.\n'));
+        if (exitOnError) process.exit(1);
+        return false;
+    }
     const spinner = ora('Restoring original Antigravity app.asar...').start();
     try {
         fs.copyFileSync(backupPath, asarPath);
+        asar.uncache(asarPath);
         fs.unlinkSync(backupPath);
         spinner.succeed('Successfully restored original Antigravity!\n');
         return true;
@@ -96,8 +117,24 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
     let failLabel = 'Permission Denied.';
     try {
         fs.accessSync(path.dirname(asarPath), fs.constants.W_OK);
-        if (!fs.existsSync(backupPath)) {
+
+        failLabel = 'Failed to read app.asar.';
+        const currentUtils = readUtils(asarPath);
+        const backupUtils = fs.existsSync(backupPath) ? readUtils(backupPath) : null;
+        let cleanUtils;
+        let repairBackup = false;
+
+        if (!currentUtils.includes(PATCH_START)) {
+            failLabel = 'Permission Denied.';
             fs.copyFileSync(asarPath, backupPath);
+            asar.uncache(backupPath);
+            cleanUtils = currentUtils;
+        } else {
+            const backupIsClean = backupUtils !== null && !backupUtils.includes(PATCH_START);
+            cleanUtils = stripPatch(currentUtils) ?? (backupIsClean ? backupUtils : null);
+            if (cleanUtils === null) throw new Error(LEGACY_PATCH_ERROR);
+            repairBackup = !backupIsClean;
+            spinner.text = 'Updating existing RTL patch to latest version...';
         }
 
         failLabel = 'Failed to extract ASAR.';
@@ -105,42 +142,37 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
         fs.rmSync(extractDir, { recursive: true, force: true });
         asar.extractAll(asarPath, extractDir);
 
+        const utilsPath = path.join(extractDir, 'dist', 'utils.js');
+        const fontDest = path.join(extractDir, 'dist', 'Vazirmatn-Variable.woff2');
+
+        if (repairBackup) {
+            failLabel = 'Failed to rebuild clean backup.';
+            spinner.text = 'Rebuilding clean backup...';
+            fs.writeFileSync(utilsPath, cleanUtils);
+            fs.rmSync(fontDest, { force: true });
+            await asar.createPackage(extractDir, backupPath);
+            asar.uncache(backupPath);
+        }
+
         failLabel = 'Injection failed.';
         spinner.text = 'Injecting RTL features...';
-        const utilsPath = path.join(extractDir, 'dist', 'utils.js');
-        if (!fs.existsSync(utilsPath)) {
-            throw new Error('dist/utils.js not found in ASAR. Unsupported Antigravity version.');
-        }
-
-        let utilsCode = fs.readFileSync(utilsPath, 'utf8');
-
-        if (utilsCode.includes('/* ANTIGRAVITY RTL PATCH */')) {
-            if (fs.existsSync(backupPath)) {
-                spinner.text = 'Updating existing RTL patch to latest version...';
-                utilsCode = asar.extractFile(backupPath, 'dist/utils.js').toString('utf8');
-            } else {
-                spinner.succeed('Antigravity is already patched!');
-                fs.rmSync(extractDir, { recursive: true, force: true });
-                console.log(green('\n✨ Enjoy your RTL experience!\n'));
-                return true;
-            }
-        }
+        let utilsCode = cleanUtils;
 
         const payload = fs.readFileSync(path.join(__dirname, 'payload.js'), 'utf8');
-        const anchor = 'void win.loadURL(url);';
-        if (!utilsCode.includes(anchor)) {
+        if (!utilsCode.includes(ANCHOR)) {
             throw new Error('Injection anchor not found. The app version might be unsupported.');
         }
-        utilsCode = utilsCode.replace(anchor, payload);
+        utilsCode = utilsCode.replace(ANCHOR, () => `${payload.trimEnd()}\n${PATCH_END}`);
         // Force-enable DevTools in packaged app
         utilsCode = utilsCode.replace(/devTools:\s*!electron_1?\.app\.isPackaged/g, 'devTools: true');
         fs.writeFileSync(utilsPath, utilsCode);
 
-        fs.copyFileSync(path.join(__dirname, 'Vazirmatn-Variable.woff2'), path.join(extractDir, 'dist', 'Vazirmatn-Variable.woff2'));
+        fs.copyFileSync(path.join(__dirname, 'Vazirmatn-Variable.woff2'), fontDest);
 
         failLabel = 'Failed to repack ASAR.';
         spinner.text = 'Repacking app.asar (almost done)...';
         await asar.createPackage(extractDir, asarPath);
+        asar.uncache(asarPath);
         fs.rmSync(extractDir, { recursive: true, force: true });
         spinner.succeed('Successfully patched Antigravity!');
         console.log(green('\n✨ RTL Features have been enabled for Antigravity (Standalone App).'));
@@ -161,7 +193,9 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
                 console.error(yellow('\nPlease run this command with sudo.\n'));
             }
         } else {
-            console.error(red(e.message));
+            console.error(red(/dist\/utils\.js/.test(e.message)
+                ? 'dist/utils.js not found in ASAR. Unsupported Antigravity version.'
+                : e.message));
             fs.rmSync(extractDir, { recursive: true, force: true });
         }
         if (exitOnError) process.exit(1);
