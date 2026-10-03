@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const CONFIG_FILE = path.join(os.homedir(), '.antigravity-rtl.json');
-const LOG_FILE = '/tmp/antigravity-rtl.log';
+const LOG_FILE = path.join(os.tmpdir(), 'antigravity-rtl.log');
 
 function log(...args) {
     try {
