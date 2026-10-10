@@ -88,6 +88,33 @@ Follow the steps for your operating system. Node.js **22.12 or newer** is requir
 | `npx antigravity-rtl --restore --app` | Revert changes and restore Antigravity Standalone App only |
 | `npx antigravity-rtl --path "/path/to/app"` | Specify a custom installation directory or app.asar |
 
+<a id="auto-update-watcher"></a>
+
+## 🔄 Automatic Re-Patch on Updates (Background Watcher)
+
+Antigravity automatically updates in the background, replacing core files (`app.asar` or IDE workbench assets) with unpatched upstream builds. To keep your RTL support intact without manually re-running the command after every update, enable the built-in **Auto-Update Watcher**:
+
+### Enable Auto-Update Watcher:
+```bash
+npx antigravity-rtl --install-watcher
+```
+This registers a lightweight, native background service configured to launch on system startup:
+- **Windows**: Silent autostart via User Registry Run key (`HKCU\...\Run`) with zero console flash.
+- **macOS**: Native user LaunchAgent daemon (`~/Library/LaunchAgents/com.mmnaderi.antigravity-rtl.plist`).
+- **Linux**: Native systemd user service (`~/.config/systemd/user/antigravity-rtl.service`).
+
+Whenever Antigravity updates and replaces its application files, the watcher immediately detects that the patch was removed and silently re-applies it in seconds.
+
+### Disable Watcher:
+```bash
+npx antigravity-rtl --uninstall-watcher
+```
+
+### Run Watcher in Foreground (Test / Debug):
+```bash
+npx antigravity-rtl --watch
+```
+
 <a id="uninstall"></a>
 
 ## Uninstall / Revert the patch
@@ -188,6 +215,33 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 npx antigravity-rtl --restore
 ```
 *(یا برای بازگردانی فقط یک برنامهٔ خاص: `npx antigravity-rtl --restore --ide`)*
+
+<a id="واچر-خودکار"></a>
+
+### 🔄 پچ خودکار پس از هر آپدیت (واچر پس‌زمینه)
+
+برنامه Antigravity در پس‌زمینه به‌صورت خودکار آپدیت می‌شود و فایل‌های هسته برنامه (`app.asar` یا فایل‌های IDE) را با نسخهٔ خام جایگزین می‌کند که باعث از بین رفتن پچ راست‌چین می‌شود. برای اینکه نیازی نباشد بعد از هر آپدیت دستور پچ را دستی اجرا کنید، می‌توانید **واچر خودکار (Auto-Update Watcher)** را فعال کنید:
+
+#### فعال‌سازی واچر خودکار:
+```bash
+npx antigravity-rtl --install-watcher
+```
+این دستور یک سرویس پس‌زمینه سبک را روی سیستم‌عامل شما ثبت می‌کند تا با روشن شدن سیستم فعال بماند:
+- **ویندوز (Windows):** ثبت در رجیستری کاربری و اجرای کاملاً بی‌صدا بدون باز شدن پنجره مشکی ترمینال.
+- **مک (macOS):** ثبت به عنوان LaunchAgent نیتیو کاربر در مسیر `~/Library/LaunchAgents`.
+- **لینوکس (Linux):** ثبت به عنوان سرویس کاربر در `systemd --user`.
+
+به محض اینکه Antigravity آپدیت شود، واچر بلافاصله تغییر را متوجه شده و در کمتر از چند ثانیه پچ راست‌چین و فونت را مجدداً به‌صورت خودکار اعمال می‌کند.
+
+#### غیرفعال‌سازی واچر:
+```bash
+npx antigravity-rtl --uninstall-watcher
+```
+
+#### اجرای زنده در ترمینال (برای تست و لاگ):
+```bash
+npx antigravity-rtl --watch
+```
 
 ### پروژه‌های الهام‌گرفته از این پروژه
 
