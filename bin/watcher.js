@@ -100,9 +100,9 @@ export async function runWatcher({ appAsar, ideDir } = {}) {
     }, 30000);
 }
 
-export function installWatcher() {
+export function installWatcher({ silent = false } = {}) {
     const platform = os.platform();
-    console.log(bold(cyan('⚙ Configuring Auto-Update Watcher for system startup...\n')));
+    if (!silent) console.log(bold(cyan('⚙ Configuring Auto-Update Watcher for system startup...\n')));
 
     if (platform === 'win32') {
         const stateDir = path.join(process.env.LOCALAPPDATA || os.homedir(), 'AntigravityRtlWatcher');
@@ -116,10 +116,12 @@ export function installWatcher() {
             const regCmd = `reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "AntigravityRtlWatcher" /t REG_SZ /d "wscript.exe \\"${vbsPath}\\"" /f`;
             execSync(regCmd, { stdio: 'ignore' });
             exec(`wscript.exe "${vbsPath}"`);
-            console.log(green('✔ Watcher registered to startup successfully!'));
-            console.log(cyan('  Antigravity RTL will now automatically re-patch after application updates.\n'));
+            if (!silent) {
+                console.log(green('✔ Auto-Update Watcher enabled for system startup!'));
+                console.log(cyan('  Antigravity RTL will now automatically re-patch after application updates.\n'));
+            }
         } catch (e) {
-            console.error(red(`✖ Failed to register startup key: ${e.message}`));
+            if (!silent) console.error(red(`✖ Failed to register startup key: ${e.message}`));
         }
     } else if (platform === 'darwin') {
         const agentDir = path.join(os.homedir(), 'Library', 'LaunchAgents');

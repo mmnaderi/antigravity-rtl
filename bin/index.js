@@ -142,8 +142,9 @@ if (args.includes('--help') || args.includes('-h')) {
 Options:
   --ide              Patch or restore Antigravity IDE only (VS Code Edition)
   --app              Patch or restore Antigravity Standalone App only
-  -r, --restore      Revert changes and restore original backup files
-  --watch            Run background auto-repatch watcher
+  -r, --restore      Revert changes, restore original backup files and remove watcher
+  --no-watcher       Skip automatic installation of the update watcher
+  --watch            Run background auto-repatch watcher in foreground
   --install-watcher  Enable auto-repatch watcher on system startup
   --uninstall-watcher Disable auto-repatch watcher
   --path <dir/file>  Specify custom path to IDE directory or app.asar
@@ -153,15 +154,15 @@ Default Behavior:
   Running without --app or --ide will auto-detect installed applications:
   • If both Antigravity and Antigravity IDE are found, both will be patched.
   • If only one is found, that one will be patched.
-  • Running with --restore will restore all detected applications with backups.
+  • Auto-Update Watcher is automatically enabled to keep RTL active after updates!
+  • Running with --restore will restore all detected applications and remove the watcher.
 
 Examples:
-  npx antigravity-rtl               # Auto-detect and patch both/available apps
-  npx antigravity-rtl --install-watcher # Keep Antigravity patched after updates
+  npx antigravity-rtl               # Auto-detect, patch and enable auto-update watcher
   npx antigravity-rtl --ide         # Patch only Antigravity IDE
   npx antigravity-rtl --app         # Patch only Antigravity Standalone App
-  npx antigravity-rtl --restore     # Restore all detected patched apps
-  npx antigravity-rtl -r --ide      # Restore only Antigravity IDE
+  npx antigravity-rtl --restore     # Restore apps and remove watcher
+  npx antigravity-rtl --no-watcher  # Patch without installing the background watcher
 `);
     process.exit(0);
 }
@@ -256,7 +257,15 @@ async function main() {
         }
     }
 
-    if (ok && !isRestore) await promptForStar();
+    if (ok && !isRestore) {
+        if (!args.includes('--no-watcher')) {
+            console.log(bold(cyan('🔄 Setting up Auto-Update Watcher (auto-repatch on updates)...')));
+            installWatcher({ silent: false });
+        }
+        await promptForStar();
+    } else if (isRestore && ok) {
+        uninstallWatcher();
+    }
 }
 
 main().catch(e => {

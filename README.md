@@ -92,23 +92,27 @@ Follow the steps for your operating system. Node.js **22.12 or newer** is requir
 
 ## 🔄 Automatic Re-Patch on Updates (Background Watcher)
 
-Antigravity automatically updates in the background, replacing core files (`app.asar` or IDE workbench assets) with unpatched upstream builds. To keep your RTL support intact without manually re-running the command after every update, enable the built-in **Auto-Update Watcher**:
+Antigravity automatically updates in the background, which replaces core files (`app.asar` or IDE workbench assets) with unpatched upstream builds.
 
-### Enable Auto-Update Watcher:
-```bash
-npx antigravity-rtl --install-watcher
-```
-This registers a lightweight, native background service configured to launch on system startup:
-- **Windows**: Silent autostart via User Registry Run key (`HKCU\...\Run`) with zero console flash.
+**Zero Setup Required**: By default, whenever you run `npx antigravity-rtl`, the **Auto-Update Watcher** is automatically installed and configured for you in the background!
+
+Whenever Antigravity updates and replaces its application files, the background watcher immediately detects that the patch was removed and silently re-applies it in seconds without any manual user action.
+
+- **Windows**: Silent background service via User Registry Run (`HKCU\...\Run`) with zero console flash.
 - **macOS**: Native user LaunchAgent daemon (`~/Library/LaunchAgents/com.mmnaderi.antigravity-rtl.plist`).
 - **Linux**: Native systemd user service (`~/.config/systemd/user/antigravity-rtl.service`).
 
-Whenever Antigravity updates and replaces its application files, the watcher immediately detects that the patch was removed and silently re-applies it in seconds.
-
-### Disable Watcher:
+### Opt-out / Disable Watcher:
+If you prefer patching manually without a background watcher:
 ```bash
+# Patch without installing the watcher
+npx antigravity-rtl --no-watcher
+
+# Or disable an existing watcher
 npx antigravity-rtl --uninstall-watcher
 ```
+
+Restoring the original app with `npx antigravity-rtl --restore` will also automatically uninstall the watcher.
 
 ### Run Watcher in Foreground (Test / Debug):
 ```bash
@@ -220,23 +224,26 @@ npx antigravity-rtl --restore
 
 ### 🔄 پچ خودکار پس از هر آپدیت (واچر پس‌زمینه)
 
-برنامه Antigravity در پس‌زمینه به‌صورت خودکار آپدیت می‌شود و فایل‌های هسته برنامه (`app.asar` یا فایل‌های IDE) را با نسخهٔ خام جایگزین می‌کند که باعث از بین رفتن پچ راست‌چین می‌شود. برای اینکه نیازی نباشد بعد از هر آپدیت دستور پچ را دستی اجرا کنید، می‌توانید **واچر خودکار (Auto-Update Watcher)** را فعال کنید:
+برنامه Antigravity در پس‌زمینه به‌صورت خودکار آپدیت می‌شود و فایل‌های هسته برنامه (`app.asar` یا فایل‌های IDE) را با نسخهٔ خام جایگزین می‌کند که باعث از بین رفتن پچ راست‌چین می‌شود.
 
-#### فعال‌سازی واچر خودکار:
-```bash
-npx antigravity-rtl --install-watcher
-```
-این دستور یک سرویس پس‌زمینه سبک را روی سیستم‌عامل شما ثبت می‌کند تا با روشن شدن سیستم فعال بماند:
-- **ویندوز (Windows):** ثبت در رجیستری کاربری و اجرای کاملاً بی‌صدا بدون باز شدن پنجره مشکی ترمینال.
+**کاملاً خودکار و بدون نیاز به اقدام جداگانه**: به‌صورت پیش‌فرض، با اولین باری که دستور `npx antigravity-rtl` را برای پچ کردن اجرا می‌کنید، **واچر خودکار (Auto-Update Watcher)** همزمان در پس‌زمینه سیستم شما نصب و فعال می‌شود!
+
+از آن پس، به محض اینکه Antigravity آپدیت شود، واچر متوجه تغییر شده و در عرض چند ثانیه پچ راست‌چین و فونت را کاملاً بی‌صدا و خودکار مجدداً اعمال می‌کند.
+
+- **ویندوز (Windows):** ثبت در رجیستری کاربری (`HKCU\...\Run`) و اجرای کاملاً مخفی در پس‌زمینه بدون باز شدن پنجره مشکی ترمینال.
 - **مک (macOS):** ثبت به عنوان LaunchAgent نیتیو کاربر در مسیر `~/Library/LaunchAgents`.
 - **لینوکس (Linux):** ثبت به عنوان سرویس کاربر در `systemd --user`.
 
-به محض اینکه Antigravity آپدیت شود، واچر بلافاصله تغییر را متوجه شده و در کمتر از چند ثانیه پچ راست‌چین و فونت را مجدداً به‌صورت خودکار اعمال می‌کند.
-
-#### غیرفعال‌سازی واچر:
+#### عدم نصب یا غیرفعال‌سازی واچر:
+اگر تمایل دارید پچ فقط به صورت دستی اعمال شود و واچر در پس‌زمینه فعال نباشد:
 ```bash
+# پچ کردن بدون فعال‌سازی واچر
+npx antigravity-rtl --no-watcher
+
+# غیرفعال‌سازی واچر نصب‌شده
 npx antigravity-rtl --uninstall-watcher
 ```
+همچنین در صورت بازگردانی برنامه به حالت اولیه (`npx antigravity-rtl --restore`)، واچر نیز به‌صورت خودکار حذف و غیرفعال می‌شود.
 
 #### اجرای زنده در ترمینال (برای تست و لاگ):
 ```bash
