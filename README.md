@@ -80,6 +80,9 @@ Follow the steps for your operating system. Node.js **22.12 or newer** is requir
 | `npx antigravity-rtl` | **Auto-detect & patch**: patches both Antigravity & Antigravity IDE if found, or the installed one |
 | `npx antigravity-rtl --ide` | Directly patch Antigravity IDE only |
 | `npx antigravity-rtl --app` | Directly patch Antigravity Standalone App only |
+| `npx antigravity-rtl --install-watcher` | Enable background watcher to automatically re-patch after application updates |
+| `npx antigravity-rtl --uninstall-watcher` | Disable background auto-repatch watcher |
+| `npx antigravity-rtl --watch` | Run auto-repatch watcher in foreground |
 | `npx antigravity-rtl --restore` | Revert changes and restore original backups for all detected apps |
 | `npx antigravity-rtl --restore --ide` | Revert changes and restore Antigravity IDE only |
 | `npx antigravity-rtl --restore --app` | Revert changes and restore Antigravity Standalone App only |
@@ -150,6 +153,9 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 | `npx antigravity-rtl` | **تشخیص و پچ خودکار**: در صورت وجود هر دو برنامه، هر دو پچ می‌شوند؛ در غیر این صورت برنامهٔ موجود پچ می‌شود |
 | `npx antigravity-rtl --ide` | فقط پچ مستقیم نسخهٔ Antigravity IDE |
 | `npx antigravity-rtl --app` | فقط پچ مستقیم نسخهٔ مستقل Antigravity |
+| `npx antigravity-rtl --install-watcher` | فعال‌سازی واچر پس‌زمینه برای اعمال خودکار مجدد پچ پس از هر آپدیت برنامه |
+| `npx antigravity-rtl --uninstall-watcher` | غیرفعال‌سازی واچر خودکار |
+| `npx antigravity-rtl --watch` | اجرای واچر در پیش‌زمینه |
 | `npx antigravity-rtl --restore` | بازگردانی به نسخه اصلی برای تمام برنامه‌های شناسایی‌شده |
 | `npx antigravity-rtl --restore --ide` | فقط بازگردانی Antigravity IDE به نسخه اصلی |
 | `npx antigravity-rtl --restore --app` | فقط بازگردانی نسخه مستقل Antigravity به نسخه اصلی |

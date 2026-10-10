@@ -21,6 +21,11 @@ import {
     resolveIdeAppDir,
     hasIdeBackup
 } from './patch-ide.js';
+import {
+    runWatcher,
+    installWatcher,
+    uninstallWatcher
+} from './watcher.js';
 
 import { exec } from 'child_process';
 
@@ -138,6 +143,9 @@ Options:
   --ide              Patch or restore Antigravity IDE only (VS Code Edition)
   --app              Patch or restore Antigravity Standalone App only
   -r, --restore      Revert changes and restore original backup files
+  --watch            Run background auto-repatch watcher
+  --install-watcher  Enable auto-repatch watcher on system startup
+  --uninstall-watcher Disable auto-repatch watcher
   --path <dir/file>  Specify custom path to IDE directory or app.asar
   -h, --help         Show this help message
 
@@ -149,11 +157,27 @@ Default Behavior:
 
 Examples:
   npx antigravity-rtl               # Auto-detect and patch both/available apps
+  npx antigravity-rtl --install-watcher # Keep Antigravity patched after updates
   npx antigravity-rtl --ide         # Patch only Antigravity IDE
   npx antigravity-rtl --app         # Patch only Antigravity Standalone App
   npx antigravity-rtl --restore     # Restore all detected patched apps
   npx antigravity-rtl -r --ide      # Restore only Antigravity IDE
 `);
+    process.exit(0);
+}
+
+if (args.includes('--watch')) {
+    await runWatcher();
+    process.exit(0);
+}
+
+if (args.includes('--install-watcher')) {
+    installWatcher();
+    process.exit(0);
+}
+
+if (args.includes('--uninstall-watcher')) {
+    uninstallWatcher();
     process.exit(0);
 }
 
