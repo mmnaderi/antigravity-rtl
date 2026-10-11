@@ -27,6 +27,9 @@
     "prompts": "^2.4.2"
   },
   "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
   "bin": {
     "antigravity-rtl": "bin/index.js"
   }

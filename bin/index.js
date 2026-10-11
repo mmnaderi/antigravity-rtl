@@ -24,7 +24,8 @@ import {
 import {
     runWatcher,
     installWatcher,
-    uninstallWatcher
+    uninstallWatcher,
+    stopRunningWatcher
 } from './watcher.js';
 
 import { exec } from 'child_process';
@@ -168,17 +169,30 @@ Examples:
 }
 
 if (args.includes('--watch')) {
-    await runWatcher();
+    await runWatcher({
+        watchApp: forceApp ? true : (forceIde ? false : null),
+        watchIde: forceIde ? true : (forceApp ? false : null),
+        appAsar: customPath && !forceIde ? customPath : null,
+        ideDir: customPath && (forceIde || resolveIdeAppDir(customPath)) ? (resolveIdeAppDir(customPath) || customPath) : null
+    });
     process.exit(0);
 }
 
 if (args.includes('--install-watcher')) {
-    installWatcher();
-    process.exit(0);
+    const ok = installWatcher({
+        silent: false,
+        targets: {
+            watchApp: forceApp ? true : (forceIde ? false : true),
+            watchIde: forceIde ? true : (forceApp ? false : true),
+            appPath: customPath && !forceIde ? customPath : null,
+            idePath: customPath && (forceIde || resolveIdeAppDir(customPath)) ? (resolveIdeAppDir(customPath) || customPath) : null
+        }
+    });
+    process.exit(ok ? 0 : 1);
 }
 
 if (args.includes('--uninstall-watcher')) {
-    uninstallWatcher();
+    uninstallWatcher({ silent: false });
     process.exit(0);
 }
 
@@ -199,21 +213,37 @@ if (pathArgIdx !== -1 && args[pathArgIdx + 1]) {
 }
 
 async function main() {
+    if (isRestore) {
+        stopRunningWatcher();
+    }
+
     const [runApp, runIde, verb] = isRestore
         ? [restoreApp, restoreIde, 'restore']
         : [patchApp, patchIde, 'patch'];
     let ok = false;
+    let targetAppPath = null;
+    let targetIdeDir = null;
 
     if (customPath) {
         const ideDir = resolveIdeAppDir(customPath);
-        ok = (forceIde || ideDir) ? await runIde(ideDir || customPath) : await runApp(customPath);
+        if (forceIde || ideDir) {
+            targetIdeDir = ideDir || customPath;
+            ok = await runIde(targetIdeDir);
+        } else {
+            targetAppPath = customPath;
+            ok = await runApp(targetAppPath);
+        }
     } else if (forceApp && !forceIde) {
-        ok = await runApp(await getAppAsarPath());
+        targetAppPath = await getAppAsarPath();
+        ok = await runApp(targetAppPath);
     } else if (forceIde && !forceApp) {
-        ok = await runIde(await getIdeAppPath());
+        targetIdeDir = await getIdeAppPath();
+        ok = await runIde(targetIdeDir);
     } else {
         const appPath = detectAppAsarPath();
         const ideDir = detectIdeAppPath();
+        targetAppPath = appPath;
+        targetIdeDir = ideDir;
 
         if (!appPath && !ideDir) {
             console.log(yellow('⚠ Could not automatically locate Antigravity or Antigravity IDE.'));
@@ -228,7 +258,15 @@ async function main() {
                 initial: 0
             });
             if (!target) process.exit(0);
-            ok = target === 'ide' ? await runIde(await getIdeAppPath()) : await runApp(await getAppAsarPath());
+            if (target === 'ide') {
+                targetIdeDir = await getIdeAppPath();
+                targetAppPath = null;
+                ok = await runIde(targetIdeDir);
+            } else {
+                targetAppPath = await getAppAsarPath();
+                targetIdeDir = null;
+                ok = await runApp(targetAppPath);
+            }
         } else {
             const targets = [
                 appPath && { name: 'Antigravity (Standalone App)', run: o => runApp(appPath, o), hasBackup: hasAppBackup(appPath) },
@@ -260,11 +298,19 @@ async function main() {
     if (ok && !isRestore) {
         if (!args.includes('--no-watcher')) {
             console.log(bold(cyan('🔄 Setting up Auto-Update Watcher (auto-repatch on updates)...')));
-            installWatcher({ silent: false });
+            installWatcher({
+                silent: false,
+                targets: {
+                    watchApp: forceApp ? true : (forceIde ? false : Boolean(targetAppPath)),
+                    watchIde: forceIde ? true : (forceApp ? false : Boolean(targetIdeDir)),
+                    appPath: targetAppPath,
+                    idePath: targetIdeDir
+                }
+            });
         }
         await promptForStar();
     } else if (isRestore && ok) {
-        uninstallWatcher();
+        uninstallWatcher({ silent: true });
     }
 }
 
