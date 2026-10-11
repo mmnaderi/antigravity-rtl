@@ -107,7 +107,7 @@ export async function runWatcher({ watchApp = null, watchIde = null, appAsar = n
         const existingPid = parseInt(fs.readFileSync(pidFile, 'utf8').trim(), 10);
         if (existingPid && isPidRunning(existingPid) && existingPid !== process.pid) {
             console.log(yellow(`ℹ Auto-Update Watcher is already running (PID: ${existingPid}). Exiting.`));
-            return;
+            return false;
         }
     }
     fs.writeFileSync(pidFile, String(process.pid), 'utf8');
@@ -201,6 +201,8 @@ export async function runWatcher({ watchApp = null, watchIde = null, appAsar = n
     setInterval(() => {
         checkAndPatch('periodic sweep');
     }, 30000);
+
+    return true;
 }
 
 export function installWatcher({ silent = false, targets = null } = {}) {

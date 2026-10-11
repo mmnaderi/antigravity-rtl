@@ -167,15 +167,34 @@ Examples:
 `);
     process.exit(0);
 }
+const isRestore = args.includes('--restore') || args.includes('-r');
+const forceIde = args.includes('--ide');
+const forceApp = args.includes('--app');
+
+// Find custom path argument if provided e.g. --path /foo/bar or last positional argument
+let customPath = null;
+const pathArgIdx = args.indexOf('--path');
+if (pathArgIdx !== -1 && args[pathArgIdx + 1]) {
+    customPath = args[pathArgIdx + 1];
+} else {
+    const nonFlags = args.filter(a => !a.startsWith('-'));
+    if (nonFlags.length > 0) {
+        customPath = nonFlags[0];
+    }
+}
 
 if (args.includes('--watch')) {
-    await runWatcher({
+    const started = await runWatcher({
         watchApp: forceApp ? true : (forceIde ? false : null),
         watchIde: forceIde ? true : (forceApp ? false : null),
         appAsar: customPath && !forceIde ? customPath : null,
         ideDir: customPath && (forceIde || resolveIdeAppDir(customPath)) ? (resolveIdeAppDir(customPath) || customPath) : null
     });
-    process.exit(0);
+    if (started) {
+        await new Promise(() => {});
+    } else {
+        process.exit(0);
+    }
 }
 
 if (args.includes('--install-watcher')) {
@@ -194,22 +213,6 @@ if (args.includes('--install-watcher')) {
 if (args.includes('--uninstall-watcher')) {
     uninstallWatcher({ silent: false });
     process.exit(0);
-}
-
-const isRestore = args.includes('--restore') || args.includes('-r');
-const forceIde = args.includes('--ide');
-const forceApp = args.includes('--app');
-
-// Find custom path argument if provided e.g. --path /foo/bar or last positional argument
-let customPath = null;
-const pathArgIdx = args.indexOf('--path');
-if (pathArgIdx !== -1 && args[pathArgIdx + 1]) {
-    customPath = args[pathArgIdx + 1];
-} else {
-    const nonFlags = args.filter(a => !a.startsWith('-'));
-    if (nonFlags.length > 0) {
-        customPath = nonFlags[0];
-    }
 }
 
 async function main() {

@@ -48,3 +48,12 @@ test('getStateDir returns a valid path string', () => {
     assert.ok(typeof dir === 'string' && dir.length > 0);
 });
 
+test('CLI --help outputs usage text and exits cleanly', async () => {
+    const { execFileSync } = await import('node:child_process');
+    const script = path.resolve('bin/index.js');
+    const out = execFileSync(process.execPath, [script, '--help'], { encoding: 'utf8' });
+    assert.ok(out.includes('Usage:'));
+    assert.ok(out.includes('--watch'));
+    assert.ok(out.includes('--install-watcher'));
+});
+
