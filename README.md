@@ -77,10 +77,12 @@ Follow the steps for your operating system. Node.js **22.12 or newer** is requir
 
 | Command | Description |
 | :--- | :--- |
-| `npx antigravity-rtl` | **Auto-detect & patch**: patches both Antigravity & Antigravity IDE if found, or the installed one |
+| `npx antigravity-rtl` | **Auto-detect & configure**: Installs native Zero-Patch plugin for Antigravity App (survives updates) and patches IDE |
+| `npx antigravity-rtl --plugin` | Install native Zero-Patch plugin directly (permanent across app updates) [Recommended] |
+| `npx antigravity-rtl --uninstall-plugin` | Remove the native Zero-Patch plugin |
 | `npx antigravity-rtl --ide` | Directly patch Antigravity IDE only |
-| `npx antigravity-rtl --app` | Directly patch Antigravity Standalone App only |
-| `npx antigravity-rtl --restore` | Revert changes and restore original backups for all detected apps |
+| `npx antigravity-rtl --app` | Directly patch Antigravity Standalone App only (Legacy asar patch) |
+| `npx antigravity-rtl --restore` | Revert changes and restore original backups / plugin for all detected apps |
 | `npx antigravity-rtl --restore --ide` | Revert changes and restore Antigravity IDE only |
 | `npx antigravity-rtl --restore --app` | Revert changes and restore Antigravity Standalone App only |
 | `npx antigravity-rtl --path "/path/to/app"` | Specify a custom installation directory or app.asar |
@@ -147,10 +149,12 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 
 | دستور | توضیحات |
 | :--- | :--- |
-| `npx antigravity-rtl` | **تشخیص و پچ خودکار**: در صورت وجود هر دو برنامه، هر دو پچ می‌شوند؛ در غیر این صورت برنامهٔ موجود پچ می‌شود |
+| `npx antigravity-rtl` | **تشخیص و تنظیم خودکار**: نصب افزونه نیتیو Zero-Patch برای نسخه مستقل (ماندگار در آپدیت ها) و پچ IDE |
+| `npx antigravity-rtl --plugin` | نصب مستقیم افزونه نیتیو Zero-Patch (ماندگار و دائمی در تمام آپدیت های رسمی) [پیشنهادی] |
+| `npx antigravity-rtl --uninstall-plugin` | حذف افزونه نیتیو Zero-Patch |
 | `npx antigravity-rtl --ide` | فقط پچ مستقیم نسخهٔ Antigravity IDE |
-| `npx antigravity-rtl --app` | فقط پچ مستقیم نسخهٔ مستقل Antigravity |
-| `npx antigravity-rtl --restore` | بازگردانی به نسخه اصلی برای تمام برنامه‌های شناسایی‌شده |
+| `npx antigravity-rtl --app` | فقط پچ مستقیم نسخهٔ مستقل Antigravity (روش قدیمی دستکاری asar) |
+| `npx antigravity-rtl --restore` | بازگردانی به نسخه اصلی و حذف افزونه برای تمام برنامه های شناسایی شده |
 | `npx antigravity-rtl --restore --ide` | فقط بازگردانی Antigravity IDE به نسخه اصلی |
 | `npx antigravity-rtl --restore --app` | فقط بازگردانی نسخه مستقل Antigravity به نسخه اصلی |
 | `npx antigravity-rtl --path "/path/to/app"` | مشخص کردن مسیر دلخواه نصب برنامه |

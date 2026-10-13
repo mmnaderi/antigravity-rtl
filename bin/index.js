@@ -21,6 +21,11 @@ import {
     resolveIdeAppDir,
     hasIdeBackup
 } from './patch-ide.js';
+import {
+    installPlugin,
+    uninstallPlugin,
+    isPluginInstalled
+} from './patch-plugin.js';
 
 import { exec } from 'child_process';
 
@@ -135,23 +140,26 @@ if (args.includes('--help') || args.includes('-h')) {
   npx antigravity-rtl [options] [path]
 
 Options:
+  --plugin           Install native Zero-Patch plugin (Permanent across app updates) [Recommended]
+  --uninstall-plugin Remove native Zero-Patch plugin
   --ide              Patch or restore Antigravity IDE only (VS Code Edition)
-  --app              Patch or restore Antigravity Standalone App only
-  -r, --restore      Revert changes and restore original backup files
+  --app              Patch or restore Antigravity Standalone App only (Legacy asar patch)
+  -r, --restore      Revert changes and restore original backup files / plugin
   --path <dir/file>  Specify custom path to IDE directory or app.asar
   -h, --help         Show this help message
 
 Default Behavior:
   Running without --app or --ide will auto-detect installed applications:
-  • If both Antigravity and Antigravity IDE are found, both will be patched.
-  • If only one is found, that one will be patched.
-  • Running with --restore will restore all detected applications with backups.
+  • Antigravity Standalone: Installs native Zero-Patch plugin (survives updates).
+  • Antigravity IDE: Automatically patches IDE workbench.
+  • Running with --restore will restore all detected applications and backups.
 
 Examples:
-  npx antigravity-rtl               # Auto-detect and patch both/available apps
+  npx antigravity-rtl               # Auto-detect and install plugin / patch IDE
+  npx antigravity-rtl --plugin      # Install native Zero-Patch plugin
   npx antigravity-rtl --ide         # Patch only Antigravity IDE
-  npx antigravity-rtl --app         # Patch only Antigravity Standalone App
-  npx antigravity-rtl --restore     # Restore all detected patched apps
+  npx antigravity-rtl --app         # Patch only Antigravity Standalone App (asar)
+  npx antigravity-rtl --restore     # Restore all detected patched apps & plugin
   npx antigravity-rtl -r --ide      # Restore only Antigravity IDE
 `);
     process.exit(0);
@@ -160,6 +168,8 @@ Examples:
 const isRestore = args.includes('--restore') || args.includes('-r');
 const forceIde = args.includes('--ide');
 const forceApp = args.includes('--app');
+const forcePlugin = args.includes('--plugin');
+const forceUninstallPlugin = args.includes('--uninstall-plugin');
 
 // Find custom path argument if provided e.g. --path /foo/bar or last positional argument
 let customPath = null;
@@ -174,6 +184,17 @@ if (pathArgIdx !== -1 && args[pathArgIdx + 1]) {
 }
 
 async function main() {
+    if (forceUninstallPlugin) {
+        await uninstallPlugin();
+        return;
+    }
+
+    if (forcePlugin) {
+        const ok = isRestore ? await uninstallPlugin() : await installPlugin();
+        if (ok && !isRestore) await promptForStar();
+        return;
+    }
+
     const [runApp, runIde, verb] = isRestore
         ? [restoreApp, restoreIde, 'restore']
         : [patchApp, patchIde, 'patch'];
@@ -190,40 +211,69 @@ async function main() {
         const appPath = detectAppAsarPath();
         const ideDir = detectIdeAppPath();
 
-        if (!appPath && !ideDir) {
+        if (!appPath && !ideDir && (!isRestore || !isPluginInstalled())) {
             console.log(yellow('⚠ Could not automatically locate Antigravity or Antigravity IDE.'));
             const { target } = await prompts({
                 type: 'select',
                 name: 'target',
                 message: `Which application would you like to ${verb}?`,
                 choices: [
+                    { title: 'Antigravity (Standalone App) - Native Plugin (Permanent / Zero-Patch) [Recommended]', value: 'plugin' },
                     { title: 'Antigravity IDE (VS Code Edition)', value: 'ide' },
-                    { title: 'Antigravity (Standalone App)', value: 'app' }
+                    { title: 'Antigravity (Standalone App) - Legacy Asar Patch', value: 'app' }
                 ],
                 initial: 0
             });
             if (!target) process.exit(0);
-            ok = target === 'ide' ? await runIde(await getIdeAppPath()) : await runApp(await getAppAsarPath());
+            if (target === 'plugin') {
+                ok = isRestore ? await uninstallPlugin() : await installPlugin();
+            } else if (target === 'ide') {
+                ok = await runIde(await getIdeAppPath());
+            } else {
+                ok = await runApp(await getAppAsarPath());
+            }
         } else {
-            const targets = [
-                appPath && { name: 'Antigravity (Standalone App)', run: o => runApp(appPath, o), hasBackup: hasAppBackup(appPath) },
-                ideDir && { name: 'Antigravity IDE', run: o => runIde(ideDir, o), hasBackup: hasIdeBackup(ideDir) }
-            ].filter(t => t && (!isRestore || t.hasBackup));
+            let targets = [];
+
+            if (isRestore) {
+                if (isPluginInstalled()) {
+                    targets.push({ name: 'Antigravity Native Plugin', run: () => uninstallPlugin() });
+                }
+                if (appPath && hasAppBackup(appPath)) {
+                    targets.push({ name: 'Antigravity (Standalone App)', run: o => runApp(appPath, o) });
+                }
+                if (ideDir && hasIdeBackup(ideDir)) {
+                    targets.push({ name: 'Antigravity IDE', run: o => runIde(ideDir, o) });
+                }
+            } else {
+                if (appPath) {
+                    targets.push({
+                        name: 'Antigravity Standalone (Native Zero-Patch Plugin)',
+                        run: () => installPlugin()
+                    });
+                }
+                if (ideDir) {
+                    targets.push({
+                        name: 'Antigravity IDE',
+                        run: o => runIde(ideDir, o)
+                    });
+                }
+            }
 
             if (targets.length === 0) {
-                console.log(yellow('⚠ No backup files found to restore for detected application(s).\n'));
+                console.log(yellow('⚠ No installed plugins or backup files found to restore.\n'));
                 return;
             }
 
             const multi = targets.length > 1;
             if (multi && !isRestore) {
                 console.log(bold(cyan('ℹ Found both Antigravity (Standalone App) and Antigravity IDE!')));
-                console.log(bold(cyan('  Patching both applications...\n')));
+                console.log(bold(cyan('  Configuring both environments...\n')));
             }
             for (const [i, t] of targets.entries()) {
-                if (isRestore) console.log(blue(`ℹ Found backup for ${t.name}. Restoring...`));
+                if (isRestore) console.log(blue(`ℹ Found ${t.name}. Restoring...`));
                 else if (multi) console.log(bold(`${i ? '\n' : ''}--- ${i + 1}/2: ${t.name} ---`));
-                else console.log(blue(`ℹ Found ${t.name}. Patching...\n`));
+                else console.log(blue(`ℹ Target: ${t.name}\n`));
                 if (await t.run({ exitOnError: !multi })) ok = true;
             }
             if (multi && ok && !isRestore) {
