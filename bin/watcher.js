@@ -2,12 +2,25 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { fileURLToPath } from 'url';
-import { exec, execSync } from 'child_process';
+import { exec, execSync, spawn } from 'child_process';
 import picocolors from 'picocolors';
 import { detectAppAsarPath, patchApp, isAppPatched } from './patch-app.js';
 import { detectIdeAppPath, patchIde, isIdePatched } from './patch-ide.js';
 
 const { green, red, yellow, cyan, bold, blue } = picocolors;
+
+export function logWatcher(msg, { level = 'info' } = {}) {
+    try {
+        const stateDir = getStateDir();
+        if (!fs.existsSync(stateDir)) fs.mkdirSync(stateDir, { recursive: true });
+        const logFile = path.join(stateDir, 'watcher.log');
+        const timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+        const cleanMsg = typeof msg === 'string' ? msg.replace(/\x1b\[[0-9;]*m/g, '').trim() : String(msg);
+        fs.appendFileSync(logFile, `[${timestamp}] [${level.toUpperCase()}] ${cleanMsg}\n`, 'utf8');
+    } catch (_) {}
+    if (level === 'error') console.error(msg);
+    else console.log(msg);
+}
 
 export function getStateDir() {
     const platform = os.platform();
@@ -119,7 +132,19 @@ export async function runWatcher({ watchApp = null, watchIde = null, appAsar = n
             }
         } catch (_) {}
     };
-    process.on('exit', cleanup);
+    process.on('exit', (code) => {
+        logWatcher(`[PROCESS EXIT] Process exited with code: ${code}`);
+        cleanup();
+    });
+    process.on('beforeExit', (code) => {
+        logWatcher(`[PROCESS BEFORE_EXIT] Empty event loop detected, beforeExit code: ${code}`);
+    });
+    process.on('uncaughtException', (err) => {
+        logWatcher(`[UNCAUGHT EXCEPTION] ${err?.stack || err}`, { level: 'error' });
+    });
+    process.on('unhandledRejection', (err) => {
+        logWatcher(`[UNHANDLED REJECTION] ${err?.stack || err}`, { level: 'error' });
+    });
     process.on('SIGINT', () => { cleanup(); process.exit(0); });
     process.on('SIGTERM', () => { cleanup(); process.exit(0); });
 
@@ -137,10 +162,10 @@ export async function runWatcher({ watchApp = null, watchIde = null, appAsar = n
         process.exit(1);
     }
 
-    console.log(bold(cyan('👀 Antigravity RTL Auto-Update Watcher started...')));
-    if (asarPath) console.log(blue(`  Watching Standalone App: ${asarPath}`));
-    if (ideAppDir) console.log(blue(`  Watching IDE App: ${ideAppDir}`));
-    console.log(yellow('  Press Ctrl+C to stop.\n'));
+    logWatcher(bold(cyan('👀 Antigravity RTL Auto-Update Watcher started...')));
+    if (asarPath) logWatcher(blue(`  Watching Standalone App: ${asarPath}`));
+    if (ideAppDir) logWatcher(blue(`  Watching IDE App: ${ideAppDir}`));
+    logWatcher(yellow('  Press Ctrl+C to stop.\n'));
 
     let isPatching = false;
     let lastCheck = 0;
@@ -154,29 +179,29 @@ export async function runWatcher({ watchApp = null, watchIde = null, appAsar = n
         try {
             if (effectiveWatchApp && asarPath && fs.existsSync(asarPath)) {
                 if (!isAppPatched(asarPath)) {
-                    console.log(yellow(`\n⚠ Detected unpatched Standalone App (${source}). Re-applying RTL patch...`));
+                    logWatcher(yellow(`\n⚠ Detected unpatched Standalone App (${source}). Re-applying RTL patch...`));
                     const ok = await patchApp(asarPath, { exitOnError: false });
                     if (ok) {
-                        console.log(green('✔ Antigravity Standalone App re-patched successfully!'));
+                        logWatcher(green('✔ Antigravity Standalone App re-patched successfully!'));
                     } else {
-                        console.error(red('✖ Failed to re-patch Antigravity Standalone App. Check write permissions.'));
+                        logWatcher(red('✖ Failed to re-patch Antigravity Standalone App. Check write permissions.'), { level: 'error' });
                     }
                 }
             }
 
             if (effectiveWatchIde && ideAppDir && fs.existsSync(ideAppDir)) {
                 if (!isIdePatched(ideAppDir)) {
-                    console.log(yellow(`\n⚠ Detected unpatched IDE (${source}). Re-applying RTL patch...`));
+                    logWatcher(yellow(`\n⚠ Detected unpatched IDE (${source}). Re-applying RTL patch...`));
                     const ok = await patchIde(ideAppDir, { exitOnError: false });
                     if (ok) {
-                        console.log(green('✔ Antigravity IDE re-patched successfully!'));
+                        logWatcher(green('✔ Antigravity IDE re-patched successfully!'));
                     } else {
-                        console.error(red('✖ Failed to re-patch Antigravity IDE. Check write permissions.'));
+                        logWatcher(red('✖ Failed to re-patch Antigravity IDE. Check write permissions.'), { level: 'error' });
                     }
                 }
             }
         } catch (e) {
-            console.error(red(`✖ Error during check/patch: ${e.message}`));
+            logWatcher(red(`✖ Error during check/patch: ${e.message}`), { level: 'error' });
         } finally {
             isPatching = false;
         }
@@ -185,22 +210,29 @@ export async function runWatcher({ watchApp = null, watchIde = null, appAsar = n
     // Initial check
     await checkAndPatch('initial startup check');
 
-    // File watcher on Standalone resources directory
+    // File watcher on Standalone resources directory & app root
     if (effectiveWatchApp && asarPath) {
         const resourcesDir = path.dirname(asarPath);
+        const appRootDir = path.dirname(resourcesDir);
+        const onFileEvent = (filename) => {
+            if (!filename || filename.toLowerCase().includes('asar') || filename.toLowerCase().includes('resource')) {
+                setTimeout(() => checkAndPatch(`file event: ${filename || 'dir'}`), 1500);
+            }
+        };
         try {
-            fs.watch(resourcesDir, (eventType, filename) => {
-                if (filename && filename.toLowerCase().includes('asar')) {
-                    setTimeout(() => checkAndPatch(`file event: ${filename}`), 2500);
-                }
-            });
+            fs.watch(resourcesDir, (_, f) => onFileEvent(f));
+        } catch (_) {}
+        try {
+            if (appRootDir && appRootDir !== resourcesDir) {
+                fs.watch(appRootDir, (_, f) => onFileEvent(f));
+            }
         } catch (_) {}
     }
 
-    // Periodic sweep every 30 seconds (also covers IDE file updates)
+    // Fast periodic sweep every 5 seconds (also covers IDE file updates)
     setInterval(() => {
         checkAndPatch('periodic sweep');
-    }, 30000);
+    }, 5000);
 
     return true;
 }
@@ -230,7 +262,11 @@ export function installWatcher({ silent = false, targets = null } = {}) {
         try {
             const regCmd = `reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" /v "AntigravityRtlWatcher" /t REG_SZ /d "wscript.exe \\"${vbsPath}\\"" /f`;
             execSync(regCmd, { stdio: 'ignore' });
-            exec(`wscript.exe "${vbsPath}"`);
+            const child = spawn('wscript.exe', [vbsPath], {
+                detached: true,
+                stdio: 'ignore'
+            });
+            child.unref();
             if (!silent) {
                 console.log(green('✔ Auto-Update Watcher enabled for system startup!'));
                 console.log(cyan('  Antigravity RTL will now automatically re-patch after application updates.\n'));
