@@ -1,8 +1,11 @@
 {
   "name": "antigravity-rtl",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "description": "A smart RTL (Right-to-Left) patcher with UI settings for Antigravity & Antigravity IDE.",
   "main": "./bin/index.js",
+  "scripts": {
+    "test": "node --test bin/*.test.js test/*.test.js"
+  },
   "keywords": [
     "antigravity",
     "rtl",
@@ -17,6 +20,7 @@
   "license": "MIT",
   "files": [
     "bin",
+    "extension",
     "README.md"
   ],
   "dependencies": {
@@ -27,9 +31,6 @@
     "prompts": "^2.4.2"
   },
   "type": "module",
-  "scripts": {
-    "test": "node --test test/*.test.js"
-  },
   "bin": {
     "antigravity-rtl": "bin/index.js"
   }
