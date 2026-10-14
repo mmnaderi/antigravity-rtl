@@ -245,17 +245,58 @@
                 }
                 .katex, .math-inline, math {
                     text-align: left !important;
+                }
+                .katex:not(.katex-display *) {
                     display: inline-block !important;
+                    max-width: 100% !important;
+                    overflow-x: auto !important;
+                    overflow-y: hidden !important;
+                    vertical-align: middle !important;
                 }
                 .katex-display, .math-block, mjx-container[display="true"] {
                     display: block !important;
                     text-align: center !important;
                     direction: ltr !important;
                     unicode-bidi: isolate !important;
+                    max-width: 100% !important;
+                    overflow-x: auto !important;
+                    overflow-y: hidden !important;
+                    box-sizing: border-box !important;
+                    padding: 4px 0 !important;
+                }
+                .katex-display > .katex {
+                    display: inline-block !important;
+                    text-align: initial !important;
+                    max-width: none !important;
                 }
                 sub, sup {
                     direction: ltr !important;
                     unicode-bidi: isolate !important;
+                }
+                .katex-display::-webkit-scrollbar,
+                .katex::-webkit-scrollbar,
+                .math-block::-webkit-scrollbar,
+                mjx-container::-webkit-scrollbar {
+                    height: 6px !important;
+                }
+                .katex-display::-webkit-scrollbar-thumb,
+                .katex::-webkit-scrollbar-thumb,
+                .math-block::-webkit-scrollbar-thumb,
+                mjx-container::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.25) !important;
+                    border-radius: 3px !important;
+                }
+                .katex-display::-webkit-scrollbar-thumb:hover,
+                .katex::-webkit-scrollbar-thumb:hover,
+                .math-block::-webkit-scrollbar-thumb:hover,
+                mjx-container::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.45) !important;
+                }
+                .katex-display::-webkit-scrollbar-track,
+                .katex::-webkit-scrollbar-track,
+                .math-block::-webkit-scrollbar-track,
+                mjx-container::-webkit-scrollbar-track {
+                    background: transparent !important;
                 }
             `;
         }
@@ -662,6 +703,19 @@
                 }
             }
         }, { capture: true });
+
+        // Horizontal scroll with mouse wheel for long math formulas
+        document.addEventListener('wheel', (e) => {
+            const mathEl = e.target.closest?.('.katex-display, .math-block, mjx-container[display="true"], .katex');
+            if (mathEl && mathEl.scrollWidth > mathEl.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                const canScrollLeft = mathEl.scrollLeft > 0 && e.deltaY < 0;
+                const canScrollRight = mathEl.scrollLeft < (mathEl.scrollWidth - mathEl.clientWidth - 1) && e.deltaY > 0;
+                if (canScrollLeft || canScrollRight) {
+                    mathEl.scrollLeft += e.deltaY;
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
 
         // Throttled dynamic UI updater
         let domUpdateTimer = null;
