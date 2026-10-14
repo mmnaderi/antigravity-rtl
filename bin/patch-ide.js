@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { blue, green, red, yellow } = picocolors;
 
-function idePaths(appDir) {
+export function idePaths(appDir) {
     const outDir = path.join(appDir, 'out');
     const wbDir = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench');
     const mainJsPath = path.join(outDir, 'main.js');
@@ -22,6 +22,17 @@ function idePaths(appDir) {
         workbenchHtmlBak: workbenchHtml + '.rtl-bak',
         jetskiHtmlBak: jetskiHtml + '.rtl-bak'
     };
+}
+
+export function isIdePatched(appDir) {
+    if (!appDir) return false;
+    const { mainJsPath } = idePaths(appDir);
+    if (!fs.existsSync(mainJsPath)) return false;
+    try {
+        return fs.readFileSync(mainJsPath, 'utf8').includes("import './antigravity-rtl-main.js';");
+    } catch (_) {
+        return false;
+    }
 }
 
 function getIdeCandidatePaths() {
@@ -197,14 +208,21 @@ export async function patchIde(appDir, { exitOnError = true } = {}) {
         fs.accessSync(mainJsPath, fs.constants.W_OK);
 
         failLabel = 'Failed to create backup.';
-        if (!fs.existsSync(mainJsBak) && fs.existsSync(mainJsPath)) {
+        const mainUnpatched = fs.existsSync(mainJsPath) && !fs.readFileSync(mainJsPath, 'utf8').includes("import './antigravity-rtl-main.js';");
+        if (mainUnpatched) {
             fs.copyFileSync(mainJsPath, mainJsBak);
-        }
-        if (!fs.existsSync(workbenchHtmlBak) && fs.existsSync(workbenchHtml)) {
-            fs.copyFileSync(workbenchHtml, workbenchHtmlBak);
-        }
-        if (!fs.existsSync(jetskiHtmlBak) && fs.existsSync(jetskiHtml)) {
-            fs.copyFileSync(jetskiHtml, jetskiHtmlBak);
+            if (fs.existsSync(workbenchHtml)) fs.copyFileSync(workbenchHtml, workbenchHtmlBak);
+            if (fs.existsSync(jetskiHtml)) fs.copyFileSync(jetskiHtml, jetskiHtmlBak);
+        } else {
+            if (!fs.existsSync(mainJsBak) && fs.existsSync(mainJsPath)) {
+                fs.copyFileSync(mainJsPath, mainJsBak);
+            }
+            if (!fs.existsSync(workbenchHtmlBak) && fs.existsSync(workbenchHtml)) {
+                fs.copyFileSync(workbenchHtml, workbenchHtmlBak);
+            }
+            if (!fs.existsSync(jetskiHtmlBak) && fs.existsSync(jetskiHtml)) {
+                fs.copyFileSync(jetskiHtml, jetskiHtmlBak);
+            }
         }
 
         failLabel = 'Failed to copy RTL assets.';

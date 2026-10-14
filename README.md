@@ -80,6 +80,9 @@ Follow the steps for your operating system. Node.js **22.12 or newer** is requir
 | `npx antigravity-rtl` | **Auto-detect & patch**: patches both Antigravity & Antigravity IDE if found, or the installed one |
 | `npx antigravity-rtl --ide` | Directly patch Antigravity IDE only |
 | `npx antigravity-rtl --app` | Directly patch Antigravity Standalone App only |
+| `npx antigravity-rtl --install-watcher` | Enable background watcher to automatically re-patch after application updates |
+| `npx antigravity-rtl --uninstall-watcher` | Disable background auto-repatch watcher |
+| `npx antigravity-rtl --watch` | Run auto-repatch watcher in foreground |
 | `npx antigravity-rtl --restore` | Revert changes and restore original backups for all detected apps |
 | `npx antigravity-rtl --restore --ide` | Revert changes and restore Antigravity IDE only |
 | `npx antigravity-rtl --restore --app` | Revert changes and restore Antigravity Standalone App only |
@@ -87,6 +90,37 @@ Follow the steps for your operating system. Node.js **22.12 or newer** is requir
 | `npx antigravity-rtl --browser` | Install the Remote Control extension folder (Chrome / Arc) |
 
 Remote Control opens this UI in the browser, inside a cross-origin iframe. The desktop patch cannot reach it. `--browser` writes an unpacked Chrome/Arc extension that injects the same RTL engine into that iframe. Load the printed folder from the extensions page (Developer Mode → Load unpacked), then reload the remote tab.
+
+<a id="auto-update-watcher"></a>
+
+## 🔄 Automatic Re-Patch on Updates (Background Watcher)
+
+Antigravity automatically updates in the background, which replaces core files (`app.asar` or IDE workbench assets) with unpatched upstream builds.
+
+**Zero Setup Required**: By default, whenever you run `npx antigravity-rtl`, the **Auto-Update Watcher** is automatically installed and configured for you in the background!
+
+Whenever Antigravity updates and replaces its application files, the background watcher immediately detects that the patch was removed and silently re-applies it in seconds without any manual user action.
+
+- **Windows**: Silent background service via User Registry Run (`HKCU\...\Run`) with zero console flash.
+- **macOS**: Native user LaunchAgent daemon (`~/Library/LaunchAgents/com.mmnaderi.antigravity-rtl.plist`).
+- **Linux**: Native systemd user service (`~/.config/systemd/user/antigravity-rtl.service`).
+
+### Opt-out / Disable Watcher:
+If you prefer patching manually without a background watcher:
+```bash
+# Patch without installing the watcher
+npx antigravity-rtl --no-watcher
+
+# Or disable an existing watcher
+npx antigravity-rtl --uninstall-watcher
+```
+
+Restoring the original app with `npx antigravity-rtl --restore` will also automatically uninstall the watcher.
+
+### Run Watcher in Foreground (Test / Debug):
+```bash
+npx antigravity-rtl --watch
+```
 
 <a id="uninstall"></a>
 
@@ -153,6 +187,9 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 | `npx antigravity-rtl` | **تشخیص و پچ خودکار**: در صورت وجود هر دو برنامه، هر دو پچ می‌شوند؛ در غیر این صورت برنامهٔ موجود پچ می‌شود |
 | `npx antigravity-rtl --ide` | فقط پچ مستقیم نسخهٔ Antigravity IDE |
 | `npx antigravity-rtl --app` | فقط پچ مستقیم نسخهٔ مستقل Antigravity |
+| `npx antigravity-rtl --install-watcher` | فعال‌سازی واچر پس‌زمینه برای اعمال خودکار مجدد پچ پس از هر آپدیت برنامه |
+| `npx antigravity-rtl --uninstall-watcher` | غیرفعال‌سازی واچر خودکار |
+| `npx antigravity-rtl --watch` | اجرای واچر در پیش‌زمینه |
 | `npx antigravity-rtl --restore` | بازگردانی به نسخه اصلی برای تمام برنامه‌های شناسایی‌شده |
 | `npx antigravity-rtl --restore --ide` | فقط بازگردانی Antigravity IDE به نسخه اصلی |
 | `npx antigravity-rtl --restore --app` | فقط بازگردانی نسخه مستقل Antigravity به نسخه اصلی |
@@ -188,6 +225,36 @@ Remote Control همان رابط را داخل یک iframe با دامنهٔ ج�
 npx antigravity-rtl --restore
 ```
 *(یا برای بازگردانی فقط یک برنامهٔ خاص: `npx antigravity-rtl --restore --ide`)*
+
+<a id="واچر-خودکار"></a>
+
+### 🔄 پچ خودکار پس از هر آپدیت (واچر پس‌زمینه)
+
+برنامه Antigravity در پس‌زمینه به‌صورت خودکار آپدیت می‌شود و فایل‌های هسته برنامه (`app.asar` یا فایل‌های IDE) را با نسخهٔ خام جایگزین می‌کند که باعث از بین رفتن پچ راست‌چین می‌شود.
+
+**کاملاً خودکار و بدون نیاز به اقدام جداگانه**: به‌صورت پیش‌فرض، با اولین باری که دستور `npx antigravity-rtl` را برای پچ کردن اجرا می‌کنید، **واچر خودکار (Auto-Update Watcher)** همزمان در پس‌زمینه سیستم شما نصب و فعال می‌شود!
+
+از آن پس، به محض اینکه Antigravity آپدیت شود، واچر متوجه تغییر شده و در عرض چند ثانیه پچ راست‌چین و فونت را کاملاً بی‌صدا و خودکار مجدداً اعمال می‌کند.
+
+- **ویندوز (Windows):** ثبت در رجیستری کاربری (`HKCU\...\Run`) و اجرای کاملاً مخفی در پس‌زمینه بدون باز شدن پنجره مشکی ترمینال.
+- **مک (macOS):** ثبت به عنوان LaunchAgent نیتیو کاربر در مسیر `~/Library/LaunchAgents`.
+- **لینوکس (Linux):** ثبت به عنوان سرویس کاربر در `systemd --user`.
+
+#### عدم نصب یا غیرفعال‌سازی واچر:
+اگر تمایل دارید پچ فقط به صورت دستی اعمال شود و واچر در پس‌زمینه فعال نباشد:
+```bash
+# پچ کردن بدون فعال‌سازی واچر
+npx antigravity-rtl --no-watcher
+
+# غیرفعال‌سازی واچر نصب‌شده
+npx antigravity-rtl --uninstall-watcher
+```
+همچنین در صورت بازگردانی برنامه به حالت اولیه (`npx antigravity-rtl --restore`)، واچر نیز به‌صورت خودکار حذف و غیرفعال می‌شود.
+
+#### اجرای زنده در ترمینال (برای تست و لاگ):
+```bash
+npx antigravity-rtl --watch
+```
 
 ### پروژه‌های الهام‌گرفته از این پروژه
 

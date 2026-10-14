@@ -22,6 +22,15 @@ function readUtils(asarFile) {
     return asar.extractFile(asarFile, 'dist/utils.js').toString('utf8');
 }
 
+export function isAppPatched(asarFile) {
+    if (!asarFile || !fs.existsSync(asarFile)) return false;
+    try {
+        return readUtils(asarFile).includes(PATCH_START);
+    } catch (_) {
+        return false;
+    }
+}
+
 function stripPatch(code) {
     return PATCH_BLOCK.test(code) ? code.replace(PATCH_BLOCK, ANCHOR) : null;
 }

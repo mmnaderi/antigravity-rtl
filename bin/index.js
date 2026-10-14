@@ -22,6 +22,12 @@ import {
     resolveIdeAppDir,
     hasIdeBackup
 } from './patch-ide.js';
+import {
+    runWatcher,
+    installWatcher,
+    uninstallWatcher,
+    stopRunningWatcher
+} from './watcher.js';
 
 import { exec } from 'child_process';
 
@@ -138,7 +144,11 @@ if (args.includes('--help') || args.includes('-h')) {
 Options:
   --ide              Patch or restore Antigravity IDE only (VS Code Edition)
   --app              Patch or restore Antigravity Standalone App only
-  -r, --restore      Revert changes and restore original backup files
+  -r, --restore      Revert changes, restore original backup files and remove watcher
+  --no-watcher       Skip automatic installation of the update watcher
+  --watch            Run background auto-repatch watcher in foreground
+  --install-watcher  Enable auto-repatch watcher on system startup
+  --uninstall-watcher Disable auto-repatch watcher
   --path <dir/file>  Specify custom path to IDE directory or app.asar
   --browser          Install the Remote Control browser extension folder
   -h, --help         Show this help message
@@ -147,14 +157,15 @@ Default Behavior:
   Running without --app or --ide will auto-detect installed applications:
   • If both Antigravity and Antigravity IDE are found, both will be patched.
   • If only one is found, that one will be patched.
-  • Running with --restore will restore all detected applications with backups.
+  • Auto-Update Watcher is automatically enabled to keep RTL active after updates!
+  • Running with --restore will restore all detected applications and remove the watcher.
 
 Examples:
-  npx antigravity-rtl               # Auto-detect and patch both/available apps
+  npx antigravity-rtl               # Auto-detect, patch and enable auto-update watcher
   npx antigravity-rtl --ide         # Patch only Antigravity IDE
   npx antigravity-rtl --app         # Patch only Antigravity Standalone App
-  npx antigravity-rtl --restore     # Restore all detected patched apps
-  npx antigravity-rtl -r --ide      # Restore only Antigravity IDE
+  npx antigravity-rtl --restore     # Restore apps and remove watcher
+  npx antigravity-rtl --no-watcher  # Patch without installing the background watcher
   npx antigravity-rtl --browser     # Extension for Remote Control in Chrome/Arc
 `);
     process.exit(0);
@@ -197,22 +208,70 @@ if (pathArgIdx !== -1 && args[pathArgIdx + 1]) {
     }
 }
 
+if (args.includes('--watch')) {
+    const started = await runWatcher({
+        watchApp: forceApp ? true : (forceIde ? false : null),
+        watchIde: forceIde ? true : (forceApp ? false : null),
+        appAsar: customPath && !forceIde ? customPath : null,
+        ideDir: customPath && (forceIde || resolveIdeAppDir(customPath)) ? (resolveIdeAppDir(customPath) || customPath) : null
+    });
+    if (started) {
+        await new Promise(() => {});
+    } else {
+        process.exit(0);
+    }
+}
+
+if (args.includes('--install-watcher')) {
+    const ok = installWatcher({
+        silent: false,
+        targets: {
+            watchApp: forceApp ? true : (forceIde ? false : true),
+            watchIde: forceIde ? true : (forceApp ? false : true),
+            appPath: customPath && !forceIde ? customPath : null,
+            idePath: customPath && (forceIde || resolveIdeAppDir(customPath)) ? (resolveIdeAppDir(customPath) || customPath) : null
+        }
+    });
+    process.exit(ok ? 0 : 1);
+}
+
+if (args.includes('--uninstall-watcher')) {
+    uninstallWatcher({ silent: false });
+    process.exit(0);
+}
+
 async function main() {
+    if (isRestore) {
+        stopRunningWatcher();
+    }
+
     const [runApp, runIde, verb] = isRestore
         ? [restoreApp, restoreIde, 'restore']
         : [patchApp, patchIde, 'patch'];
     let ok = false;
+    let targetAppPath = null;
+    let targetIdeDir = null;
 
     if (customPath) {
         const ideDir = resolveIdeAppDir(customPath);
-        ok = (forceIde || ideDir) ? await runIde(ideDir || customPath) : await runApp(customPath);
+        if (forceIde || ideDir) {
+            targetIdeDir = ideDir || customPath;
+            ok = await runIde(targetIdeDir);
+        } else {
+            targetAppPath = customPath;
+            ok = await runApp(targetAppPath);
+        }
     } else if (forceApp && !forceIde) {
-        ok = await runApp(await getAppAsarPath());
+        targetAppPath = await getAppAsarPath();
+        ok = await runApp(targetAppPath);
     } else if (forceIde && !forceApp) {
-        ok = await runIde(await getIdeAppPath());
+        targetIdeDir = await getIdeAppPath();
+        ok = await runIde(targetIdeDir);
     } else {
         const appPath = detectAppAsarPath();
         const ideDir = detectIdeAppPath();
+        targetAppPath = appPath;
+        targetIdeDir = ideDir;
 
         if (!appPath && !ideDir) {
             console.log(yellow('⚠ Could not automatically locate Antigravity or Antigravity IDE.'));
@@ -227,7 +286,15 @@ async function main() {
                 initial: 0
             });
             if (!target) process.exit(0);
-            ok = target === 'ide' ? await runIde(await getIdeAppPath()) : await runApp(await getAppAsarPath());
+            if (target === 'ide') {
+                targetIdeDir = await getIdeAppPath();
+                targetAppPath = null;
+                ok = await runIde(targetIdeDir);
+            } else {
+                targetAppPath = await getAppAsarPath();
+                targetIdeDir = null;
+                ok = await runApp(targetAppPath);
+            }
         } else {
             const targets = [
                 appPath && { name: 'Antigravity (Standalone App)', run: o => runApp(appPath, o), hasBackup: hasAppBackup(appPath) },
@@ -257,8 +324,22 @@ async function main() {
     }
 
     if (ok && !isRestore) {
+        if (!args.includes('--no-watcher')) {
+            console.log(bold(cyan('🔄 Setting up Auto-Update Watcher (auto-repatch on updates)...')));
+            installWatcher({
+                silent: false,
+                targets: {
+                    watchApp: forceApp ? true : (forceIde ? false : Boolean(targetAppPath)),
+                    watchIde: forceIde ? true : (forceApp ? false : Boolean(targetIdeDir)),
+                    appPath: targetAppPath,
+                    idePath: targetIdeDir
+                }
+            });
+        }
         console.log(cyan('\nRemote Control in the browser is separate. Set it up with: npx antigravity-rtl --browser\n'));
         await promptForStar();
+    } else if (isRestore && ok) {
+        uninstallWatcher({ silent: true });
     }
 }
 
