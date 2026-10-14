@@ -22,6 +22,86 @@ win.webContents.on('console-message', (event, ...args) => {
         }
     });
     void win.loadURL(url);
+
+    // === Math & Formula LTR Fix ===
+    try {
+        const { app: electronApp } = require('electron');
+        const mathFixCss = `
+            .katex, .katex *, .katex-display, .katex-display *, .katex-html, .katex-html *,
+            mjx-container, mjx-container *, math, math *, .math, .math *,
+            .math-inline, .math-block, span[class*="katex"], div[class*="katex"] {
+                direction: ltr !important;
+                unicode-bidi: isolate !important;
+            }
+            .katex, .math-inline, math {
+                text-align: left !important;
+            }
+            .katex:not(.katex-display *) {
+                display: inline-block !important;
+                max-width: 100% !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                vertical-align: middle !important;
+            }
+            .katex-display, .math-block, mjx-container[display="true"] {
+                display: block !important;
+                text-align: center !important;
+                direction: ltr !important;
+                unicode-bidi: isolate !important;
+                max-width: 100% !important;
+                overflow-x: auto !important;
+                overflow-y: hidden !important;
+                box-sizing: border-box !important;
+                padding: 4px 0 !important;
+            }
+            .katex-display > .katex {
+                display: inline-block !important;
+                text-align: initial !important;
+                max-width: none !important;
+            }
+            sub, sup {
+                direction: ltr !important;
+                unicode-bidi: isolate !important;
+            }
+            .katex-display::-webkit-scrollbar,
+            .katex::-webkit-scrollbar,
+            .math-block::-webkit-scrollbar,
+            mjx-container::-webkit-scrollbar {
+                height: 6px !important;
+            }
+            .katex-display::-webkit-scrollbar-thumb,
+            .katex::-webkit-scrollbar-thumb,
+            .math-block::-webkit-scrollbar-thumb,
+            mjx-container::-webkit-scrollbar-thumb {
+                background: rgba(255, 255, 255, 0.25) !important;
+                border-radius: 3px !important;
+            }
+            .katex-display::-webkit-scrollbar-thumb:hover,
+            .katex::-webkit-scrollbar-thumb:hover,
+            .math-block::-webkit-scrollbar-thumb:hover,
+            mjx-container::-webkit-scrollbar-thumb:hover {
+                background: rgba(255, 255, 255, 0.45) !important;
+            }
+            .katex-display::-webkit-scrollbar-track,
+            .katex::-webkit-scrollbar-track,
+            .math-block::-webkit-scrollbar-track,
+            mjx-container::-webkit-scrollbar-track {
+                background: transparent !important;
+            }
+        `;
+        if (electronApp && electronApp.on) {
+            electronApp.on('web-contents-created', (_event, contents) => {
+                const injectMathFix = () => { contents.insertCSS(mathFixCss).catch(() => {}); };
+                contents.on('dom-ready', injectMathFix);
+                contents.on('did-finish-load', injectMathFix);
+                contents.on('did-navigate-in-page', injectMathFix);
+            });
+        }
+        const injectWinMathFix = () => { win.webContents.insertCSS(mathFixCss).catch(() => {}); };
+        win.webContents.on('dom-ready', injectWinMathFix);
+        win.webContents.on('did-finish-load', injectWinMathFix);
+        win.webContents.on('did-navigate-in-page', injectWinMathFix);
+    } catch (e) {}
     
     win.webContents.on('dom-ready', () => {
         // Strict Guard: only inject into local application server
@@ -433,9 +513,11 @@ win.webContents.on('console-message', (event, ...args) => {
                         :root, :host, html, body {
                             font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
                         }
-                        [dir="rtl"], [dir="rtl"] *:not(pre):not(code),
-                        .prose, .prose *, [data-testid="chat-message"], [data-testid="chat-message"] *,
-                        .markdown-body, .markdown-body *, .leading-relaxed, .leading-relaxed *,
+                        [dir="rtl"], [dir="rtl"] *:not(pre):not(code):not(.katex):not(.katex *):not(mjx-container):not(mjx-container *):not(math):not(math *),
+                        .prose:not(.katex):not(mjx-container), .prose *:not(pre):not(code):not(.katex):not(.katex *):not(mjx-container):not(mjx-container *):not(math):not(math *),
+                        [data-testid="chat-message"]:not(.katex):not(mjx-container), [data-testid="chat-message"] *:not(pre):not(code):not(.katex):not(.katex *):not(mjx-container):not(mjx-container *):not(math):not(math *),
+                        .markdown-body:not(.katex):not(mjx-container), .markdown-body *:not(pre):not(code):not(.katex):not(.katex *):not(mjx-container):not(mjx-container *):not(math):not(math *),
+                        .leading-relaxed:not(.katex):not(mjx-container), .leading-relaxed *:not(pre):not(code):not(.katex):not(.katex *):not(mjx-container):not(mjx-container *):not(math):not(math *),
                         [contenteditable="true"], [contenteditable="true"] *, [data-lexical-text="true"],
                         label[for^="ask-opt-"], textarea[data-testid="ask-question-writein"] {
                             font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
@@ -500,6 +582,69 @@ win.webContents.on('console-message', (event, ...args) => {
                             text-align: left !important;
                             font-family: \${codeFontStr} !important;
                         }
+
+                        /* Math & Formula LTR Fix */
+                        .katex, .katex *, .katex-display, .katex-display *, .katex-html, .katex-html *,
+                        mjx-container, mjx-container *, math, math *, .math, .math *,
+                        .math-inline, .math-block, span[class*="katex"], div[class*="katex"] {
+                            direction: ltr !important;
+                            unicode-bidi: isolate !important;
+                        }
+                        .katex, .math-inline, math {
+                            text-align: left !important;
+                        }
+                        .katex:not(.katex-display *) {
+                            display: inline-block !important;
+                            max-width: 100% !important;
+                            overflow-x: auto !important;
+                            overflow-y: hidden !important;
+                            vertical-align: middle !important;
+                        }
+                        .katex-display, .math-block, mjx-container[display="true"] {
+                            display: block !important;
+                            text-align: center !important;
+                            direction: ltr !important;
+                            unicode-bidi: isolate !important;
+                            max-width: 100% !important;
+                            overflow-x: auto !important;
+                            overflow-y: hidden !important;
+                            box-sizing: border-box !important;
+                            padding: 4px 0 !important;
+                        }
+                        .katex-display > .katex {
+                            display: inline-block !important;
+                            text-align: initial !important;
+                            max-width: none !important;
+                        }
+                        sub, sup {
+                            direction: ltr !important;
+                            unicode-bidi: isolate !important;
+                        }
+                        .katex-display::-webkit-scrollbar,
+                        .katex::-webkit-scrollbar,
+                        .math-block::-webkit-scrollbar,
+                        mjx-container::-webkit-scrollbar {
+                            height: 6px !important;
+                        }
+                        .katex-display::-webkit-scrollbar-thumb,
+                        .katex::-webkit-scrollbar-thumb,
+                        .math-block::-webkit-scrollbar-thumb,
+                        mjx-container::-webkit-scrollbar-thumb {
+                            background: rgba(255, 255, 255, 0.25) !important;
+                            border-radius: 3px !important;
+                        }
+                        .katex-display::-webkit-scrollbar-thumb:hover,
+                        .katex::-webkit-scrollbar-thumb:hover,
+                        .math-block::-webkit-scrollbar-thumb:hover,
+                        mjx-container::-webkit-scrollbar-thumb:hover {
+                            background: rgba(255, 255, 255, 0.45) !important;
+                        }
+                        .katex-display::-webkit-scrollbar-track,
+                        .katex::-webkit-scrollbar-track,
+                        .math-block::-webkit-scrollbar-track,
+                        mjx-container::-webkit-scrollbar-track {
+                            background: transparent !important;
+                        }
                         
                         /* AI Response Line Height */
                         .leading-relaxed {
@@ -562,8 +707,8 @@ win.webContents.on('console-message', (event, ...args) => {
                         div:has(> [role="radiogroup"]),
                         label[for^="ask-opt-"]
                     \`).forEach(el => {
-                        // Skip code blocks
-                        if (el.tagName === 'PRE' || el.tagName === 'CODE') return;
+                        // Skip code blocks and math formulas
+                        if (el.tagName === 'PRE' || el.tagName === 'CODE' || (typeof el.closest === 'function' && (el.closest('.katex') || el.closest('mjx-container') || el.closest('math'))) || el.classList?.contains?.('katex') || el.classList?.contains?.('katex-display') || el.classList?.contains?.('math-block') || el.classList?.contains?.('math-inline')) return;
                         
                         const text = el.textContent.replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
                         let dir = 'auto';
@@ -597,6 +742,19 @@ win.webContents.on('console-message', (event, ...args) => {
                         setRTLActive(!isRTL);
                     }
                 });
+
+                // Horizontal scroll with mouse wheel for long math formulas
+                document.addEventListener('wheel', (e) => {
+                    const mathEl = e.target.closest?.('.katex-display, .math-block, mjx-container[display="true"], .katex');
+                    if (mathEl && mathEl.scrollWidth > mathEl.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                        const canScrollLeft = mathEl.scrollLeft > 0 && e.deltaY < 0;
+                        const canScrollRight = mathEl.scrollLeft < (mathEl.scrollWidth - mathEl.clientWidth - 1) && e.deltaY > 0;
+                        if (canScrollLeft || canScrollRight) {
+                            mathEl.scrollLeft += e.deltaY;
+                            e.preventDefault();
+                        }
+                    }
+                }, { passive: false });
                 
                 const isMac = /Mac/i.test(navigator.userAgent || navigator.platform);
                 const shortcutKbdHtml = isMac 

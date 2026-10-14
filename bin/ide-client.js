@@ -122,10 +122,10 @@
 
                 /* Apply Vazirmatn font to conversation and text elements */
                 [dir="rtl"],
-                [dir="rtl"] *:not(.codicon):not([class*="codicon-"]):not(.google-symbols):not(pre):not(code):not(.monaco-editor):not(.monaco-editor *),
+                [dir="rtl"] *:not(.codicon):not([class*="codicon-"]):not(.google-symbols):not(pre):not(code):not(.monaco-editor):not(.monaco-editor *):not(.katex):not(.katex *):not(mjx-container):not(mjx-container *):not(math):not(math *),
                 [data-testid="conversation-view"] p,
                 [data-testid="conversation-view"] li,
-                [data-testid="conversation-view"] span,
+                [data-testid="conversation-view"] span:not(.katex *),
                 [data-testid="conversation-view"] h1,
                 [data-testid="conversation-view"] h2,
                 [data-testid="conversation-view"] h3,
@@ -134,11 +134,11 @@
                 .leading-relaxed,
                 .leading-relaxed p,
                 .leading-relaxed li,
-                .leading-relaxed span,
+                .leading-relaxed span:not(.katex *),
                 .rendered-markdown,
                 .rendered-markdown p,
                 .rendered-markdown li,
-                .rendered-markdown span,
+                .rendered-markdown span:not(.katex *),
                 .prose,
                 .prose p,
                 .prose li,
@@ -235,6 +235,69 @@
                     unicode-bidi: normal !important;
                     ${codeFontRule}
                 }
+
+                /* Math & Formula LTR Fix */
+                .katex, .katex *, .katex-display, .katex-display *, .katex-html, .katex-html *,
+                mjx-container, mjx-container *, math, math *, .math, .math *,
+                .math-inline, .math-block, span[class*="katex"], div[class*="katex"] {
+                    direction: ltr !important;
+                    unicode-bidi: isolate !important;
+                }
+                .katex, .math-inline, math {
+                    text-align: left !important;
+                }
+                .katex:not(.katex-display *) {
+                    display: inline-block !important;
+                    max-width: 100% !important;
+                    overflow-x: auto !important;
+                    overflow-y: hidden !important;
+                    vertical-align: middle !important;
+                }
+                .katex-display, .math-block, mjx-container[display="true"] {
+                    display: block !important;
+                    text-align: center !important;
+                    direction: ltr !important;
+                    unicode-bidi: isolate !important;
+                    max-width: 100% !important;
+                    overflow-x: auto !important;
+                    overflow-y: hidden !important;
+                    box-sizing: border-box !important;
+                    padding: 4px 0 !important;
+                }
+                .katex-display > .katex {
+                    display: inline-block !important;
+                    text-align: initial !important;
+                    max-width: none !important;
+                }
+                sub, sup {
+                    direction: ltr !important;
+                    unicode-bidi: isolate !important;
+                }
+                .katex-display::-webkit-scrollbar,
+                .katex::-webkit-scrollbar,
+                .math-block::-webkit-scrollbar,
+                mjx-container::-webkit-scrollbar {
+                    height: 6px !important;
+                }
+                .katex-display::-webkit-scrollbar-thumb,
+                .katex::-webkit-scrollbar-thumb,
+                .math-block::-webkit-scrollbar-thumb,
+                mjx-container::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.25) !important;
+                    border-radius: 3px !important;
+                }
+                .katex-display::-webkit-scrollbar-thumb:hover,
+                .katex::-webkit-scrollbar-thumb:hover,
+                .math-block::-webkit-scrollbar-thumb:hover,
+                mjx-container::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.45) !important;
+                }
+                .katex-display::-webkit-scrollbar-track,
+                .katex::-webkit-scrollbar-track,
+                .math-block::-webkit-scrollbar-track,
+                mjx-container::-webkit-scrollbar-track {
+                    background: transparent !important;
+                }
             `;
         }
 
@@ -286,7 +349,7 @@
                 div:has(> [role="radiogroup"]),
                 label[for^="ask-opt-"]
             `).forEach(el => {
-                if (el.tagName === 'PRE' || el.tagName === 'CODE' || el.closest('.monaco-editor') || el.closest('.terminal')) return;
+                if (el.tagName === 'PRE' || el.tagName === 'CODE' || (typeof el.closest === 'function' && (el.closest('.monaco-editor') || el.closest('.terminal') || el.closest('.katex') || el.closest('mjx-container') || el.closest('math'))) || el.classList?.contains?.('katex') || el.classList?.contains?.('katex-display') || el.classList?.contains?.('math-block') || el.classList?.contains?.('math-inline')) return;
 
                 const text = (el.textContent || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
                 let dir = 'auto';
@@ -640,6 +703,19 @@
                 }
             }
         }, { capture: true });
+
+        // Horizontal scroll with mouse wheel for long math formulas
+        document.addEventListener('wheel', (e) => {
+            const mathEl = e.target.closest?.('.katex-display, .math-block, mjx-container[display="true"], .katex');
+            if (mathEl && mathEl.scrollWidth > mathEl.clientWidth && Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+                const canScrollLeft = mathEl.scrollLeft > 0 && e.deltaY < 0;
+                const canScrollRight = mathEl.scrollLeft < (mathEl.scrollWidth - mathEl.clientWidth - 1) && e.deltaY > 0;
+                if (canScrollLeft || canScrollRight) {
+                    mathEl.scrollLeft += e.deltaY;
+                    e.preventDefault();
+                }
+            }
+        }, { passive: false });
 
         // Throttled dynamic UI updater
         let domUpdateTimer = null;

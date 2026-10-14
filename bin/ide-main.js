@@ -29,6 +29,82 @@ function getFontBase64() {
     return cachedFontBase64;
 }
 
+// === Math & Formula LTR Fix ===
+try {
+    const electronApp = typeof app !== 'undefined' ? app : (typeof require !== 'undefined' ? require('electron').app : null);
+    if (electronApp) {
+        const mathFixCss = `
+    .katex, .katex *, .katex-display, .katex-display *, .katex-html, .katex-html *,
+    mjx-container, mjx-container *, math, math *, .math, .math *,
+    .math-inline, .math-block, span[class*="katex"], div[class*="katex"] {
+      direction: ltr !important;
+      unicode-bidi: isolate !important;
+    }
+    .katex, .math-inline, math {
+      text-align: left !important;
+    }
+    .katex:not(.katex-display *) {
+      display: inline-block !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      vertical-align: middle !important;
+    }
+    .katex-display, .math-block, mjx-container[display="true"] {
+      display: block !important;
+      text-align: center !important;
+      direction: ltr !important;
+      unicode-bidi: isolate !important;
+      max-width: 100% !important;
+      overflow-x: auto !important;
+      overflow-y: hidden !important;
+      box-sizing: border-box !important;
+      padding: 4px 0 !important;
+    }
+    .katex-display > .katex {
+      display: inline-block !important;
+      text-align: initial !important;
+      max-width: none !important;
+    }
+    sub, sup {
+      direction: ltr !important;
+      unicode-bidi: isolate !important;
+    }
+    .katex-display::-webkit-scrollbar,
+    .katex::-webkit-scrollbar,
+    .math-block::-webkit-scrollbar,
+    mjx-container::-webkit-scrollbar {
+      height: 6px !important;
+    }
+    .katex-display::-webkit-scrollbar-thumb,
+    .katex::-webkit-scrollbar-thumb,
+    .math-block::-webkit-scrollbar-thumb,
+    mjx-container::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.25) !important;
+      border-radius: 3px !important;
+    }
+    .katex-display::-webkit-scrollbar-thumb:hover,
+    .katex::-webkit-scrollbar-thumb:hover,
+    .math-block::-webkit-scrollbar-thumb:hover,
+    mjx-container::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.45) !important;
+    }
+    .katex-display::-webkit-scrollbar-track,
+    .katex::-webkit-scrollbar-track,
+    .math-block::-webkit-scrollbar-track,
+    mjx-container::-webkit-scrollbar-track {
+      background: transparent !important;
+    }
+  `;
+        electronApp.on('web-contents-created', (_event, contents) => {
+            const injectMathFix = () => { contents.insertCSS(mathFixCss).catch(() => {}); };
+            contents.on('dom-ready', injectMathFix);
+            contents.on('did-finish-load', injectMathFix);
+            contents.on('did-navigate-in-page', injectMathFix);
+        });
+    }
+} catch (e) {}
+
 app.on('browser-window-created', (_event, win) => {
     // 1. Listen for console messages to save settings
     win.webContents.on('console-message', (_e, ...args) => {
