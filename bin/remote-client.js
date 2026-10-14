@@ -50,6 +50,25 @@
                 text-align: left !important;
                 unicode-bidi: isolate !important;
             }
+            .katex, .katex *, .katex-display, .katex-display *, .katex-html, .katex-html *,
+            mjx-container, mjx-container *, math, math *, .math, .math *,
+            .math-inline, .math-block, span[class*="katex"], div[class*="katex"] {
+                direction: ltr !important;
+                unicode-bidi: isolate !important;
+            }
+            .katex, .math-inline, math {
+                text-align: left !important;
+            }
+            .katex-display, .math-block, mjx-container[display="true"] {
+                display: block !important;
+                text-align: center !important;
+                direction: ltr !important;
+                unicode-bidi: isolate !important;
+            }
+            sub, sup {
+                direction: ltr !important;
+                unicode-bidi: isolate !important;
+            }
         ` : `
             ${BLOCKS}, ${INPUTS} {
                 direction: ltr !important;
@@ -68,7 +87,7 @@
             setDir(el, rtl ? 'rtl' : 'ltr');
         });
         document.querySelectorAll(BLOCKS).forEach(el => {
-            if (el.tagName === 'PRE' || el.tagName === 'CODE') return;
+            if (el.tagName === 'PRE' || el.tagName === 'CODE' || (typeof el.closest === 'function' && (el.closest('.katex') || el.closest('mjx-container') || el.closest('math'))) || el.classList?.contains?.('katex') || el.classList?.contains?.('katex-display') || el.classList?.contains?.('math-block') || el.classList?.contains?.('math-inline')) return;
             setDir(el, isRTL ? textDir(el.textContent) : 'ltr');
         });
     }

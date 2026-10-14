@@ -29,6 +29,41 @@ function getFontBase64() {
     return cachedFontBase64;
 }
 
+// === Math & Formula LTR Fix ===
+try {
+    const electronApp = typeof app !== 'undefined' ? app : (typeof require !== 'undefined' ? require('electron').app : null);
+    if (electronApp) {
+        const mathFixCss = `
+    .katex, .katex *, .katex-display, .katex-display *, .katex-html, .katex-html *,
+    mjx-container, mjx-container *, math, math *, .math, .math *,
+    .math-inline, .math-block, span[class*="katex"], div[class*="katex"] {
+      direction: ltr !important;
+      unicode-bidi: isolate !important;
+    }
+    .katex, .math-inline, math {
+      text-align: left !important;
+      display: inline-block !important;
+    }
+    .katex-display, .math-block, mjx-container[display="true"] {
+      display: block !important;
+      text-align: center !important;
+      direction: ltr !important;
+      unicode-bidi: isolate !important;
+    }
+    sub, sup {
+       direction: ltr !important;
+      unicode-bidi: isolate !important;
+    }
+  `;
+        electronApp.on('web-contents-created', (_event, contents) => {
+            const injectMathFix = () => { contents.insertCSS(mathFixCss).catch(() => {}); };
+            contents.on('dom-ready', injectMathFix);
+            contents.on('did-finish-load', injectMathFix);
+            contents.on('did-navigate-in-page', injectMathFix);
+        });
+    }
+} catch (e) {}
+
 app.on('browser-window-created', (_event, win) => {
     // 1. Listen for console messages to save settings
     win.webContents.on('console-message', (_e, ...args) => {

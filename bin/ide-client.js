@@ -122,10 +122,10 @@
 
                 /* Apply Vazirmatn font to conversation and text elements */
                 [dir="rtl"],
-                [dir="rtl"] *:not(.codicon):not([class*="codicon-"]):not(.google-symbols):not(pre):not(code):not(.monaco-editor):not(.monaco-editor *),
+                [dir="rtl"] *:not(.codicon):not([class*="codicon-"]):not(.google-symbols):not(pre):not(code):not(.monaco-editor):not(.monaco-editor *):not(.katex):not(.katex *):not(mjx-container):not(mjx-container *):not(math):not(math *),
                 [data-testid="conversation-view"] p,
                 [data-testid="conversation-view"] li,
-                [data-testid="conversation-view"] span,
+                [data-testid="conversation-view"] span:not(.katex *),
                 [data-testid="conversation-view"] h1,
                 [data-testid="conversation-view"] h2,
                 [data-testid="conversation-view"] h3,
@@ -134,11 +134,11 @@
                 .leading-relaxed,
                 .leading-relaxed p,
                 .leading-relaxed li,
-                .leading-relaxed span,
+                .leading-relaxed span:not(.katex *),
                 .rendered-markdown,
                 .rendered-markdown p,
                 .rendered-markdown li,
-                .rendered-markdown span,
+                .rendered-markdown span:not(.katex *),
                 .prose,
                 .prose p,
                 .prose li,
@@ -235,6 +235,28 @@
                     unicode-bidi: normal !important;
                     ${codeFontRule}
                 }
+
+                /* Math & Formula LTR Fix */
+                .katex, .katex *, .katex-display, .katex-display *, .katex-html, .katex-html *,
+                mjx-container, mjx-container *, math, math *, .math, .math *,
+                .math-inline, .math-block, span[class*="katex"], div[class*="katex"] {
+                    direction: ltr !important;
+                    unicode-bidi: isolate !important;
+                }
+                .katex, .math-inline, math {
+                    text-align: left !important;
+                    display: inline-block !important;
+                }
+                .katex-display, .math-block, mjx-container[display="true"] {
+                    display: block !important;
+                    text-align: center !important;
+                    direction: ltr !important;
+                    unicode-bidi: isolate !important;
+                }
+                sub, sup {
+                    direction: ltr !important;
+                    unicode-bidi: isolate !important;
+                }
             `;
         }
 
@@ -286,7 +308,7 @@
                 div:has(> [role="radiogroup"]),
                 label[for^="ask-opt-"]
             `).forEach(el => {
-                if (el.tagName === 'PRE' || el.tagName === 'CODE' || el.closest('.monaco-editor') || el.closest('.terminal')) return;
+                if (el.tagName === 'PRE' || el.tagName === 'CODE' || (typeof el.closest === 'function' && (el.closest('.monaco-editor') || el.closest('.terminal') || el.closest('.katex') || el.closest('mjx-container') || el.closest('math'))) || el.classList?.contains?.('katex') || el.classList?.contains?.('katex-display') || el.classList?.contains?.('math-block') || el.classList?.contains?.('math-inline')) return;
 
                 const text = (el.textContent || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
                 let dir = 'auto';

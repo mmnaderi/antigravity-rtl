@@ -142,4 +142,6 @@ assert.equal(pre.getAttribute('dir'), null);
 assert.equal(document.getElementById('antigravity-rtl-float-btn').textContent, 'RTL');
 assert.match(document.getElementById('antigravity-rtl-style').textContent, /unicode-bidi:\s*plaintext/);
 assert.match(document.getElementById('antigravity-rtl-style').textContent, /chrome-extension:\/\/ext-test\/Vazirmatn-Variable\.woff2/);
+assert.match(document.getElementById('antigravity-rtl-style').textContent, /\.katex/);
+assert.match(document.getElementById('antigravity-rtl-style').textContent, /direction:\s*ltr\s*!important/);
 console.log('remote-client checks passed');
