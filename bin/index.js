@@ -181,7 +181,7 @@ if (args.includes('--browser')) {
     process.exit(0);
 }
 
-const isRestore = args.includes('--restore') || args.includes('-r');
+const isRestore = args.includes('--restore') || args.includes('-r') || args.some(a => a.toLowerCase() === 'restore');
 const forceIde = args.includes('--ide');
 const forceApp = args.includes('--app');
 
@@ -191,7 +191,8 @@ const pathArgIdx = args.indexOf('--path');
 if (pathArgIdx !== -1 && args[pathArgIdx + 1]) {
     customPath = args[pathArgIdx + 1];
 } else {
-    const nonFlags = args.filter(a => !a.startsWith('-'));
+    // Filter out flags and known subcommands ('patch', 'restore') to accurately detect filesystem paths
+    const nonFlags = args.filter(a => !a.startsWith('-') && !['patch', 'restore'].includes(a.toLowerCase()));
     if (nonFlags.length > 0) {
         customPath = nonFlags[0];
     }

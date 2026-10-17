@@ -243,7 +243,9 @@ export async function patchIde(appDir, { exitOnError = true } = {}) {
         return true;
     } catch (e) {
         spinner.fail(failLabel);
-        if (failLabel === 'Permission Denied.') {
+        if (e.code === 'EBUSY' || /busy|locked/i.test(e.message)) {
+            console.error(yellow('\nAntigravity IDE is currently running. Please close Antigravity IDE completely and try again.\n'));
+        } else if (failLabel === 'Permission Denied.') {
             console.error(red('\nSystem Error: ' + e.message));
             console.error(yellow(os.platform() === 'win32'
                 ? '\nPlease run your terminal as Administrator and try again.\n'

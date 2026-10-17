@@ -65,7 +65,7 @@ win.webContents.on('console-message', (event, ...args) => {
                     const fontBase64 = '${fontBase64}';
                     try {
                         if (typeof FontFace !== 'undefined' && fontBase64) {
-                            const font = new FontFace('PersianOnlyFont', `url(data:font/woff2;base64,${fontBase64})`, {
+                            const font = new FontFace('PersianOnlyFont', 'url(data:font/woff2;base64,' + fontBase64 + ')', {
                                 weight: '100 900',
                                 unicodeRange: 'U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F'
                             });
@@ -538,14 +538,10 @@ win.webContents.on('console-message', (event, ...args) => {
                             text-align: right !important;
                             font-family: \${codeFontStr} !important;
                         }
-                        
-                        /* Enable window dragging across titlebar and tabs while keeping controls clickable */
+
+                        /* Enable window dragging strictly on the topbar container while keeping controls and sidebar clickable */
                         div.shrink-0[style*="height: 40px"],
-                        div.shrink-0[style*="height: 40px"] > div,
-                        div.flex.w-full.min-w-0.select-none.items-center.justify-between,
-                        div.flex.w-full.min-w-0.select-none.items-center.justify-between *,
-                        div.flex.items-center.min-w-0,
-                        div.flex.items-center.min-w-0 * {
+                        div.shrink-0[style*="height: 40px"] > div {
                             -webkit-app-region: drag !important;
                         }
                         div.shrink-0[style*="height: 40px"] button,
@@ -554,14 +550,12 @@ win.webContents.on('console-message', (event, ...args) => {
                         div.shrink-0[style*="height: 40px"] a *,
                         div.shrink-0[style*="height: 40px"] input,
                         div.shrink-0[style*="height: 40px"] [role="button"],
-                        div.flex.w-full.min-w-0.select-none.items-center.justify-between button,
-                        div.flex.w-full.min-w-0.select-none.items-center.justify-between button *,
-                        div.flex.w-full.min-w-0.select-none.items-center.justify-between a,
-                        div.flex.w-full.min-w-0.select-none.items-center.justify-between a *,
-                        div.flex.w-full.min-w-0.select-none.items-center.justify-between input,
-                        div.flex.w-full.min-w-0.select-none.items-center.justify-between [role="button"],
                         #rtl-topbar-wrapper,
-                        #rtl-topbar-wrapper * {
+                        #rtl-topbar-wrapper *,
+                        [role="navigation"],
+                        [role="navigation"] *,
+                        aside,
+                        aside * {
                             -webkit-app-region: no-drag !important;
                         }
                         
@@ -606,12 +600,16 @@ win.webContents.on('console-message', (event, ...args) => {
 
                 function isRtl(text) {
                     if (!text) return false;
-                    const clean = text.replace(/[\\u00ad\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\ufeff]/g, ' ').trim();
+                    // Strip URLs and inline code so URLs and technical identifiers do not skew natural language classification
+                    const withoutCodeAndUrls = text
+                        .replace(/https?:\\/\\/\\S+/gi, ' ')
+                        .replace(/\\x60[^\\x60]+\\x60/g, ' ');
+                    const clean = withoutCodeAndUrls.replace(/[\\u00ad\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\ufeff]/g, ' ').trim();
                     if (!clean) return false;
                     const rtlCount = (clean.match(RTL_CHAR_RE) || []).length;
                     if (!rtlCount) return false;
                     const latinCount = (clean.match(LATIN_CHAR_RE) || []).length;
-                    return rtlCount > latinCount * 0.5;
+                    return rtlCount > latinCount * 0.4;
                 }
 
                 // Active inputs need direct synchronous attribute updates on typing so the browser
@@ -622,7 +620,7 @@ win.webContents.on('console-message', (event, ...args) => {
                         const raw = el.tagName === 'TEXTAREA' ? el.value : el.textContent;
                         const text = (raw || '').replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
                         if (text.length > 0) {
-                            const isRtlText = isRtl(text);
+                            const isRtlText = forceRTL || isRtl(text);
                             const newDir = isRtlText ? 'rtl' : 'ltr';
                             if (el.getAttribute('dir') !== newDir) el.setAttribute('dir', newDir);
                         } else {
@@ -643,6 +641,9 @@ win.webContents.on('console-message', (event, ...args) => {
                         div:has(> [role="radiogroup"]),
                         label[for^="ask-opt-"]
                     \`).forEach(el => {
+                        // Protect code editors and terminal from RTL text override
+                        if (el.closest && (el.closest('.monaco-editor') || el.closest('.terminal') || el.closest('.xterm'))) return;
+
                         // Code blocks with syntax 'markdown', 'text', or unstated syntax contain prose and must
                         // follow RTL text direction, while programming languages (JS, Python, etc.) must remain strictly LTR.
                         if (el.tagName === 'PRE') {
@@ -714,8 +715,10 @@ win.webContents.on('console-message', (event, ...args) => {
                 }, { capture: true });
                 document.body.addEventListener('focusin', updateInputs, { capture: true });
                 const observer = new MutationObserver(scheduleUpdateDir);
-                observer.observe(document.body, { childList: true, subtree: true });
-                setInterval(scheduleUpdateDir, 500);
+                observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+                setInterval(() => {
+                    if (!document.hidden) scheduleUpdateDir();
+                }, 2000);
 
                 
                 // Keyboard layout fixes & shortcuts
@@ -855,13 +858,10 @@ win.webContents.on('console-message', (event, ...args) => {
                         document.body.appendChild(dropdownPanel);
                     }
                     const topBar = document.querySelector('div.shrink-0[style*="height: 40px"] > div')
-                        || document.querySelector('div.flex.w-full.min-w-0.select-none.items-center.justify-between');
+                        || document.querySelector('div.shrink-0[style*="height: 40px"]');
                     if (topBar && topBar.style.webkitAppRegion !== 'drag') {
                         topBar.style.webkitAppRegion = 'drag';
                     }
-                    document.querySelectorAll('div.flex.items-center.min-w-0[style*="no-drag"]').forEach(el => {
-                        el.style.webkitAppRegion = 'drag';
-                    });
                 }
                 attachElements();
 

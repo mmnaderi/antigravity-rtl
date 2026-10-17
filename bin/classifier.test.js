@@ -6,12 +6,16 @@ const LATIN_CHAR_RE = /(?=\p{Script=Latin})\p{Letter}/gu;
 
 function isRtl(text) {
     if (!text) return false;
-    const clean = text.replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, ' ').trim();
+    // Strip URLs and inline code (`...`) so links and code identifiers don't distort natural language classification
+    const withoutCodeAndUrls = text
+        .replace(/https?:\/\/\S+/gi, ' ')
+        .replace(/`[^`]+`/g, ' ');
+    const clean = withoutCodeAndUrls.replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, ' ').trim();
     if (!clean) return false;
     const rtlCount = (clean.match(RTL_CHAR_RE) || []).length;
     if (!rtlCount) return false;
     const latinCount = (clean.match(LATIN_CHAR_RE) || []).length;
-    return rtlCount > latinCount * 0.5;
+    return rtlCount > latinCount * 0.4;
 }
 
 test('isRtl: pure Persian text is RTL', () => {
@@ -53,3 +57,12 @@ test('isRtl: empty or whitespace is not RTL', () => {
     assert.equal(isRtl('   \n  \t '), false);
     assert.equal(isRtl('\u200B\uFEFF'), false);
 });
+
+test('isRtl: Persian prompt with long URL is correctly classified as RTL', () => {
+    assert.equal(isRtl('https://github.com/mmnaderi/antigravity-rtl/pull/123 این پول ریکوئست را چک کن'), true);
+});
+
+test('isRtl: Persian prompt with inline code block is correctly classified as RTL', () => {
+    assert.equal(isRtl('دستور `git checkout -b fix/markdown-and-composer-rtl` را در ترمینال بزن'), true);
+});
+

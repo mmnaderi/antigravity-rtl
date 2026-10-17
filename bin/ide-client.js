@@ -272,12 +272,16 @@
 
         function isRtl(text) {
             if (!text) return false;
-            const clean = text.replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, ' ').trim();
+            // Strip URLs and inline code so URLs and technical identifiers do not skew natural language classification
+            const withoutCodeAndUrls = text
+                .replace(/https?:\/\/\S+/gi, ' ')
+                .replace(/`[^`]+`/g, ' ');
+            const clean = withoutCodeAndUrls.replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, ' ').trim();
             if (!clean) return false;
             const rtlCount = (clean.match(RTL_CHAR_RE) || []).length;
             if (!rtlCount) return false;
             const latinCount = (clean.match(LATIN_CHAR_RE) || []).length;
-            return rtlCount > latinCount * 0.5;
+            return rtlCount > latinCount * 0.4;
         }
 
         // Active inputs need direct synchronous attribute updates on typing so the browser
@@ -288,7 +292,7 @@
                 const raw = el.tagName === 'TEXTAREA' ? el.value : el.textContent;
                 const text = (raw || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
                 if (text.length > 0) {
-                    const isRtlText = isRtl(text);
+                    const isRtlText = state.forceRTL || isRtl(text);
                     const newDir = isRtlText ? 'rtl' : 'ltr';
                     if (el.getAttribute('dir') !== newDir) el.setAttribute('dir', newDir);
                 } else {
@@ -311,7 +315,8 @@
                 div:has(> [role="radiogroup"]),
                 label[for^="ask-opt-"]
             `).forEach(el => {
-                if (el.closest && (el.closest('.monaco-editor') || el.closest('.terminal'))) return;
+                // Protect code editors and terminal from RTL text override
+                if (el.closest && (el.closest('.monaco-editor') || el.closest('.terminal') || el.closest('.xterm'))) return;
 
                 // Code blocks with syntax 'markdown', 'text', or unstated syntax contain prose and must
                 // follow RTL text direction, while programming languages (JS, Python, etc.) must remain strictly LTR.
@@ -729,10 +734,13 @@
         document.body.addEventListener('focusin', updateInputs, { capture: true });
 
         const observer = new MutationObserver((mutations) => {
-            const hasExternal = mutations.some(m => [...m.addedNodes].some(node => !node.id || !node.id.startsWith('antigravity-rtl')));
+            const hasExternal = mutations.some(m => {
+                if (m.type === 'characterData') return true;
+                return [...m.addedNodes].some(node => !node.id || !node.id.startsWith('antigravity-rtl'));
+            });
             if (hasExternal) scheduleDOMUpdate();
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
         // Initial run
         updateUI();

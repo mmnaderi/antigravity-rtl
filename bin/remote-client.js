@@ -20,12 +20,16 @@
 
     function isRtl(text) {
         if (!text) return false;
-        const clean = text.replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, ' ').trim();
+        // Strip URLs and inline code so URLs and technical identifiers do not skew natural language classification
+        const withoutCodeAndUrls = text
+            .replace(/https?:\/\/\S+/gi, ' ')
+            .replace(/`[^`]+`/g, ' ');
+        const clean = withoutCodeAndUrls.replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, ' ').trim();
         if (!clean) return false;
         const rtlCount = (clean.match(RTL_CHAR_RE) || []).length;
         if (!rtlCount) return false;
         const latinCount = (clean.match(LATIN_CHAR_RE) || []).length;
-        return rtlCount > latinCount * 0.5;
+        return rtlCount > latinCount * 0.4;
     }
 
     function textDir(text) {
@@ -95,6 +99,9 @@
 
     function updateChat() {
         document.querySelectorAll(BLOCKS).forEach(el => {
+            // Protect code editors and terminal from RTL text override
+            if (el.closest && (el.closest('.monaco-editor') || el.closest('.terminal') || el.closest('.xterm'))) return;
+
             if (el.tagName === 'PRE') {
                 const langEl = el.querySelector ? el.querySelector('.font-sans, [class*="text-muted-foreground"], [data-language], code[class*="language-"]') : null;
                 let lang = '';

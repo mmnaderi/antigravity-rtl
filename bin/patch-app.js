@@ -119,7 +119,20 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
         fs.accessSync(path.dirname(asarPath), fs.constants.W_OK);
 
         failLabel = 'Failed to read app.asar.';
-        const currentUtils = readUtils(asarPath);
+        let currentUtils = null;
+        try {
+            currentUtils = readUtils(asarPath);
+        } catch (readErr) {
+            // Auto-heal: If app.asar is corrupted or incomplete from an interrupted run, recover from backup if available
+            if (fs.existsSync(backupPath)) {
+                spinner.text = 'Main app.asar was corrupted, recovering from backup...';
+                fs.copyFileSync(backupPath, asarPath);
+                asar.uncache(asarPath);
+                currentUtils = readUtils(asarPath);
+            } else {
+                throw readErr;
+            }
+        }
         const backupUtils = fs.existsSync(backupPath) ? readUtils(backupPath) : null;
         let cleanUtils;
         let repairBackup = false;
@@ -180,7 +193,9 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
         return true;
     } catch (e) {
         spinner.fail(failLabel);
-        if (failLabel === 'Permission Denied.') {
+        if (e.code === 'EBUSY' || /busy|locked/i.test(e.message)) {
+            console.error(yellow('\nAntigravity is currently running. Please close Antigravity completely and try again.\n'));
+        } else if (failLabel === 'Permission Denied.') {
             console.error(red('\nSystem Error: ' + e.message));
             if (os.platform() === 'win32') {
                 console.error(yellow('\nPlease run your terminal (PowerShell/CMD) as Administrator and try again.\n'));
@@ -196,9 +211,15 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
             console.error(red(/dist\/utils\.js/.test(e.message)
                 ? 'dist/utils.js not found in ASAR. Unsupported Antigravity version.'
                 : e.message));
-            fs.rmSync(extractDir, { recursive: true, force: true });
         }
         if (exitOnError) process.exit(1);
         return false;
+    } finally {
+        try {
+            if (fs.existsSync(extractDir)) {
+                fs.rmSync(extractDir, { recursive: true, force: true });
+            }
+        } catch (_) {}
     }
 }
+
