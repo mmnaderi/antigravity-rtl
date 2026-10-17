@@ -51,11 +51,7 @@ win.webContents.on('console-message', (event, ...args) => {
                 function isAntigravityReady() {
                     try {
                         if (!document || !document.body) return false;
-                        const root = document.getElementById('root');
-                        if (!root || !root.children || root.children.length === 0) return false;
-                        return Boolean(document.querySelector('[role="navigation"]') || 
-                                       document.querySelector('[role="main"]') || 
-                                       document.querySelector('[contenteditable="true"]'));
+                        return document.body.children.length > 0;
                     } catch (_) {
                         return false;
                     }
@@ -712,12 +708,9 @@ win.webContents.on('console-message', (event, ...args) => {
                 \`;
 
                 function attachElements() {
-                    if (!document.getElementById('rtl-topbar-wrapper')) {
-                        const actionsCluster = document.querySelector('[data-testid="titlebar-more-actions"]')?.parentElement
-                            || document.querySelector('[data-testid="install-editor"]')?.parentElement;
-                        if (actionsCluster) {
-                            actionsCluster.appendChild(widgetWrapper);
-                        }
+                    widgetWrapper.style.cssText = 'position:fixed;right:16px;bottom:24px;z-index:2147483646;app-region:no-drag;';
+                    if (widgetWrapper.parentElement !== document.body) {
+                        document.body.appendChild(widgetWrapper);
                     }
                     if (!document.getElementById('rtl-dropdown-panel')) {
                         document.body.appendChild(dropdownPanel);
@@ -891,7 +884,8 @@ win.webContents.on('console-message', (event, ...args) => {
                 function updateDropdownPosition() {
                     if (!topbarBtn || !dropdownPanel) return;
                     const rect = topbarBtn.getBoundingClientRect();
-                    dropdownPanel.style.top = (rect.bottom + 6) + 'px';
+                    dropdownPanel.style.top = 'auto';
+                    dropdownPanel.style.bottom = (window.innerHeight - rect.top + 6) + 'px';
                     dropdownPanel.style.right = Math.max(8, window.innerWidth - rect.right) + 'px';
                     dropdownPanel.style.left = 'auto';
                 }
@@ -1144,4 +1138,3 @@ win.webContents.on('console-message', (event, ...args) => {
             console.error("Failed to read offline font", e);
         }
     });
-
