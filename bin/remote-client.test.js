@@ -33,9 +33,27 @@ function el(tag) {
         hasAttribute(k) { return Object.prototype.hasOwnProperty.call(this.attributes, k); },
         removeAttribute(k) { delete this.attributes[k]; },
         addEventListener() {},
-        get firstChild() { return this.children[0] || null; }
+        closest(sel) {
+            let n = this;
+            while (n) {
+                if (matches(n, sel)) return n;
+                n = n.parentElement;
+            }
+            return null;
+        },
+        get firstChild() { return this.children[0] || null; },
+        querySelector(sel) {
+            return walk(this).find(node => sel.split(',').some(part => {
+                const p = part.trim();
+                if (p === '.font-sans') return node.className?.includes('font-sans');
+                if (p === '.code-block') return node.className?.includes('code-block');
+                if (p === 'code') return node.tagName === 'CODE';
+                return matches(node, p);
+            })) || null;
+        }
     };
 }
+
 
 function walk(node, out = []) {
     for (const child of node.children || []) {
@@ -58,6 +76,9 @@ function matches(node, sel) {
     if (sel === '[contenteditable="true"] p') return node.tagName === 'P' && walkUp(node, n => n.attributes?.contenteditable === 'true');
     if (sel === 'textarea[data-testid="ask-question-writein"]') return node.tagName === 'TEXTAREA' && node.attributes?.['data-testid'] === 'ask-question-writein';
     if (sel === '[data-testid="titlebar-more-actions"]') return node.attributes?.['data-testid'] === 'titlebar-more-actions';
+    if (sel === '.monaco-editor') return Boolean(node.className?.includes('monaco-editor'));
+    if (sel === '.terminal') return Boolean(node.className?.includes('terminal'));
+    if (sel === '.xterm') return Boolean(node.className?.includes('xterm'));
     return false;
 }
 
@@ -134,12 +155,36 @@ md.appendChild(pre);
 view.appendChild(md);
 body.appendChild(view);
 
+const mdPre = el('pre');
+const mdHeader = el('div');
+mdHeader.className = 'font-sans';
+mdHeader.textContent = 'markdown';
+const mdContent = el('div');
+mdContent.className = 'code-block';
+mdContent.textContent = '### هویت و نقش تو\nمتن مارک‌داون فارسی';
+mdPre.appendChild(mdHeader);
+mdPre.appendChild(mdContent);
+md.appendChild(mdPre);
+
+const urlP = el('p');
+urlP.textContent = 'https://github.com/mmnaderi/antigravity-rtl این پیوند را بررسی فرمایید';
+md.appendChild(urlP);
+
+const composer = el('div');
+composer.setAttribute('contenteditable', 'true');
+composer.textContent = 'salam این یک متن تستی فارسی است';
+body.appendChild(composer);
+
 await new Promise(r => setTimeout(r, 500));
 
 assert.equal(fa.getAttribute('dir'), 'rtl');
 assert.equal(en.getAttribute('dir'), 'ltr');
 assert.equal(pre.getAttribute('dir'), null);
+assert.equal(mdPre.getAttribute('dir'), 'rtl');
+assert.equal(urlP.getAttribute('dir'), 'rtl');
+assert.equal(composer.getAttribute('dir'), 'rtl');
 assert.equal(document.getElementById('antigravity-rtl-float-btn').textContent, 'RTL');
 assert.match(document.getElementById('antigravity-rtl-style').textContent, /unicode-bidi:\s*plaintext/);
 assert.match(document.getElementById('antigravity-rtl-style').textContent, /chrome-extension:\/\/ext-test\/Vazirmatn-Variable\.woff2/);
 console.log('remote-client checks passed');
+

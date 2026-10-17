@@ -110,7 +110,7 @@
                     src: local('Vazirmatn'), local('Vazirmatn Variable'), local('Vazir'),
                          url('data:font/woff2;base64,${fontBase64}') format('woff2');
                     font-weight: 100 900;
-                    unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+                    unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F;
                 }
 
                 :root {
@@ -224,7 +224,8 @@
                 }
 
                 /* Strict Protection & Custom Font for Monaco Code Editor, Diff Editor, and Terminal */
-                pre, code, pre *, code *,
+                pre:not([dir="rtl"]), code:not([dir="rtl"]),
+                pre:not([dir="rtl"]) *, code:not([dir="rtl"]) *,
                 .monaco-editor, .monaco-editor *,
                 .monaco-diff-editor, .monaco-diff-editor *,
                 .part.terminal, .part.terminal *,
@@ -232,6 +233,22 @@
                 .xterm, .xterm * {
                     direction: ltr !important;
                     text-align: left !important;
+                    unicode-bidi: normal !important;
+                    ${codeFontRule}
+                }
+
+                pre[dir="rtl"] .code-block,
+                pre[dir="rtl"] .code-block *,
+                pre[dir="rtl"] .code-line,
+                pre[dir="rtl"] .code-line *,
+                pre[dir="rtl"] .line-content,
+                pre[dir="rtl"] .line-content *,
+                pre[dir="rtl"] code,
+                pre[dir="rtl"] code *,
+                code[dir="rtl"],
+                code[dir="rtl"] * {
+                    direction: rtl !important;
+                    text-align: right !important;
                     unicode-bidi: normal !important;
                     ${codeFontRule}
                 }
@@ -247,33 +264,45 @@
             }
         }
 
-        // Input & DOM Direction Logic
-        function updateDir() {
-            if (!state.isRTL) {
-                document.querySelectorAll(`
-                    .prose > *, [data-testid="chat-message"] > *, .markdown-body > *,
-                    .leading-relaxed > *, [data-testid="conversation-view"] p, [data-testid="conversation-view"] li,
-                    [contenteditable="true"], [contenteditable="true"] p
-                `).forEach(el => {
-                    if (el.getAttribute('dir') !== 'ltr') el.setAttribute('dir', 'ltr');
-                });
-                return;
-            }
+        // Ratio-based classifier: sentences starting with English words, technical terms, or CLI commands
+        // (e.g. "git status رو چک کن") must not get stuck in LTR. Counting RTL vs Latin letters ensures
+        // natural language direction follows the dominant content rather than the first character.
+        const RTL_CHAR_RE = /(?=[\p{Script_Extensions=Arabic}\p{Script_Extensions=Hebrew}])\p{Letter}/gu;
+        const LATIN_CHAR_RE = /(?=\p{Script=Latin})\p{Letter}/gu;
 
-            // Editable inputs
+        function isRtl(text) {
+            if (!text) return false;
+            // Strip URLs and inline code so URLs and technical identifiers do not skew natural language classification
+            const withoutCodeAndUrls = text
+                .replace(/https?:\/\/\S+/gi, ' ')
+                .replace(/`[^`]+`/g, ' ');
+            const clean = withoutCodeAndUrls.replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, ' ').trim();
+            if (!clean) return false;
+            const rtlCount = (clean.match(RTL_CHAR_RE) || []).length;
+            if (!rtlCount) return false;
+            const latinCount = (clean.match(LATIN_CHAR_RE) || []).length;
+            return rtlCount > latinCount * 0.4;
+        }
+
+        // Active inputs need direct synchronous attribute updates on typing so the browser
+        // anchors the cursor stably at the end of the text instead of jumping to the line start.
+        function updateInputs() {
+            if (!state.isRTL) return;
             document.querySelectorAll('[contenteditable="true"] p, [contenteditable="true"], textarea[data-testid="ask-question-writein"]').forEach(el => {
                 const raw = el.tagName === 'TEXTAREA' ? el.value : el.textContent;
                 const text = (raw || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
                 if (text.length > 0) {
-                    const isRtlText = /^[^a-zA-Z]*[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text);
+                    const isRtlText = state.forceRTL || isRtl(text);
                     const newDir = isRtlText ? 'rtl' : 'ltr';
                     if (el.getAttribute('dir') !== newDir) el.setAttribute('dir', newDir);
                 } else {
                     if (el.hasAttribute('dir')) el.removeAttribute('dir');
                 }
             });
+        }
 
-            // Chat Output, Conversation View & Options
+        function updateChat() {
+            if (!state.isRTL) return;
             document.querySelectorAll(`
                 .prose > *, 
                 [data-testid="chat-message"] > *, 
@@ -286,7 +315,38 @@
                 div:has(> [role="radiogroup"]),
                 label[for^="ask-opt-"]
             `).forEach(el => {
-                if (el.tagName === 'PRE' || el.tagName === 'CODE' || el.closest('.monaco-editor') || el.closest('.terminal')) return;
+                // Protect code editors and terminal from RTL text override
+                if (el.closest && (el.closest('.monaco-editor') || el.closest('.terminal') || el.closest('.xterm'))) return;
+
+                // Code blocks with syntax 'markdown', 'text', or unstated syntax contain prose and must
+                // follow RTL text direction, while programming languages (JS, Python, etc.) must remain strictly LTR.
+                if (el.tagName === 'PRE') {
+                    const langEl = el.querySelector ? el.querySelector('.font-sans, [class*="text-muted-foreground"], [data-language], code[class*="language-"]') : null;
+                    let lang = '';
+                    if (langEl) {
+                        if (langEl.getAttribute && langEl.getAttribute('data-language')) {
+                            lang = langEl.getAttribute('data-language');
+                        } else if (langEl.className && typeof langEl.className === 'string' && langEl.className.includes('language-')) {
+                            const m = langEl.className.match(/language-([a-z0-9_-]+)/i);
+                            if (m) lang = m[1];
+                        } else {
+                            lang = (langEl.textContent || '').trim();
+                        }
+                    }
+                    lang = (lang || '').toLowerCase();
+                    const isTextOrMd = !lang || ['markdown', 'md', 'text', 'txt', 'plaintext'].includes(lang);
+
+                    const contentEl = (el.querySelector ? el.querySelector('.code-block, code') : null) || el;
+                    const text = (contentEl.textContent || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
+                    if (isTextOrMd && isRtl(text)) {
+                        if (el.getAttribute('dir') !== 'rtl') el.setAttribute('dir', 'rtl');
+                    } else {
+                        if (el.getAttribute('dir') === 'rtl') el.removeAttribute('dir');
+                    }
+                    return;
+                }
+
+                if (el.tagName === 'CODE') return;
 
                 const text = (el.textContent || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
                 let dir = 'auto';
@@ -294,17 +354,28 @@
                 if (state.forceRTL) {
                     dir = 'rtl';
                 } else if (text) {
-                    const firstChar = text.match(/[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/);
-                    if (firstChar) {
-                        const isPersianOrArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(firstChar[0]);
-                        dir = isPersianOrArabic ? 'rtl' : 'ltr';
-                    }
+                    dir = isRtl(text) ? 'rtl' : 'ltr';
                 }
 
                 if (el.getAttribute('dir') !== dir) {
                     el.setAttribute('dir', dir);
                 }
             });
+        }
+
+        function updateDir() {
+            if (!state.isRTL) {
+                document.querySelectorAll(`
+                    .prose > *, [data-testid="chat-message"] > *, .markdown-body > *,
+                    .leading-relaxed > *, [data-testid="conversation-view"] p, [data-testid="conversation-view"] li,
+                    [contenteditable="true"], [contenteditable="true"] p
+                `).forEach(el => {
+                    if (el.getAttribute('dir') !== 'ltr') el.setAttribute('dir', 'ltr');
+                });
+                return;
+            }
+            updateInputs();
+            updateChat();
         }
 
         function el(tag, styles, children, attrs) {
@@ -653,14 +724,23 @@
             }, 400);
         }
 
-        document.body.addEventListener('input', scheduleDOMUpdate, { capture: true });
-        document.body.addEventListener('focusin', scheduleDOMUpdate, { capture: true });
+        document.body.addEventListener('input', (e) => {
+            if (e.target && (e.target.isContentEditable || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) {
+                updateInputs();
+            } else {
+                scheduleDOMUpdate();
+            }
+        }, { capture: true });
+        document.body.addEventListener('focusin', updateInputs, { capture: true });
 
         const observer = new MutationObserver((mutations) => {
-            const hasExternal = mutations.some(m => [...m.addedNodes].some(node => !node.id || !node.id.startsWith('antigravity-rtl')));
+            const hasExternal = mutations.some(m => {
+                if (m.type === 'characterData') return true;
+                return [...m.addedNodes].some(node => !node.id || !node.id.startsWith('antigravity-rtl'));
+            });
             if (hasExternal) scheduleDOMUpdate();
         });
-        observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
         // Initial run
         updateUI();

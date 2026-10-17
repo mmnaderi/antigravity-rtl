@@ -63,7 +63,18 @@ win.webContents.on('console-message', (event, ...args) => {
 
                 function init() {
                     const fontBase64 = '${fontBase64}';
-                const rtlConfig = ${JSON.stringify(rtlConfig)};
+                    try {
+                        if (typeof FontFace !== 'undefined' && fontBase64) {
+                            const font = new FontFace('PersianOnlyFont', 'url(data:font/woff2;base64,' + fontBase64 + ')', {
+                                weight: '100 900',
+                                unicodeRange: 'U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F'
+                            });
+                            font.load().then(loadedFace => {
+                                document.fonts.add(loadedFace);
+                            }).catch(() => {});
+                        }
+                    } catch (_) {}
+                    const rtlConfig = ${JSON.stringify(rtlConfig)};
                 
                 // 2. Observer Logic
                 let isRTL = rtlConfig.isRTL !== false;
@@ -78,6 +89,11 @@ win.webContents.on('console-message', (event, ...args) => {
                     let widgetStyle = document.createElement('style');
                     widgetStyle.id = 'rtl-widget-style';
                     widgetStyle.innerHTML = \`
+                        #rtl-topbar-wrapper {
+                            position: relative !important;
+                            z-index: 60 !important;
+                            flex-shrink: 0 !important;
+                        }
                         #rtl-dropdown-panel {
                             transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.15s ease;
                         }
@@ -426,9 +442,10 @@ win.webContents.on('console-message', (event, ...args) => {
                         \${faFontRule}
                         @font-face {
                             font-family: 'PersianOnlyFont';
-                            src: url('data:font/woff2;base64,\${fontBase64}') format('woff2');
+                            src: local('Vazirmatn'), local('Vazirmatn Variable'), local('Vazir'),
+                                 url('data:font/woff2;base64,\${fontBase64}') format('woff2');
                             font-weight: 100 900;
-                            unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF;
+                            unicode-range: U+0600-06FF, U+0750-077F, U+08A0-08FF, U+FB50-FDFF, U+FE70-FEFF, U+200C-200F;
                         }
                         :root, :host, html, body {
                             font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
@@ -436,8 +453,12 @@ win.webContents.on('console-message', (event, ...args) => {
                         [dir="rtl"], [dir="rtl"] *:not(pre):not(code),
                         .prose, .prose *, [data-testid="chat-message"], [data-testid="chat-message"] *,
                         .markdown-body, .markdown-body *, .leading-relaxed, .leading-relaxed *,
+                        [data-testid="conversation-view"], [data-testid="conversation-view"] *,
+                        [data-testid="user-input-step"], [data-testid="user-input-step"] *,
+                        [data-testid="planner-response-text"], [data-testid="planner-response-text"] *,
                         [contenteditable="true"], [contenteditable="true"] *, [data-lexical-text="true"],
-                        label[for^="ask-opt-"], textarea[data-testid="ask-question-writein"] {
+                        label[for^="ask-opt-"], textarea[data-testid="ask-question-writein"],
+                        .bg-card, .bg-card * {
                             font-family: \${faFontName}, \${enFontStr}, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji" !important;
                         }
                         .prose, [data-testid="chat-message"], .markdown-body, .leading-relaxed, [contenteditable="true"], [contenteditable="true"] p {
@@ -493,12 +514,49 @@ win.webContents.on('console-message', (event, ...args) => {
                         /* Custom CSS removed to rely on Tailwind completely */
                         
                         /* Code Blocks & Terminal */
-                        pre, code, pre *, code *,
+                        pre:not([dir="rtl"]), code:not([dir="rtl"]),
+                        pre:not([dir="rtl"]) *, code:not([dir="rtl"]) *,
                         .xterm, .xterm * {
                             unicode-bidi: isolate !important;
                             direction: ltr !important;
                             text-align: left !important;
                             font-family: \${codeFontStr} !important;
+                        }
+
+                        pre[dir="rtl"] .code-block,
+                        pre[dir="rtl"] .code-block *,
+                        pre[dir="rtl"] .code-line,
+                        pre[dir="rtl"] .code-line *,
+                        pre[dir="rtl"] .line-content,
+                        pre[dir="rtl"] .line-content *,
+                        pre[dir="rtl"] code,
+                        pre[dir="rtl"] code *,
+                        code[dir="rtl"],
+                        code[dir="rtl"] * {
+                            unicode-bidi: isolate !important;
+                            direction: rtl !important;
+                            text-align: right !important;
+                            font-family: \${codeFontStr} !important;
+                        }
+
+                        /* Enable window dragging strictly on the topbar container while keeping controls and sidebar clickable */
+                        div.shrink-0[style*="height: 40px"],
+                        div.shrink-0[style*="height: 40px"] > div {
+                            -webkit-app-region: drag !important;
+                        }
+                        div.shrink-0[style*="height: 40px"] button,
+                        div.shrink-0[style*="height: 40px"] button *,
+                        div.shrink-0[style*="height: 40px"] a,
+                        div.shrink-0[style*="height: 40px"] a *,
+                        div.shrink-0[style*="height: 40px"] input,
+                        div.shrink-0[style*="height: 40px"] [role="button"],
+                        #rtl-topbar-wrapper,
+                        #rtl-topbar-wrapper *,
+                        [role="navigation"],
+                        [role="navigation"] *,
+                        aside,
+                        aside * {
+                            -webkit-app-region: no-drag !important;
                         }
                         
                         /* AI Response Line Height */
@@ -534,24 +592,45 @@ win.webContents.on('console-message', (event, ...args) => {
                     updateDynamicCSS(savedFaFont, savedEnFont, savedCodeFont, savedLH, savedFS);
                 }
                 
-                // 2. Input Observer Logic
-                function updateDir() {
+                // Ratio-based classifier: sentences starting with English words, technical terms, or CLI commands
+                // (e.g. "git status رو چک کن") must not get stuck in LTR. Counting RTL vs Latin letters ensures
+                // natural language direction follows the dominant content rather than the first character.
+                const RTL_CHAR_RE = /(?=[\\p{Script_Extensions=Arabic}\\p{Script_Extensions=Hebrew}])\\p{Letter}/gu;
+                const LATIN_CHAR_RE = /(?=\\p{Script=Latin})\\p{Letter}/gu;
+
+                function isRtl(text) {
+                    if (!text) return false;
+                    // Strip URLs and inline code so URLs and technical identifiers do not skew natural language classification
+                    const withoutCodeAndUrls = text
+                        .replace(/https?:\\/\\/\\S+/gi, ' ')
+                        .replace(/\\x60[^\\x60]+\\x60/g, ' ');
+                    const clean = withoutCodeAndUrls.replace(/[\\u00ad\\u200b-\\u200f\\u202a-\\u202e\\u2060-\\u2064\\ufeff]/g, ' ').trim();
+                    if (!clean) return false;
+                    const rtlCount = (clean.match(RTL_CHAR_RE) || []).length;
+                    if (!rtlCount) return false;
+                    const latinCount = (clean.match(LATIN_CHAR_RE) || []).length;
+                    return rtlCount > latinCount * 0.4;
+                }
+
+                // Active inputs need direct synchronous attribute updates on typing so the browser
+                // anchors the cursor stably at the end of the text instead of jumping to the line start.
+                function updateInputs() {
                     if (!isRTL) return;
-                    
-                    // Inputs
                     document.querySelectorAll('[contenteditable="true"] p, [contenteditable="true"], textarea[data-testid="ask-question-writein"]').forEach(el => {
                         const raw = el.tagName === 'TEXTAREA' ? el.value : el.textContent;
-                        const text = raw.replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
+                        const text = (raw || '').replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
                         if (text.length > 0) {
-                            const isRtlText = /^[^a-zA-Z]*[\\u0591-\\u07FF\\uFB1D-\\uFDFD\\uFE70-\\uFEFC]/.test(text);
+                            const isRtlText = forceRTL || isRtl(text);
                             const newDir = isRtlText ? 'rtl' : 'ltr';
                             if (el.getAttribute('dir') !== newDir) el.setAttribute('dir', newDir);
                         } else {
                             if (el.hasAttribute('dir')) el.removeAttribute('dir');
                         }
                     });
-                    
-                    // Chat Output & Artifact Viewer (Respects Force RTL)
+                }
+
+                function updateChat() {
+                    if (!isRTL) return;
                     document.querySelectorAll(\`
                         .prose > *, 
                         [data-testid="chat-message"] > *, 
@@ -562,20 +641,46 @@ win.webContents.on('console-message', (event, ...args) => {
                         div:has(> [role="radiogroup"]),
                         label[for^="ask-opt-"]
                     \`).forEach(el => {
-                        // Skip code blocks
-                        if (el.tagName === 'PRE' || el.tagName === 'CODE') return;
+                        // Protect code editors and terminal from RTL text override
+                        if (el.closest && (el.closest('.monaco-editor') || el.closest('.terminal') || el.closest('.xterm'))) return;
+
+                        // Code blocks with syntax 'markdown', 'text', or unstated syntax contain prose and must
+                        // follow RTL text direction, while programming languages (JS, Python, etc.) must remain strictly LTR.
+                        if (el.tagName === 'PRE') {
+                            const langEl = el.querySelector ? el.querySelector('.font-sans, [class*="text-muted-foreground"], [data-language], code[class*="language-"]') : null;
+                            let lang = '';
+                            if (langEl) {
+                                if (langEl.getAttribute && langEl.getAttribute('data-language')) {
+                                    lang = langEl.getAttribute('data-language');
+                                } else if (langEl.className && typeof langEl.className === 'string' && langEl.className.includes('language-')) {
+                                    const m = langEl.className.match(/language-([a-z0-9_-]+)/i);
+                                    if (m) lang = m[1];
+                                } else {
+                                    lang = (langEl.textContent || '').trim();
+                                }
+                            }
+                            lang = (lang || '').toLowerCase();
+                            const isTextOrMd = !lang || ['markdown', 'md', 'text', 'txt', 'plaintext'].includes(lang);
+
+                            const contentEl = (el.querySelector ? el.querySelector('.code-block, code') : null) || el;
+                            const text = (contentEl.textContent || '').replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
+                            if (isTextOrMd && isRtl(text)) {
+                                if (el.getAttribute('dir') !== 'rtl') el.setAttribute('dir', 'rtl');
+                            } else {
+                                if (el.getAttribute('dir') === 'rtl') el.removeAttribute('dir');
+                            }
+                            return;
+                        }
+
+                        if (el.tagName === 'CODE') return;
                         
-                        const text = el.textContent.replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
+                        const text = (el.textContent || '').replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
                         let dir = 'auto';
                         
                         if (forceRTL) {
                             dir = 'rtl';
                         } else if (text) {
-                            const firstChar = text.match(/[A-Za-z\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]/);
-                            if (firstChar) {
-                                const isPersianOrArabic = /[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]/.test(firstChar[0]);
-                                dir = isPersianOrArabic ? 'rtl' : 'ltr';
-                            }
+                            dir = isRtl(text) ? 'rtl' : 'ltr';
                         }
                         
                         if (el.getAttribute('dir') !== dir) {
@@ -583,11 +688,38 @@ win.webContents.on('console-message', (event, ...args) => {
                         }
                     });
                 }
-                document.body.addEventListener('input', updateDir, { capture: true });
-                document.body.addEventListener('focusin', updateDir, { capture: true });
-                const observer = new MutationObserver(updateDir);
-                observer.observe(document.body, { childList: true, subtree: true });
-                setInterval(updateDir, 500);
+
+                function updateDir() {
+                    updateInputs();
+                    updateChat();
+                }
+
+                // Decouple input typing from global DOM scanning: typing updates the active input immediately,
+                // while chat output scans are debounced via requestAnimationFrame to eliminate cursor jumping and flickering.
+                let rafPending = false;
+                function scheduleUpdateDir() {
+                    if (rafPending) return;
+                    rafPending = true;
+                    requestAnimationFrame(() => {
+                        rafPending = false;
+                        updateDir();
+                    });
+                }
+
+                document.body.addEventListener('input', (e) => {
+                    if (e.target && (e.target.isContentEditable || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT')) {
+                        updateInputs();
+                    } else {
+                        scheduleUpdateDir();
+                    }
+                }, { capture: true });
+                document.body.addEventListener('focusin', updateInputs, { capture: true });
+                const observer = new MutationObserver(scheduleUpdateDir);
+                observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+                setInterval(() => {
+                    if (!document.hidden) scheduleUpdateDir();
+                }, 2000);
+
                 
                 // Keyboard layout fixes & shortcuts
                 document.addEventListener('keydown', (e) => {
@@ -711,24 +843,30 @@ win.webContents.on('console-message', (event, ...args) => {
                     </a>
                 \`;
 
+                // In frameless Electron on Windows, inserting as firstChild keeps the RTL widget to the left
+                // of action icons, preventing it from being occluded under native caption buttons (min/max/close)
+                // or the aux sidebar header.
                 function attachElements() {
-                    if (!document.getElementById('rtl-topbar-wrapper')) {
-                        const actionsCluster = document.querySelector('[data-testid="titlebar-more-actions"]')?.parentElement
-                            || document.querySelector('[data-testid="install-editor"]')?.parentElement;
-                        if (actionsCluster) {
-                            actionsCluster.appendChild(widgetWrapper);
+                    const actionsCluster = document.querySelector('[data-testid="titlebar-more-actions"]')?.parentElement
+                        || document.querySelector('[data-testid="install-editor"]')?.parentElement;
+                    if (actionsCluster) {
+                        if (actionsCluster.firstChild !== widgetWrapper) {
+                            actionsCluster.insertBefore(widgetWrapper, actionsCluster.firstChild);
                         }
                     }
                     if (!document.getElementById('rtl-dropdown-panel')) {
                         document.body.appendChild(dropdownPanel);
                     }
+                    const topBar = document.querySelector('div.shrink-0[style*="height: 40px"] > div')
+                        || document.querySelector('div.shrink-0[style*="height: 40px"]');
+                    if (topBar && topBar.style.webkitAppRegion !== 'drag') {
+                        topBar.style.webkitAppRegion = 'drag';
+                    }
                 }
                 attachElements();
 
                 const topbarObserver = new MutationObserver(() => {
-                    if (!document.getElementById('rtl-topbar-wrapper') || !document.getElementById('rtl-dropdown-panel')) {
-                        attachElements();
-                    }
+                    attachElements();
                 });
                 topbarObserver.observe(document.body, { childList: true, subtree: true });
                 
