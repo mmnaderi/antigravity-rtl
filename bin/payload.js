@@ -497,12 +497,49 @@ win.webContents.on('console-message', (event, ...args) => {
                         /* Custom CSS removed to rely on Tailwind completely */
                         
                         /* Code Blocks & Terminal */
-                        pre, code, pre *, code *,
+                        pre:not([dir="rtl"]), code:not([dir="rtl"]),
+                        pre:not([dir="rtl"]) *, code:not([dir="rtl"]) *,
                         .xterm, .xterm * {
                             unicode-bidi: isolate !important;
                             direction: ltr !important;
                             text-align: left !important;
                             font-family: \${codeFontStr} !important;
+                        }
+
+                        pre[dir="rtl"] .code-block,
+                        pre[dir="rtl"] .code-block *,
+                        pre[dir="rtl"] .code-line,
+                        pre[dir="rtl"] .code-line *,
+                        pre[dir="rtl"] .line-content,
+                        pre[dir="rtl"] .line-content *,
+                        pre[dir="rtl"] code,
+                        pre[dir="rtl"] code *,
+                        code[dir="rtl"],
+                        code[dir="rtl"] * {
+                            unicode-bidi: isolate !important;
+                            direction: rtl !important;
+                            text-align: right !important;
+                            font-family: \${codeFontStr} !important;
+                        }
+
+                        /* Enable window dragging strictly on the topbar container while keeping controls and sidebar clickable */
+                        div.shrink-0[style*="height: 40px"],
+                        div.shrink-0[style*="height: 40px"] > div {
+                            -webkit-app-region: drag !important;
+                        }
+                        div.shrink-0[style*="height: 40px"] button,
+                        div.shrink-0[style*="height: 40px"] button *,
+                        div.shrink-0[style*="height: 40px"] a,
+                        div.shrink-0[style*="height: 40px"] a *,
+                        div.shrink-0[style*="height: 40px"] input,
+                        div.shrink-0[style*="height: 40px"] [role="button"],
+                        #rtl-topbar-wrapper,
+                        #rtl-topbar-wrapper *,
+                        [role="navigation"],
+                        [role="navigation"] *,
+                        aside,
+                        aside * {
+                            -webkit-app-region: no-drag !important;
                         }
                         
                         /* AI Response Line Height */
@@ -510,9 +547,18 @@ win.webContents.on('console-message', (event, ...args) => {
                             line-height: \${lh} !important;
                         }
                         
-                        [contenteditable="true"], [contenteditable="true"] * {
-                            unicode-bidi: isolate !important;
+                        [contenteditable="true"], [contenteditable="true"] p {
+                            unicode-bidi: plaintext !important;
                             text-align: start !important;
+                        }
+
+                        /* File chips, mentions, and decorator pills in composer must remain strictly LTR */
+                        [contenteditable="true"] [contenteditable="false"],
+                        [contenteditable="true"] [data-lexical-decorator="true"] {
+                            direction: ltr !important;
+                            text-align: left !important;
+                            unicode-bidi: isolate !important;
+                            display: inline-flex !important;
                         }
                         
                         /* Smart Auto-Direction for Sidebar & Truncated Texts */
@@ -659,23 +705,26 @@ win.webContents.on('console-message', (event, ...args) => {
                 \`;
 
                 function attachElements() {
-                    if (!document.getElementById('rtl-topbar-wrapper')) {
-                        const actionsCluster = document.querySelector('[data-testid="titlebar-more-actions"]')?.parentElement
-                            || document.querySelector('[data-testid="install-editor"]')?.parentElement;
-                        if (actionsCluster) {
-                            actionsCluster.appendChild(widgetWrapper);
+                    const actionsCluster = document.querySelector('[data-testid="titlebar-more-actions"]')?.parentElement
+                        || document.querySelector('[data-testid="install-editor"]')?.parentElement;
+                    if (actionsCluster) {
+                        if (actionsCluster.firstChild !== widgetWrapper) {
+                            actionsCluster.insertBefore(widgetWrapper, actionsCluster.firstChild);
                         }
                     }
                     if (!document.getElementById('rtl-dropdown-panel')) {
                         document.body.appendChild(dropdownPanel);
                     }
+                    const topBar = document.querySelector('div.shrink-0[style*="height: 40px"] > div')
+                        || document.querySelector('div.shrink-0[style*="height: 40px"]');
+                    if (topBar && topBar.style.webkitAppRegion !== 'drag') {
+                        topBar.style.webkitAppRegion = 'drag';
+                    }
                 }
                 attachElements();
 
                 const topbarObserver = new MutationObserver(() => {
-                    if (!document.getElementById('rtl-topbar-wrapper') || !document.getElementById('rtl-dropdown-panel')) {
-                        attachElements();
-                    }
+                    attachElements();
                 });
                 topbarObserver.observe(document.body, { childList: true, subtree: true });
                 

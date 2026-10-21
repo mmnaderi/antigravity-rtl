@@ -15,12 +15,24 @@
     style.id = 'antigravity-rtl-style';
     document.head.appendChild(style);
 
+    const RTL_CHAR_RE = /(?=[\p{Script_Extensions=Arabic}\p{Script_Extensions=Hebrew}])\p{Letter}/gu;
+    const LATIN_CHAR_RE = /(?=\p{Script=Latin})\p{Letter}/gu;
+
+    function isRtl(text) {
+        if (!text) return false;
+        const withoutCodeAndUrls = text
+            .replace(/https?:\/\/\S+/gi, ' ')
+            .replace(/\x60[^\x60]+\x60/g, ' ');
+        const clean = withoutCodeAndUrls.replace(/[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]/g, ' ').trim();
+        if (!clean) return false;
+        const rtlCount = (clean.match(RTL_CHAR_RE) || []).length;
+        if (!rtlCount) return false;
+        const latinCount = (clean.match(LATIN_CHAR_RE) || []).length;
+        return rtlCount > latinCount * 0.4;
+    }
+
     function textDir(text) {
-        const clean = (text || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
-        if (!clean) return null;
-        const first = clean.match(/[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/);
-        if (!first) return 'auto';
-        return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(first[0]) ? 'rtl' : 'ltr';
+        return isRtl(text) ? 'rtl' : 'ltr';
     }
 
     function setDir(el, dir) {
@@ -45,9 +57,31 @@
                 unicode-bidi: plaintext;
                 text-align: start;
             }
-            pre, code, pre *, code * {
+            [contenteditable="true"] [contenteditable="false"],
+            [contenteditable="true"] [data-lexical-decorator="true"] {
                 direction: ltr !important;
                 text-align: left !important;
+                unicode-bidi: isolate !important;
+                display: inline-flex !important;
+            }
+            pre:not([dir="rtl"]), code:not([dir="rtl"]),
+            pre:not([dir="rtl"]) *, code:not([dir="rtl"]) * {
+                direction: ltr !important;
+                text-align: left !important;
+                unicode-bidi: isolate !important;
+            }
+            pre[dir="rtl"] .code-block,
+            pre[dir="rtl"] .code-block *,
+            pre[dir="rtl"] .code-line,
+            pre[dir="rtl"] .code-line *,
+            pre[dir="rtl"] .line-content,
+            pre[dir="rtl"] .line-content *,
+            pre[dir="rtl"] code,
+            pre[dir="rtl"] code *,
+            code[dir="rtl"],
+            code[dir="rtl"] * {
+                direction: rtl !important;
+                text-align: right !important;
                 unicode-bidi: isolate !important;
             }
         ` : `
@@ -68,7 +102,32 @@
             setDir(el, rtl ? 'rtl' : 'ltr');
         });
         document.querySelectorAll(BLOCKS).forEach(el => {
-            if (el.tagName === 'PRE' || el.tagName === 'CODE') return;
+            if (el.tagName === 'PRE') {
+                const langEl = el.querySelector ? el.querySelector('.font-sans, [class*="text-muted-foreground"], [data-language], code[class*="language-"]') : null;
+                let lang = '';
+                if (langEl) {
+                    if (langEl.getAttribute && langEl.getAttribute('data-language')) {
+                        lang = langEl.getAttribute('data-language');
+                    } else if (langEl.className && typeof langEl.className === 'string' && langEl.className.includes('language-')) {
+                        const m = langEl.className.match(/language-([a-z0-9_-]+)/i);
+                        if (m) lang = m[1];
+                    } else {
+                        lang = (langEl.textContent || '').trim();
+                    }
+                }
+                lang = (lang || '').toLowerCase();
+                const isTextOrMd = !lang || ['markdown', 'md', 'text', 'txt', 'plaintext'].includes(lang);
+
+                const contentEl = (el.querySelector ? el.querySelector('.code-block, code') : null) || el;
+                const text = (contentEl.textContent || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
+                if (isTextOrMd && isRtl(text)) {
+                    setDir(el, isRTL ? 'rtl' : 'ltr');
+                } else {
+                    setDir(el, null);
+                }
+                return;
+            }
+            if (el.tagName === 'CODE') return;
             setDir(el, isRTL ? textDir(el.textContent) : 'ltr');
         });
     }

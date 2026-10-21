@@ -209,9 +209,18 @@
                     line-height: ${state.lh} !important;
                 }
 
-                [contenteditable="true"], [contenteditable="true"] * {
-                    unicode-bidi: isolate !important;
+                [contenteditable="true"], [contenteditable="true"] p {
+                    unicode-bidi: plaintext !important;
                     text-align: start !important;
+                }
+
+                /* File chips, mentions, and decorator pills in composer must remain strictly LTR */
+                [contenteditable="true"] [contenteditable="false"],
+                [contenteditable="true"] [data-lexical-decorator="true"] {
+                    direction: ltr !important;
+                    text-align: left !important;
+                    unicode-bidi: isolate !important;
+                    display: inline-flex !important;
                 }
 
                 /* Protect icon fonts from override */
@@ -223,7 +232,8 @@
                 }
 
                 /* Strict Protection & Custom Font for Monaco Code Editor, Diff Editor, and Terminal */
-                pre, code, pre *, code *,
+                pre:not([dir="rtl"]), code:not([dir="rtl"]),
+                pre:not([dir="rtl"]) *, code:not([dir="rtl"]) *,
                 .monaco-editor, .monaco-editor *,
                 .monaco-diff-editor, .monaco-diff-editor *,
                 .part.terminal, .part.terminal *,
@@ -232,7 +242,23 @@
                     direction: ltr !important;
                     text-align: left !important;
                     unicode-bidi: normal !important;
-                    ${codeFontRule}
+                    \${codeFontRule}
+                }
+
+                pre[dir="rtl"] .code-block,
+                pre[dir="rtl"] .code-block *,
+                pre[dir="rtl"] .code-line,
+                pre[dir="rtl"] .code-line *,
+                pre[dir="rtl"] .line-content,
+                pre[dir="rtl"] .line-content *,
+                pre[dir="rtl"] code,
+                pre[dir="rtl"] code *,
+                code[dir="rtl"],
+                code[dir="rtl"] * {
+                    direction: rtl !important;
+                    text-align: right !important;
+                    unicode-bidi: normal !important;
+                    \${codeFontRule}
                 }
             `;
         }
