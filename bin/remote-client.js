@@ -111,7 +111,8 @@
         placeButton();
         updateDir();
         document.addEventListener('keydown', (e) => {
-            if (e.altKey && e.code === 'KeyR') {
+            // Cmd/Ctrl excluded so Cmd+Alt+R and AltGr+R keep their own meaning.
+            if (e.altKey && !e.metaKey && !e.ctrlKey && e.code === 'KeyR') {
                 e.preventDefault();
                 toggle();
             }

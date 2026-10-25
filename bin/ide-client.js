@@ -15,7 +15,6 @@
         const state = {
             isRTL: rtlConfig.isRTL !== false,
             forceRTL: Boolean(rtlConfig.forceRTL),
-            fixAtSign: rtlConfig.fixAtSign !== false,
             faFont: rtlConfig.faFont || '',
             enFont: rtlConfig.enFont || '',
             codeFont: rtlConfig.codeFont || '',
@@ -259,52 +258,7 @@
                 });
                 return;
             }
-
-            // Editable inputs
-            document.querySelectorAll('[contenteditable="true"] p, [contenteditable="true"], textarea[data-testid="ask-question-writein"]').forEach(el => {
-                const raw = el.tagName === 'TEXTAREA' ? el.value : el.textContent;
-                const text = (raw || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
-                if (text.length > 0) {
-                    const isRtlText = /^[^a-zA-Z]*[\u0591-\u07FF\uFB1D-\uFDFD\uFE70-\uFEFC]/.test(text);
-                    const newDir = isRtlText ? 'rtl' : 'ltr';
-                    if (el.getAttribute('dir') !== newDir) el.setAttribute('dir', newDir);
-                } else {
-                    if (el.hasAttribute('dir')) el.removeAttribute('dir');
-                }
-            });
-
-            // Chat Output, Conversation View & Options
-            document.querySelectorAll(`
-                .prose > *, 
-                [data-testid="chat-message"] > *, 
-                .markdown-body > *, 
-                .leading-relaxed > *,
-                [data-testid="user-input-step"],
-                [data-testid="user-input-step"] > *,
-                [data-testid="conversation-view"] p,
-                [data-testid="conversation-view"] li,
-                div:has(> [role="radiogroup"]),
-                label[for^="ask-opt-"]
-            `).forEach(el => {
-                if (el.tagName === 'PRE' || el.tagName === 'CODE' || el.closest('.monaco-editor') || el.closest('.terminal')) return;
-
-                const text = (el.textContent || '').replace(/[\u200B-\u200F\uFEFF]/g, '').trim();
-                let dir = 'auto';
-
-                if (state.forceRTL) {
-                    dir = 'rtl';
-                } else if (text) {
-                    const firstChar = text.match(/[A-Za-z\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/);
-                    if (firstChar) {
-                        const isPersianOrArabic = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(firstChar[0]);
-                        dir = isPersianOrArabic ? 'rtl' : 'ltr';
-                    }
-                }
-
-                if (el.getAttribute('dir') !== dir) {
-                    el.setAttribute('dir', dir);
-                }
-            });
+            window.__antigravityRtlCore.updateDir(state.forceRTL);
         }
 
         function el(tag, styles, children, attrs) {
@@ -416,14 +370,6 @@
                 el('div', 'display:flex;align-items:center;gap:6px;', [fsInput, fsReset])
             ]));
 
-            panelBody.appendChild(el('div', 'height:1px;background:var(--vscode-widget-border,rgba(255,255,255,0.1));margin:2px 0;'));
-
-            // Shift+2 for @
-            const atLabel = el('span', 'font-size:11px;color:var(--vscode-descriptionForeground,#94a3b8);', 'Shift+2 for @', { title: 'Type @ using Shift+2 in Persian layout' });
-            const atKnob = el('span', `display:block;width:12px;height:12px;border-radius:50%;background:#ffffff;position:absolute;top:3px;left:${state.fixAtSign ? '19px' : '3px'};transition:left 0.2s;`, null, { id: 'rtl-panel-at-knob' });
-            const atBtn = el('button', `cursor:pointer;width:34px;height:18px;border-radius:9px;border:none;background:${state.fixAtSign ? 'var(--vscode-button-background, #3b82f6)' : '#64748b'};position:relative;padding:0;outline:none;transition:background 0.2s;`, [atKnob], { id: 'rtl-panel-at-btn', type: 'button' });
-            panelBody.appendChild(el('div', 'display:flex;align-items:center;justify-content:space-between;', [atLabel, atBtn]));
-
             panel.appendChild(panelBody);
 
             // 4. Footer
@@ -438,11 +384,6 @@
             masterBtn.addEventListener('click', () => { setRTLActive(!state.isRTL); });
             forceBtn.addEventListener('click', () => {
                 state.forceRTL = !state.forceRTL;
-                saveConfig();
-                updateUI();
-            });
-            atBtn.addEventListener('click', () => {
-                state.fixAtSign = !state.fixAtSign;
                 saveConfig();
                 updateUI();
             });
@@ -532,13 +473,6 @@
                 forceBtn.style.background = state.forceRTL ? 'var(--vscode-button-background, #3b82f6)' : '#64748b';
                 forceKnob.style.left = state.forceRTL ? '19px' : '3px';
             }
-
-            const atBtn = document.getElementById('rtl-panel-at-btn');
-            const atKnob = document.getElementById('rtl-panel-at-knob');
-            if (atBtn && atKnob) {
-                atBtn.style.background = state.fixAtSign ? 'var(--vscode-button-background, #3b82f6)' : '#64748b';
-                atKnob.style.left = state.fixAtSign ? '19px' : '3px';
-            }
         }
 
         function setRTLActive(active) {
@@ -621,46 +555,11 @@
             }
         });
 
-        // Keyboard layout shortcuts
-        document.addEventListener('keydown', (e) => {
-            // Alt + R to toggle RTL
-            if (e.altKey && e.code === 'KeyR') {
-                e.preventDefault();
-                setRTLActive(!state.isRTL);
-            }
+        window.__antigravityRtlCore.onToggleShortcut(() => setRTLActive(!state.isRTL));
+        window.__antigravityRtlCore.watch(() => {
+            updateDir();
+            tryInsertStatusBarItem();
         });
-
-        // Persian Keyboard Shift + 2 fix for @
-        document.addEventListener('keydown', (e) => {
-            if (!state.fixAtSign) return;
-            if (e.code === 'Digit2' && e.shiftKey) {
-                if (e.key === '٬' || e.key === '،') {
-                    e.preventDefault();
-                    document.execCommand('insertText', false, '@');
-                }
-            }
-        }, { capture: true });
-
-        // Throttled dynamic UI updater
-        let domUpdateTimer = null;
-
-        function scheduleDOMUpdate() {
-            if (domUpdateTimer) return;
-            domUpdateTimer = setTimeout(() => {
-                domUpdateTimer = null;
-                updateDir();
-                tryInsertStatusBarItem();
-            }, 400);
-        }
-
-        document.body.addEventListener('input', scheduleDOMUpdate, { capture: true });
-        document.body.addEventListener('focusin', scheduleDOMUpdate, { capture: true });
-
-        const observer = new MutationObserver((mutations) => {
-            const hasExternal = mutations.some(m => [...m.addedNodes].some(node => !node.id || !node.id.startsWith('antigravity-rtl')));
-            if (hasExternal) scheduleDOMUpdate();
-        });
-        observer.observe(document.body, { childList: true, subtree: true });
 
         // Initial run
         updateUI();

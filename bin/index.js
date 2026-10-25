@@ -5,7 +5,6 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import picocolors from 'picocolors';
 import prompts from 'prompts';
-import figlet from 'figlet';
 
 import {
     patchApp,
@@ -75,56 +74,58 @@ async function promptForStar() {
     }
 }
 
+// "Antigravity RTL" rendered once with figlet's RubiFont.
+const BANNER = [
+    ' ▗▄▖ ▗▖  ▗▖▗▄▄▄▖▗▄▄▄▖ ▗▄▄▖▗▄▄▖  ▗▄▖ ▗▖  ▗▖▗▄▄▄▖▗▄▄▄▖▗▖  ▗▖    ▗▄▄▖▗▄▄▄▖▗▖   ',
+    '▐▌ ▐▌▐▛▚▖▐▌  █    █  ▐▌   ▐▌ ▐▌▐▌ ▐▌▐▌  ▐▌  █    █   ▝▚▞▘     ▐▌ ▐▌ █  ▐▌   ',
+    '▐▛▀▜▌▐▌ ▝▜▌  █    █  ▐▌▝▜▌▐▛▀▚▖▐▛▀▜▌▐▌  ▐▌  █    █    ▐▌      ▐▛▀▚▖ █  ▐▌   ',
+    '▐▌ ▐▌▐▌  ▐▌  █  ▗▄█▄▖▝▚▄▞▘▐▌ ▐▌▐▌ ▐▌ ▝▚▞▘ ▗▄█▄▖  █    ▐▌      ▐▌ ▐▌ █  ▐▙▄▄▖'
+];
+
 function printBanner() {
-    try {
-        const fullArt = figlet.textSync('Antigravity RTL', { font: 'RubiFont' }).split('\n');
-        const hexColors = ['#3387FF', '#F25041', '#DFAC2A', '#91C45B'];
-        const colors = hexColors.map(hex => {
-            const bigint = parseInt(hex.replace('#', ''), 16);
-            return {
-                r: (bigint >> 16) & 255,
-                g: (bigint >> 8) & 255,
-                b: bigint & 255
-            };
-        });
-
-        const applyGradient = (text) => {
-            let result = '';
-            const len = text.length;
-            for (let i = 0; i < len; i++) {
-                const char = text[i];
-                if (char === ' ' || char === '\n') {
-                    result += char;
-                    continue;
-                }
-                const factor = len > 1 ? i / (len - 1) : 0;
-                const segments = colors.length - 1;
-                const segmentFloat = factor * segments;
-                const segmentIdx = Math.min(Math.floor(segmentFloat), segments - 1);
-                const segmentFactor = segmentFloat - segmentIdx;
-
-                const cStart = colors[segmentIdx];
-                const cEnd = colors[segmentIdx + 1];
-
-                const r = Math.round(cStart.r + segmentFactor * (cEnd.r - cStart.r));
-                const g = Math.round(cStart.g + segmentFactor * (cEnd.g - cStart.g));
-                const b = Math.round(cStart.b + segmentFactor * (cEnd.b - cStart.b));
-
-                result += `\x1b[38;2;${r};${g};${b}m${char}\x1b[0m`;
-            }
-            return result;
+    const hexColors = ['#3387FF', '#F25041', '#DFAC2A', '#91C45B'];
+    const colors = hexColors.map(hex => {
+        const bigint = parseInt(hex.replace('#', ''), 16);
+        return {
+            r: (bigint >> 16) & 255,
+            g: (bigint >> 8) & 255,
+            b: bigint & 255
         };
+    });
 
-        console.log('');
-        for (const line of fullArt) {
-            if (!line.trim()) continue;
-            console.log(applyGradient(line));
+    const applyGradient = (text) => {
+        let result = '';
+        const len = text.length;
+        for (let i = 0; i < len; i++) {
+            const char = text[i];
+            if (char === ' ' || char === '\n') {
+                result += char;
+                continue;
+            }
+            const factor = len > 1 ? i / (len - 1) : 0;
+            const segments = colors.length - 1;
+            const segmentFloat = factor * segments;
+            const segmentIdx = Math.min(Math.floor(segmentFloat), segments - 1);
+            const segmentFactor = segmentFloat - segmentIdx;
+
+            const cStart = colors[segmentIdx];
+            const cEnd = colors[segmentIdx + 1];
+
+            const r = Math.round(cStart.r + segmentFactor * (cEnd.r - cStart.r));
+            const g = Math.round(cStart.g + segmentFactor * (cEnd.g - cStart.g));
+            const b = Math.round(cStart.b + segmentFactor * (cEnd.b - cStart.b));
+
+            result += `\x1b[38;2;${r};${g};${b}m${char}\x1b[0m`;
         }
-        console.log('');
-        console.log(`\x1b[2m  RTL & UI Patcher for Antigravity & Antigravity IDE | v${pkg.version}\x1b[0m\n`);
-    } catch (err) {
-        console.log(bold(cyan(`\n✨ Antigravity Smart RTL Patcher v${pkg.version}\n`)));
+        return result;
+    };
+
+    console.log('');
+    for (const line of BANNER) {
+        console.log(applyGradient(line));
     }
+    console.log('');
+    console.log(`\x1b[2m  RTL & UI Patcher for Antigravity & Antigravity IDE | v${pkg.version}\x1b[0m\n`);
 }
 
 printBanner();

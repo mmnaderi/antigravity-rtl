@@ -76,12 +76,15 @@ app.on('browser-window-created', (_event, win) => {
                 lh: '1.6',
                 fs: '16',
                 isRTL: true,
-                forceRTL: false,
-                fixAtSign: true
+                forceRTL: false
             };
             if (fs.existsSync(CONFIG_FILE)) {
                 try {
                     const parsed = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+                    // Any page in the window can write this file via the console; these values reach CSS.
+                    for (const k of ['faFont', 'enFont', 'codeFont', 'lh', 'fs']) {
+                        if (typeof parsed[k] !== 'string' || !/^[\p{L}\p{N} ._-]{0,64}$/u.test(parsed[k])) delete parsed[k];
+                    }
                     rtlConfig = { ...rtlConfig, ...parsed };
                 } catch (e) {}
             }
@@ -92,7 +95,7 @@ app.on('browser-window-created', (_event, win) => {
                 let clientCode = fs.readFileSync(clientPath, 'utf8');
                 clientCode = clientCode
                     .replaceAll('__FONT_BASE64__', fontBase64)
-                    .replaceAll('__RTL_CONFIG__', JSON.stringify(rtlConfig));
+                    .replaceAll('__RTL_CONFIG__', () => JSON.stringify(rtlConfig));
 
                 await win.webContents.executeJavaScript(clientCode);
                 log(`[${sourceEvent}] Successfully injected antigravity-rtl-client.js`);

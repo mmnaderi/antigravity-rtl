@@ -38,12 +38,16 @@ win.webContents.on('console-message', (event, ...args) => {
                 const configPath = require('path').join(require('os').homedir(), '.antigravity-rtl.json');
                 if (require('fs').existsSync(configPath)) {
                     const cfg = JSON.parse(require('fs').readFileSync(configPath, 'utf8'));
+                    // Any page in the window can write this file via the console; these values reach CSS.
+                    for (const k of ['faFont', 'enFont', 'codeFont', 'lh', 'fs']) {
+                        if (typeof cfg[k] !== 'string' || !/^[\p{L}\p{N} ._-]{0,64}$/u.test(cfg[k])) delete cfg[k];
+                    }
                     rtlConfig = { ...rtlConfig, ...cfg };
                 }
             } catch (e) {}
 
             // Unified injection for RTL Toggle, CSS, and JS
-            win.webContents.executeJavaScript(`(() => {
+            win.webContents.executeJavaScript(__RTL_CORE__ + `(() => {
                 if (window.__ANTIGRAVITY_RTL_LOADED__) return;
                 window.__ANTIGRAVITY_RTL_LOADED__ = true;
 
@@ -530,70 +534,13 @@ win.webContents.on('console-message', (event, ...args) => {
                     updateDynamicCSS(savedFaFont, savedEnFont, savedCodeFont, savedLH, savedFS);
                 }
                 
-                // 2. Input Observer Logic
+                // 2. Input Observer Logic (shared engine: bin/rtl-core.js)
                 function updateDir() {
-                    if (!isRTL) return;
-                    
-                    // Inputs
-                    document.querySelectorAll('[contenteditable="true"] p, [contenteditable="true"], textarea[data-testid="ask-question-writein"]').forEach(el => {
-                        const raw = el.tagName === 'TEXTAREA' ? el.value : el.textContent;
-                        const text = raw.replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
-                        if (text.length > 0) {
-                            const isRtlText = /^[^a-zA-Z]*[\\u0591-\\u07FF\\uFB1D-\\uFDFD\\uFE70-\\uFEFC]/.test(text);
-                            const newDir = isRtlText ? 'rtl' : 'ltr';
-                            if (el.getAttribute('dir') !== newDir) el.setAttribute('dir', newDir);
-                        } else {
-                            if (el.hasAttribute('dir')) el.removeAttribute('dir');
-                        }
-                    });
-                    
-                    // Chat Output & Artifact Viewer (Respects Force RTL)
-                    document.querySelectorAll(\`
-                        .prose > *, 
-                        [data-testid="chat-message"] > *, 
-                        .markdown-body > *, 
-                        .leading-relaxed > *,
-                        [data-testid="user-input-step"],
-                        [data-testid="user-input-step"] > *,
-                        div:has(> [role="radiogroup"]),
-                        label[for^="ask-opt-"]
-                    \`).forEach(el => {
-                        // Skip code blocks
-                        if (el.tagName === 'PRE' || el.tagName === 'CODE') return;
-                        
-                        const text = el.textContent.replace(/[\\u200B-\\u200F\\uFEFF]/g, '').trim();
-                        let dir = 'auto';
-                        
-                        if (forceRTL) {
-                            dir = 'rtl';
-                        } else if (text) {
-                            const firstChar = text.match(/[A-Za-z\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]/);
-                            if (firstChar) {
-                                const isPersianOrArabic = /[\\u0600-\\u06FF\\u0750-\\u077F\\u08A0-\\u08FF\\uFB50-\\uFDFF\\uFE70-\\uFEFF]/.test(firstChar[0]);
-                                dir = isPersianOrArabic ? 'rtl' : 'ltr';
-                            }
-                        }
-                        
-                        if (el.getAttribute('dir') !== dir) {
-                            el.setAttribute('dir', dir);
-                        }
-                    });
+                    if (isRTL) window.__antigravityRtlCore.updateDir(forceRTL);
                 }
-                document.body.addEventListener('input', updateDir, { capture: true });
-                document.body.addEventListener('focusin', updateDir, { capture: true });
-                const observer = new MutationObserver(updateDir);
-                observer.observe(document.body, { childList: true, subtree: true });
-                setInterval(updateDir, 500);
-                
-                // Keyboard layout fixes & shortcuts
-                document.addEventListener('keydown', (e) => {
-                    // Alt + R to toggle RTL
-                    if (e.altKey && e.code === 'KeyR') {
-                        e.preventDefault();
-                        setRTLActive(!isRTL);
-                    }
-                });
-                
+                window.__antigravityRtlCore.watch(updateDir);
+                window.__antigravityRtlCore.onToggleShortcut(() => setRTLActive(!isRTL));
+
                 const isMac = /Mac/i.test(navigator.userAgent || navigator.platform);
                 const shortcutKbdHtml = isMac 
                     ? '<span class="flex items-center gap-1"><kbd class="rtl-kbd">⌥</kbd><kbd class="rtl-kbd">R</kbd></span>'
@@ -657,26 +604,26 @@ win.webContents.on('console-message', (event, ...args) => {
                       <!-- Tooltip example if needed later: <span class="font-medium text-xs opacity-80 whitespace-nowrap cursor-help" data-rtl-tooltip="Fallback: Vazirmatn">FA/AR Font</span> -->
                       <div class="flex items-center justify-between gap-2 px-1 h-7">
                         <span class="font-medium text-xs opacity-80 whitespace-nowrap">FA/AR Font</span>
-                        <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" value="\${savedFaFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
+                        <input id="rtl-fafont-input" type="text" placeholder="Default: Vazirmatn" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
                       </div>
                       
                       <!-- English Font -->
                       <div class="flex items-center justify-between gap-2 px-1 h-7">
                         <span class="font-medium text-xs opacity-80 whitespace-nowrap">EN Font</span>
-                        <input id="rtl-enfont-input" type="text" placeholder="Default: System" value="\${savedEnFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
+                        <input id="rtl-enfont-input" type="text" placeholder="Default: System" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
                       </div>
                       
                       <!-- Code Font -->
                       <div class="flex items-center justify-between gap-2 px-1 h-7">
                         <span class="font-medium text-xs opacity-80 whitespace-nowrap">Code Font</span>
-                        <input id="rtl-codefont-input" type="text" placeholder="Default: System" value="\${savedCodeFont}" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
+                        <input id="rtl-codefont-input" type="text" placeholder="Default: System" class="rtl-theme-input placeholder:text-placeholder focus:!outline-none focus:!ring-0 transition-all !border !border-border !bg-muted disabled:opacity-50 !shadow-none w-28" style="font-size: 12px; border-radius: 4px; padding: 4px 8px;">
                       </div>
                       
                       <!-- Line Height -->
                       <div class="flex items-center justify-between gap-2 px-1 h-7">
                         <span class="font-medium text-xs opacity-80 whitespace-nowrap">Line Height</span>
                         <div class="flex items-center gap-2">
-                          <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" value="\${savedLH}" class="rtl-theme-range w-20 cursor-pointer">
+                          <input id="rtl-lh-input" type="range" min="1.2" max="2.5" step="0.1" class="rtl-theme-range w-20 cursor-pointer">
                           <button id="rtl-lh-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" data-rtl-tooltip="Reset to 1.6" data-rtl-tooltip-pos="left">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                           </button>
@@ -687,7 +634,7 @@ win.webContents.on('console-message', (event, ...args) => {
                       <div class="flex items-center justify-between gap-2 px-1 h-7">
                         <span class="font-medium text-xs opacity-80 whitespace-nowrap">Font Size</span>
                         <div class="flex items-center gap-2">
-                          <input id="rtl-fs-input" type="range" min="11" max="22" step="1" value="\${savedFS}" class="rtl-theme-range w-20 cursor-pointer">
+                          <input id="rtl-fs-input" type="range" min="11" max="22" step="1" class="rtl-theme-range w-20 cursor-pointer">
                           <button id="rtl-fs-reset" type="button" class="opacity-50 hover:opacity-100 transition-opacity cursor-pointer p-0.5" data-rtl-tooltip="Reset to 16px" data-rtl-tooltip-pos="left">
                             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
                           </button>
@@ -703,7 +650,7 @@ win.webContents.on('console-message', (event, ...args) => {
                         <svg height="14" width="14" viewBox="0 0 16 16" fill="currentColor" class="text-muted-foreground group-hover:text-foreground transition-colors shrink-0"><path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path></svg>
                         <span class="text-xs font-medium text-secondary-foreground group-hover:text-foreground">Star on GitHub</span>
                       </div>
-                      <span id="rtl-star-num" class="rtl-star-badge">★ \${cachedStars}</span>
+                      <span id="rtl-star-num" class="rtl-star-badge"></span>
                     </a>
                 \`;
 
@@ -741,6 +688,13 @@ win.webContents.on('console-message', (event, ...args) => {
                 const forceBtn = dropdownPanel.querySelector('#rtl-force-btn');
                 const forceKnob = dropdownPanel.querySelector('#rtl-force-knob');
                 const forceRow = dropdownPanel.querySelector('#rtl-force-row');
+                // Set saved values through the DOM, never through innerHTML.
+                faFontInput.value = savedFaFont;
+                enFontInput.value = savedEnFont;
+                codeFontInput.value = savedCodeFont;
+                lhInput.value = savedLH;
+                fsInput.value = savedFS;
+                dropdownPanel.querySelector('#rtl-star-num').textContent = '★ ' + cachedStars;
                 const refreshCSS = () => updateDynamicCSS(faFontInput.value.trim(), enFontInput.value.trim(), codeFontInput.value.trim(), lhInput.value, fsInput.value);
 
                 function clearRTL() {

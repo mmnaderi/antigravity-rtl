@@ -1,6 +1,6 @@
 {
   "name": "antigravity-rtl",
-  "version": "1.3.0",
+  "version": "1.4.1",
   "description": "A smart RTL (Right-to-Left) patcher with UI settings for Antigravity & Antigravity IDE.",
   "main": "./bin/index.js",
   "scripts": {
@@ -25,7 +25,6 @@
   ],
   "dependencies": {
     "@electron/asar": "^4.2.0",
-    "figlet": "^1.11.0",
     "ora": "^9.4.1",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2"
