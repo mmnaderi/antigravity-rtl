@@ -34,6 +34,7 @@ Antigravity RTL adds seamless Right-to-Left (RTL) support and typography control
 - **Typography your way:** Choose separate fonts for Persian/Arabic, English, and Code. Vazirmatn is embedded offline; font size and line height can be adjusted live.
 - **Quick controls:** Title-bar menu in Standalone App and UI widget in IDE, toggleable via `⌥R` on macOS / `Alt+R` on Windows and Linux.
 
+
 Settings are saved in `~/.antigravity-rtl.json` and restored when you reopen the app.
 
 ## Install
@@ -41,6 +42,8 @@ Settings are saved in `~/.antigravity-rtl.json` and restored when you reopen the
 Follow the steps for your operating system. Node.js **22.12 or newer** is required; you don't need to clone this repository.
 
 > **Before running the patch:** Close Antigravity / Antigravity IDE if open.
+
+Antigravity updates replace patched app files. After updating Antigravity, run `npx antigravity-rtl --app` again and restart the app.
 
 ### macOS
 
