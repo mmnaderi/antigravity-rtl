@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import picocolors from 'picocolors';
 import prompts from 'prompts';
-import figlet from 'figlet';
 
 import {
     patchApp,
@@ -79,56 +79,58 @@ async function promptForStar() {
     }
 }
 
+// "Antigravity RTL" rendered once with figlet's RubiFont.
+const BANNER = [
+    ' ▗▄▖ ▗▖  ▗▖▗▄▄▄▖▗▄▄▄▖ ▗▄▄▖▗▄▄▖  ▗▄▖ ▗▖  ▗▖▗▄▄▄▖▗▄▄▄▖▗▖  ▗▖    ▗▄▄▖▗▄▄▄▖▗▖   ',
+    '▐▌ ▐▌▐▛▚▖▐▌  █    █  ▐▌   ▐▌ ▐▌▐▌ ▐▌▐▌  ▐▌  █    █   ▝▚▞▘     ▐▌ ▐▌ █  ▐▌   ',
+    '▐▛▀▜▌▐▌ ▝▜▌  █    █  ▐▌▝▜▌▐▛▀▚▖▐▛▀▜▌▐▌  ▐▌  █    █    ▐▌      ▐▛▀▚▖ █  ▐▌   ',
+    '▐▌ ▐▌▐▌  ▐▌  █  ▗▄█▄▖▝▚▄▞▘▐▌ ▐▌▐▌ ▐▌ ▝▚▞▘ ▗▄█▄▖  █    ▐▌      ▐▌ ▐▌ █  ▐▙▄▄▖'
+];
+
 function printBanner() {
-    try {
-        const fullArt = figlet.textSync('Antigravity RTL', { font: 'RubiFont' }).split('\n');
-        const hexColors = ['#3387FF', '#F25041', '#DFAC2A', '#91C45B'];
-        const colors = hexColors.map(hex => {
-            const bigint = parseInt(hex.replace('#', ''), 16);
-            return {
-                r: (bigint >> 16) & 255,
-                g: (bigint >> 8) & 255,
-                b: bigint & 255
-            };
-        });
-
-        const applyGradient = (text) => {
-            let result = '';
-            const len = text.length;
-            for (let i = 0; i < len; i++) {
-                const char = text[i];
-                if (char === ' ' || char === '\n') {
-                    result += char;
-                    continue;
-                }
-                const factor = len > 1 ? i / (len - 1) : 0;
-                const segments = colors.length - 1;
-                const segmentFloat = factor * segments;
-                const segmentIdx = Math.min(Math.floor(segmentFloat), segments - 1);
-                const segmentFactor = segmentFloat - segmentIdx;
-
-                const cStart = colors[segmentIdx];
-                const cEnd = colors[segmentIdx + 1];
-
-                const r = Math.round(cStart.r + segmentFactor * (cEnd.r - cStart.r));
-                const g = Math.round(cStart.g + segmentFactor * (cEnd.g - cStart.g));
-                const b = Math.round(cStart.b + segmentFactor * (cEnd.b - cStart.b));
-
-                result += `\x1b[38;2;${r};${g};${b}m${char}\x1b[0m`;
-            }
-            return result;
+    const hexColors = ['#3387FF', '#F25041', '#DFAC2A', '#91C45B'];
+    const colors = hexColors.map(hex => {
+        const bigint = parseInt(hex.replace('#', ''), 16);
+        return {
+            r: (bigint >> 16) & 255,
+            g: (bigint >> 8) & 255,
+            b: bigint & 255
         };
+    });
 
-        console.log('');
-        for (const line of fullArt) {
-            if (!line.trim()) continue;
-            console.log(applyGradient(line));
+    const applyGradient = (text) => {
+        let result = '';
+        const len = text.length;
+        for (let i = 0; i < len; i++) {
+            const char = text[i];
+            if (char === ' ' || char === '\n') {
+                result += char;
+                continue;
+            }
+            const factor = len > 1 ? i / (len - 1) : 0;
+            const segments = colors.length - 1;
+            const segmentFloat = factor * segments;
+            const segmentIdx = Math.min(Math.floor(segmentFloat), segments - 1);
+            const segmentFactor = segmentFloat - segmentIdx;
+
+            const cStart = colors[segmentIdx];
+            const cEnd = colors[segmentIdx + 1];
+
+            const r = Math.round(cStart.r + segmentFactor * (cEnd.r - cStart.r));
+            const g = Math.round(cStart.g + segmentFactor * (cEnd.g - cStart.g));
+            const b = Math.round(cStart.b + segmentFactor * (cEnd.b - cStart.b));
+
+            result += `\x1b[38;2;${r};${g};${b}m${char}\x1b[0m`;
         }
-        console.log('');
-        console.log(`\x1b[2m  RTL & UI Patcher for Antigravity & Antigravity IDE | v${pkg.version}\x1b[0m\n`);
-    } catch (err) {
-        console.log(bold(cyan(`\n✨ Antigravity Smart RTL Patcher v${pkg.version}\n`)));
+        return result;
+    };
+
+    console.log('');
+    for (const line of BANNER) {
+        console.log(applyGradient(line));
     }
+    console.log('');
+    console.log(`\x1b[2m  RTL & UI Patcher for Antigravity & Antigravity IDE | v${pkg.version}\x1b[0m\n`);
 }
 
 printBanner();
@@ -146,6 +148,7 @@ Options:
   --app              Patch or restore Antigravity Standalone App only (Legacy asar patch)
   -r, --restore      Revert changes and restore original backup files / plugin
   --path <dir/file>  Specify custom path to IDE directory or app.asar
+  --browser          Install the Remote Control browser extension folder
   -h, --help         Show this help message
 
 Default Behavior:
@@ -161,7 +164,29 @@ Examples:
   npx antigravity-rtl --app         # Patch only Antigravity Standalone App (asar)
   npx antigravity-rtl --restore     # Restore all detected patched apps & plugin
   npx antigravity-rtl -r --ide      # Restore only Antigravity IDE
+  npx antigravity-rtl --browser     # Extension for Remote Control in Chrome/Arc
 `);
+    process.exit(0);
+}
+
+function installBrowserExtension() {
+    const dest = path.join(os.homedir(), '.antigravity-rtl-extension');
+    const extDir = path.join(__dirname, '..', 'extension');
+    fs.mkdirSync(dest, { recursive: true });
+    fs.copyFileSync(path.join(extDir, 'manifest.json'), path.join(dest, 'manifest.json'));
+    fs.copyFileSync(path.join(__dirname, 'remote-client.js'), path.join(dest, 'content.js'));
+    fs.copyFileSync(path.join(__dirname, 'Vazirmatn-Variable.woff2'), path.join(dest, 'Vazirmatn-Variable.woff2'));
+    console.log(green(`\nRemote Control extension ready:\n  ${dest}\n`));
+    console.log('The remote UI is a cross-origin iframe, so the desktop patch cannot reach it.');
+    console.log('In Chrome or Arc: open the extensions page, turn on Developer Mode,');
+    console.log('then Load unpacked and choose the folder above. Reload the remote tab.');
+    console.log(yellow('Browser settings are stored in the extension, separate from ~/.antigravity-rtl.json.\n'));
+    const openCmd = process.platform === 'darwin' ? `open "${dest}"` : process.platform === 'win32' ? `explorer "${dest}"` : `xdg-open "${dest}"`;
+    exec(openCmd, () => {});
+}
+
+if (args.includes('--browser')) {
+    installBrowserExtension();
     process.exit(0);
 }
 
@@ -282,7 +307,10 @@ async function main() {
         }
     }
 
-    if (ok && !isRestore) await promptForStar();
+    if (ok && !isRestore) {
+        console.log(cyan('\nRemote Control in the browser is separate. Set it up with: npx antigravity-rtl --browser\n'));
+        await promptForStar();
+    }
 }
 
 main().catch(e => {

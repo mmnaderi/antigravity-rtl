@@ -32,7 +32,6 @@ Antigravity RTL adds seamless Right-to-Left (RTL) support and typography control
 - **Natural text direction:** Chat, input fields, and agent views adapt dynamically. Use **Force RTL** when you want everything right-aligned.
 - **Code & Terminal stay LTR**: Code blocks, Monaco editor, and terminal remain left-to-right with customizable code fonts.
 - **Typography your way:** Choose separate fonts for Persian/Arabic, English, and Code. Vazirmatn is embedded offline; font size and line height can be adjusted live.
-- **Persian Keyboard Fix**: Maps `Shift + 2` to type `@` instead of `٬` on Persian keyboard layouts.
 - **Quick controls:** Title-bar menu in Standalone App and UI widget in IDE, toggleable via `⌥R` on macOS / `Alt+R` on Windows and Linux.
 
 Settings are saved in `~/.antigravity-rtl.json` and restored when you reopen the app.
@@ -85,7 +84,10 @@ Follow the steps for your operating system. Node.js **22.12 or newer** is requir
 | `npx antigravity-rtl --restore` | Revert changes and restore original backups / plugin for all detected apps |
 | `npx antigravity-rtl --restore --ide` | Revert changes and restore Antigravity IDE only |
 | `npx antigravity-rtl --restore --app` | Revert changes and restore Antigravity Standalone App only |
-| `npx antigravity-rtl --path "/path/to/app"` | Specify a custom installation directory or app.asar |
+| `npx antigravity-rtl --path "/path/to/app"` | Specify a custom path: the IDE directory, or the Standalone App's `app.asar` file |
+| `npx antigravity-rtl --browser` | Install the Remote Control extension folder (Chrome / Arc) |
+
+Remote Control opens this UI in the browser, inside a cross-origin iframe. The desktop patch cannot reach it. `--browser` writes an unpacked Chrome/Arc extension that injects the same RTL engine into that iframe. Load the printed folder from the extensions page (Developer Mode → Load unpacked), then reload the remote tab.
 
 <a id="uninstall"></a>
 
@@ -142,7 +144,6 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 - **جهت‌دهی خودکار متن:** چیدمان پیام‌های چت، ورودی‌ها و پرامپت‌ها بر اساس زبان متن راست‌چین یا چپ‌چین می‌شود.
 - **ایزولاسیون کد و ترمینال:** بلوک‌های کد، ادیتور Monaco و محیط ترمینال با پشتیبانی از انتخاب فونت کد کاملاً چپ‌چین (LTR) باقی می‌مانند.
 - **تایپوگرافی دلخواه:** تعیین فونت مجزا برای متون فارسی/عربی، انگلیسی و کد به همراه فونت توکار **وزیرمتن (Vazirmatn Variable)** بدون وابستگی به اینترنت.
-- **حل مشکل کلید `@`:** اصلاح میانبر `Shift + 2` روی کیبورد فارسی برای تایپ مستقیم علامت `@`.
 - **دسترسی سریع:** پنل تنظیمات در برنامه و کلید میانبر `⌥R` در مک یا `Alt+R` در ویندوز و لینوکس.
 
 ### گزینه‌ها و فلگ‌های خط فرمان
@@ -157,7 +158,10 @@ Antigravity RTL یک ابزار خط فرمان برای افزودن پشتیب
 | `npx antigravity-rtl --restore` | بازگردانی به نسخه اصلی و حذف افزونه برای تمام برنامه های شناسایی شده |
 | `npx antigravity-rtl --restore --ide` | فقط بازگردانی Antigravity IDE به نسخه اصلی |
 | `npx antigravity-rtl --restore --app` | فقط بازگردانی نسخه مستقل Antigravity به نسخه اصلی |
-| `npx antigravity-rtl --path "/path/to/app"` | مشخص کردن مسیر دلخواه نصب برنامه |
+| `npx antigravity-rtl --path "/path/to/app"` | مشخص کردن مسیر دلخواه: پوشهٔ IDE، یا فایل `app.asar` نسخهٔ مستقل |
+| `npx antigravity-rtl --browser` | نصب پوشهٔ افزونهٔ Remote Control برای کروم و Arc |
+
+Remote Control همان رابط را داخل یک iframe با دامنهٔ جدا در مرورگر باز می‌کند و پچ دسکتاپ به آن نمی‌رسد. `--browser` یک افزونهٔ unpacked می‌سازد؛ پوشهٔ چاپ‌شده را از صفحهٔ افزونه‌ها با Developer Mode بارگذاری کنید و تب ریموت را رفرش کنید.
 
 ### نصب
 

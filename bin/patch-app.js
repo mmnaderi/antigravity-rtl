@@ -90,13 +90,13 @@ export async function restoreApp(asarPath, { exitOnError = true } = {}) {
         if (exitOnError) process.exit(1);
         return false;
     }
-    if (readUtils(backupPath).includes(PATCH_START)) {
-        console.error(red('✖ The backup is itself patched, so restoring would not remove RTL. Run the patcher once to rebuild a clean backup, or reinstall Antigravity.\n'));
-        if (exitOnError) process.exit(1);
-        return false;
-    }
     const spinner = ora('Restoring original Antigravity app.asar...').start();
     try {
+        if (readUtils(backupPath).includes(PATCH_START)) {
+            spinner.fail('The backup is itself patched, so restoring would not remove RTL. Run the patcher once to rebuild a clean backup, or reinstall Antigravity.\n');
+            if (exitOnError) process.exit(1);
+            return false;
+        }
         fs.copyFileSync(backupPath, asarPath);
         asar.uncache(asarPath);
         fs.unlinkSync(backupPath);
@@ -158,7 +158,9 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
         spinner.text = 'Injecting RTL features...';
         let utilsCode = cleanUtils;
 
-        const payload = fs.readFileSync(path.join(__dirname, 'payload.js'), 'utf8');
+        const core = fs.readFileSync(path.join(__dirname, 'rtl-core.js'), 'utf8');
+        const payload = fs.readFileSync(path.join(__dirname, 'payload.js'), 'utf8')
+            .replace('__RTL_CORE__', () => JSON.stringify(core));
         if (!utilsCode.includes(ANCHOR)) {
             throw new Error('Injection anchor not found. The app version might be unsupported.');
         }

@@ -10,6 +10,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const { blue, green, red, yellow } = picocolors;
 
+const HOOK_IMPORT = "import './antigravity-rtl-main.js';";
+const FONT_SRC_DATA = /font-src[^;]*\bdata:/;
+
 function idePaths(appDir) {
     const outDir = path.join(appDir, 'out');
     const wbDir = path.join(outDir, 'vs', 'code', 'electron-browser', 'workbench');
@@ -97,7 +100,7 @@ export function hasIdeBackup(appDir) {
     if (fs.existsSync(mainJsPath)) {
         try {
             const code = fs.readFileSync(mainJsPath, 'utf8');
-            hasImport = code.includes("import './antigravity-rtl-main.js';");
+            hasImport = code.includes(HOOK_IMPORT);
         } catch (_) {}
     }
     return fs.existsSync(mainJsBak) || fs.existsSync(workbenchHtmlBak) || fs.existsSync(jetskiHtmlBak) || hasImport;
@@ -149,9 +152,9 @@ export async function restoreIde(appDir, { exitOnError = true } = {}) {
             fs.unlinkSync(mainJsBak);
         } else if (fs.existsSync(mainJsPath)) {
             let code = fs.readFileSync(mainJsPath, 'utf8');
-            if (code.includes("import './antigravity-rtl-main.js';")) {
-                code = code.replace("import './antigravity-rtl-main.js';\n", '');
-                code = code.replace("import './antigravity-rtl-main.js';", '');
+            if (code.includes(HOOK_IMPORT)) {
+                code = code.replace(HOOK_IMPORT + '\n', '');
+                code = code.replace(HOOK_IMPORT, '');
                 fs.writeFileSync(mainJsPath, code, 'utf8');
             }
         }
@@ -197,30 +200,28 @@ export async function patchIde(appDir, { exitOnError = true } = {}) {
         fs.accessSync(mainJsPath, fs.constants.W_OK);
 
         failLabel = 'Failed to create backup.';
-        if (!fs.existsSync(mainJsBak) && fs.existsSync(mainJsPath)) {
+        let mainCode = fs.readFileSync(mainJsPath, 'utf8');
+        // Back up only unpatched files: a backup is never a patched copy, and an IDE update refreshes it.
+        if (!mainCode.includes(HOOK_IMPORT)) {
             fs.copyFileSync(mainJsPath, mainJsBak);
         }
-        if (!fs.existsSync(workbenchHtmlBak) && fs.existsSync(workbenchHtml)) {
-            fs.copyFileSync(workbenchHtml, workbenchHtmlBak);
-        }
-        if (!fs.existsSync(jetskiHtmlBak) && fs.existsSync(jetskiHtml)) {
-            fs.copyFileSync(jetskiHtml, jetskiHtmlBak);
+        for (const [file, bak] of [[workbenchHtml, workbenchHtmlBak], [jetskiHtml, jetskiHtmlBak]]) {
+            if (fs.existsSync(file) && !FONT_SRC_DATA.test(fs.readFileSync(file, 'utf8'))) {
+                fs.copyFileSync(file, bak);
+            }
         }
 
         failLabel = 'Failed to copy RTL assets.';
         spinner.text = 'Copying RTL assets and injection scripts...';
         fs.copyFileSync(path.join(__dirname, 'Vazirmatn-Variable.woff2'), path.join(outDir, 'Vazirmatn-Variable.woff2'));
-        fs.copyFileSync(path.join(__dirname, 'ide-client.js'), path.join(outDir, 'antigravity-rtl-client.js'));
+        fs.writeFileSync(path.join(outDir, 'antigravity-rtl-client.js'),
+            fs.readFileSync(path.join(__dirname, 'rtl-core.js'), 'utf8') + '\n' + fs.readFileSync(path.join(__dirname, 'ide-client.js'), 'utf8'));
         fs.copyFileSync(path.join(__dirname, 'ide-main.js'), path.join(outDir, 'antigravity-rtl-main.js'));
 
         failLabel = 'Injection into Antigravity IDE failed.';
         spinner.text = 'Injecting RTL hook into main.js...';
-        let mainCode = fs.readFileSync(mainJsPath, 'utf8');
-        const importHook = "import './antigravity-rtl-main.js';\n";
-
-        if (!mainCode.includes("import './antigravity-rtl-main.js';")) {
-            mainCode = importHook + mainCode;
-            fs.writeFileSync(mainJsPath, mainCode, 'utf8');
+        if (!mainCode.includes(HOOK_IMPORT)) {
+            fs.writeFileSync(mainJsPath, HOOK_IMPORT + '\n' + mainCode, 'utf8');
         }
 
         // Patch CSP in HTML files to allow data: fonts
@@ -228,7 +229,7 @@ export async function patchIde(appDir, { exitOnError = true } = {}) {
             if (!fs.existsSync(filePath)) return;
             let content = fs.readFileSync(filePath, 'utf8');
             // If font-src does not have data:, add it
-            if (content.includes("font-src") && !/font-src[^;]*\bdata:/.test(content)) {
+            if (content.includes("font-src") && !FONT_SRC_DATA.test(content)) {
                 content = content.replace(/(font-src[\s\S]*?'self')/i, "$1\n\t\t\t\t\tdata:");
                 fs.writeFileSync(filePath, content, 'utf8');
             }
