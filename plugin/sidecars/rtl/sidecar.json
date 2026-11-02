@@ -1,0 +1,8 @@
+{
+  "command": "node",
+  "args": ["main.mjs"],
+  "restart_policy": "always",
+  "display_name": "Antigravity RTL Engine",
+  "description": "Zero-patch background RTL and typography injector for Antigravity.",
+  "has_web_ui": false
+}
