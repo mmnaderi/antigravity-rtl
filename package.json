@@ -4,7 +4,10 @@
   "description": "A smart RTL (Right-to-Left) patcher with UI settings for Antigravity & Antigravity IDE.",
   "main": "./bin/index.js",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "autostart": "powershell -ExecutionPolicy Bypass -File ./auto-patcher/install-autostart.ps1",
+    "autostart:status": "powershell -ExecutionPolicy Bypass -File ./auto-patcher/status.ps1",
+    "autostart:uninstall": "powershell -ExecutionPolicy Bypass -File ./auto-patcher/uninstall-autostart.ps1"
   },
   "keywords": [
     "antigravity",
