@@ -3,3 +3,7 @@ node_modules
 app.asar*
 unpatch.js
 *.mp3
+*.pid
+*.log
+!bin/
+!bin/**
