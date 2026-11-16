@@ -38,6 +38,13 @@ window.__antigravityRtlCore = window.__antigravityRtlCore || (() => {
         document.querySelectorAll(BLOCKS).forEach(el => {
             if (el.tagName === 'PRE' || el.tagName === 'CODE' || el.closest('.monaco-editor') || el.closest('.terminal')) return;
 
+            // Preserve table host container geometry (prevent margin-inline/bleed distortion)
+            const isTableHost = (typeof el.className === 'string' && el.className.includes('md-table-host')) || (typeof el.closest === 'function' && el.closest('.md-table-host'));
+            if (isTableHost) {
+                if (el.hasAttribute('dir')) el.removeAttribute('dir');
+                return;
+            }
+
             let dir = 'auto';
             if (forceRTL) {
                 dir = 'rtl';
@@ -46,6 +53,19 @@ window.__antigravityRtlCore = window.__antigravityRtlCore || (() => {
                 if (firstChar) dir = ARABIC_CHAR.test(firstChar[0]) ? 'rtl' : 'ltr';
             }
             setDir(el, dir);
+        });
+
+        // Set direction specifically on table elements (both standalone and inside .md-table-host)
+        document.querySelectorAll('.md-table-host table, .md-table-frame table, table').forEach(table => {
+            if (table.closest('.monaco-editor') || table.closest('.terminal')) return;
+            let dir = 'auto';
+            if (forceRTL) {
+                dir = 'rtl';
+            } else {
+                const firstChar = (table.textContent || '').replace(ZERO_WIDTH, '').match(STRONG_CHAR);
+                if (firstChar) dir = ARABIC_CHAR.test(firstChar[0]) ? 'rtl' : 'ltr';
+            }
+            setDir(table, dir);
         });
     }
 

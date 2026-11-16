@@ -58,6 +58,7 @@ function matches(node, sel) {
     if (sel === '[contenteditable="true"] p') return node.tagName === 'P' && walkUp(node, n => n.attributes?.contenteditable === 'true');
     if (sel === 'textarea[data-testid="ask-question-writein"]') return node.tagName === 'TEXTAREA' && node.attributes?.['data-testid'] === 'ask-question-writein';
     if (sel === '[data-testid="titlebar-more-actions"]') return node.attributes?.['data-testid'] === 'titlebar-more-actions';
+    if (sel === 'table' || sel.includes('table')) return node.tagName === 'TABLE';
     return false;
 }
 
@@ -128,9 +129,15 @@ const en = el('p');
 en.textContent = 'Hello world';
 const pre = el('pre');
 pre.textContent = 'const x = 1';
+const tableHost = el('div');
+tableHost.className = 'group/md-table relative my-4 md-table-host';
+const table = el('table');
+table.textContent = 'جدول فارسی';
+tableHost.appendChild(table);
 md.appendChild(fa);
 md.appendChild(en);
 md.appendChild(pre);
+md.appendChild(tableHost);
 view.appendChild(md);
 body.appendChild(view);
 
@@ -139,7 +146,10 @@ await new Promise(r => setTimeout(r, 500));
 assert.equal(fa.getAttribute('dir'), 'rtl');
 assert.equal(en.getAttribute('dir'), 'ltr');
 assert.equal(pre.getAttribute('dir'), null);
+assert.equal(tableHost.getAttribute('dir'), null);
+assert.equal(table.getAttribute('dir'), 'rtl');
 assert.equal(document.getElementById('antigravity-rtl-float-btn').textContent, 'RTL');
 assert.match(document.getElementById('antigravity-rtl-style').textContent, /unicode-bidi:\s*plaintext/);
+assert.match(document.getElementById('antigravity-rtl-style').textContent, /\.md-table-host/);
 assert.match(document.getElementById('antigravity-rtl-style').textContent, /chrome-extension:\/\/ext-test\/Vazirmatn-Variable\.woff2/);
 console.log('remote-client checks passed');

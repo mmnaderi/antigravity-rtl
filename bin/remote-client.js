@@ -7,7 +7,7 @@
     window.__antigravity_rtl_injected = true;
 
     // ponytail: selectors match jetski 2.23. Add one when a bubble renders without dir.
-    const BLOCKS = '.leading-relaxed > *, [data-testid="conversation-view"] p, [data-testid="conversation-view"] li, [data-testid="user-input-step"], [data-testid="user-input-step"] > *, label[for^="ask-opt-"]';
+    const BLOCKS = '.leading-relaxed > *:not(.md-table-host), [data-testid="conversation-view"] p, [data-testid="conversation-view"] li, [data-testid="user-input-step"], [data-testid="user-input-step"] > *:not(.md-table-host), label[for^="ask-opt-"]';
     const INPUTS = '[contenteditable="true"], [contenteditable="true"] p, textarea[data-testid="ask-question-writein"]';
     let isRTL = true;
 
@@ -50,6 +50,34 @@
                 text-align: left !important;
                 unicode-bidi: isolate !important;
             }
+            .md-table-host {
+                direction: ltr !important;
+                text-align: start !important;
+            }
+            .md-table-bleed .md-table-host[data-width-mode='column'],
+            .md-table-bleed .md-table-host[data-width-mode='column']:dir(rtl) {
+                margin-inline-start: 50% !important;
+                margin-left: 50% !important;
+                margin-right: 0 !important;
+                transform: translateX(min(-50%, calc(50cqw - var(--md-table-end-reserve, 0px) - 100%))) !important;
+            }
+            .md-table-bleed .md-table-host[data-width-mode='full'],
+            .md-table-bleed .md-table-host[data-width-mode='full']:dir(rtl) {
+                margin-inline-start: calc((100% - 100cqw) / 2 + var(--md-table-bleed-inset, 0px) + var(--md-table-bleed-skew, 0px)) !important;
+                margin-left: calc((100% - 100cqw) / 2 + var(--md-table-bleed-inset, 0px) + var(--md-table-bleed-skew, 0px)) !important;
+                margin-right: 0 !important;
+            }
+            table[dir="rtl"], .md-table-host table[dir="rtl"] {
+                direction: rtl !important;
+                text-align: right !important;
+                unicode-bidi: isolate !important;
+            }
+            table[dir="rtl"] th, table[dir="rtl"] td, .md-table-host table[dir="rtl"] th, .md-table-host table[dir="rtl"] td {
+                text-align: right !important;
+            }
+            table[dir="ltr"] th, table[dir="ltr"] td, .md-table-host table[dir="ltr"] th, .md-table-host table[dir="ltr"] td {
+                text-align: left !important;
+            }
         ` : `
             ${BLOCKS}, ${INPUTS} {
                 direction: ltr !important;
@@ -69,7 +97,15 @@
         });
         document.querySelectorAll(BLOCKS).forEach(el => {
             if (el.tagName === 'PRE' || el.tagName === 'CODE') return;
+            const isTableHost = (typeof el.className === 'string' && el.className.includes('md-table-host')) || (typeof el.closest === 'function' && el.closest('.md-table-host'));
+            if (isTableHost) {
+                if (el.hasAttribute('dir')) el.removeAttribute('dir');
+                return;
+            }
             setDir(el, isRTL ? textDir(el.textContent) : 'ltr');
+        });
+        document.querySelectorAll('.md-table-host table, .md-table-frame table, table').forEach(table => {
+            setDir(table, isRTL ? textDir(table.textContent) : 'ltr');
         });
     }
 
