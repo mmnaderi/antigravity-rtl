@@ -412,12 +412,12 @@ win.webContents.on('console-message', (event, ...args) => {
                     let codeFontStr = codeFont ? \`'\${codeFont}', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace\` : 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
                     
                     let forceRtlStyle = (isRTL && forceRTL) ? \`
-                        .prose > *:not(pre):not(code), 
-                        [data-testid="chat-message"] > *:not(pre):not(code), 
-                        .markdown-body > *:not(pre):not(code), 
-                        .leading-relaxed > *:not(pre):not(code),
+                        .prose > *:not(pre):not(code):not(.md-table-host), 
+                        [data-testid="chat-message"] > *:not(pre):not(code):not(.md-table-host), 
+                        .markdown-body > *:not(pre):not(code):not(.md-table-host), 
+                        .leading-relaxed > *:not(pre):not(code):not(.md-table-host),
                         [data-testid="user-input-step"],
-                        [data-testid="user-input-step"] > *:not(pre):not(code),
+                        [data-testid="user-input-step"] > *:not(pre):not(code):not(.md-table-host),
                         div:has(> [role="radiogroup"]),
                         label[for^="ask-opt-"] {
                             direction: rtl !important;
@@ -484,6 +484,43 @@ win.webContents.on('console-message', (event, ...args) => {
                         ol:not(#_)[dir="rtl"] ul:not(#_), ol:not(#_)[dir="rtl"] ol:not(#_) {
                             padding-left: 0 !important;
                             padding-right: 2.5rem !important;
+                        }
+                        
+                        /* Antigravity Table RTL Centering & Bleed Fix */
+                        .md-table-host {
+                            direction: ltr !important;
+                            text-align: start !important;
+                        }
+                        .md-table-bleed .md-table-host[data-width-mode='column'],
+                        .md-table-bleed .md-table-host[data-width-mode='column']:dir(rtl) {
+                            margin-inline-start: 50% !important;
+                            margin-left: 50% !important;
+                            margin-right: 0 !important;
+                            transform: translateX(min(-50%, calc(50cqw - var(--md-table-end-reserve, 0px) - 100%))) !important;
+                        }
+                        .md-table-bleed .md-table-host[data-width-mode='full'],
+                        .md-table-bleed .md-table-host[data-width-mode='full']:dir(rtl) {
+                            margin-inline-start: calc((100% - 100cqw) / 2 + var(--md-table-bleed-inset, 0px) + var(--md-table-bleed-skew, 0px)) !important;
+                            margin-left: calc((100% - 100cqw) / 2 + var(--md-table-bleed-inset, 0px) + var(--md-table-bleed-skew, 0px)) !important;
+                            margin-right: 0 !important;
+                        }
+                        table[dir="rtl"],
+                        .md-table-host table[dir="rtl"] {
+                            direction: rtl !important;
+                            text-align: right !important;
+                            unicode-bidi: isolate !important;
+                        }
+                        table[dir="rtl"] th,
+                        table[dir="rtl"] td,
+                        .md-table-host table[dir="rtl"] th,
+                        .md-table-host table[dir="rtl"] td {
+                            text-align: right !important;
+                        }
+                        table[dir="ltr"] th,
+                        table[dir="ltr"] td,
+                        .md-table-host table[dir="ltr"] th,
+                        .md-table-host table[dir="ltr"] td {
+                            text-align: left !important;
                         }
                         
                         /* Thinking Blocks (Keep LTR) */

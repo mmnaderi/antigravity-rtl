@@ -87,15 +87,15 @@
             const codeFontRule = state.codeFont ? `font-family: '${state.codeFont}', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;` : '';
 
             const forceRtlStyle = state.forceRTL ? `
-                .prose > *:not(pre):not(code), 
-                [data-testid="chat-message"] > *:not(pre):not(code), 
-                .markdown-body > *:not(pre):not(code), 
-                .leading-relaxed > *:not(pre):not(code),
+                .prose > *:not(pre):not(code):not(.md-table-host), 
+                [data-testid="chat-message"] > *:not(pre):not(code):not(.md-table-host), 
+                .markdown-body > *:not(pre):not(code):not(.md-table-host), 
+                .leading-relaxed > *:not(pre):not(code):not(.md-table-host),
                 [data-testid="user-input-step"],
-                [data-testid="user-input-step"] > *:not(pre):not(code),
+                [data-testid="user-input-step"] > *:not(pre):not(code):not(.md-table-host),
                 div:has(> [role="radiogroup"]),
                 label[for^="ask-opt-"],
-                [data-testid="conversation-view"] > *:not(pre):not(code) {
+                [data-testid="conversation-view"] > *:not(pre):not(code):not(.md-table-host) {
                     direction: rtl !important;
                     text-align: right !important;
                     unicode-bidi: isolate !important;
@@ -191,6 +191,43 @@
                     padding-right: 1.25rem !important;
                 }
 
+                /* Antigravity Table RTL Centering & Bleed Fix */
+                .md-table-host {
+                    direction: ltr !important;
+                    text-align: start !important;
+                }
+                .md-table-bleed .md-table-host[data-width-mode='column'],
+                .md-table-bleed .md-table-host[data-width-mode='column']:dir(rtl) {
+                    margin-inline-start: 50% !important;
+                    margin-left: 50% !important;
+                    margin-right: 0 !important;
+                    transform: translateX(min(-50%, calc(50cqw - var(--md-table-end-reserve, 0px) - 100%))) !important;
+                }
+                .md-table-bleed .md-table-host[data-width-mode='full'],
+                .md-table-bleed .md-table-host[data-width-mode='full']:dir(rtl) {
+                    margin-inline-start: calc((100% - 100cqw) / 2 + var(--md-table-bleed-inset, 0px) + var(--md-table-bleed-skew, 0px)) !important;
+                    margin-left: calc((100% - 100cqw) / 2 + var(--md-table-bleed-inset, 0px) + var(--md-table-bleed-skew, 0px)) !important;
+                    margin-right: 0 !important;
+                }
+                table[dir="rtl"],
+                .md-table-host table[dir="rtl"] {
+                    direction: rtl !important;
+                    text-align: right !important;
+                    unicode-bidi: isolate !important;
+                }
+                table[dir="rtl"] th,
+                table[dir="rtl"] td,
+                .md-table-host table[dir="rtl"] th,
+                .md-table-host table[dir="rtl"] td {
+                    text-align: right !important;
+                }
+                table[dir="ltr"] th,
+                table[dir="ltr"] td,
+                .md-table-host table[dir="ltr"] th,
+                .md-table-host table[dir="ltr"] td {
+                    text-align: left !important;
+                }
+
                 /* Thinking Blocks (Keep LTR) */
                 .cursor-edit.text-secondary-foreground,
                 .cursor-edit.text-secondary-foreground * {
@@ -252,9 +289,12 @@
                 document.querySelectorAll(`
                     .prose > *, [data-testid="chat-message"] > *, .markdown-body > *,
                     .leading-relaxed > *, [data-testid="conversation-view"] p, [data-testid="conversation-view"] li,
-                    [contenteditable="true"], [contenteditable="true"] p
+                    [contenteditable="true"], [contenteditable="true"] p, table
                 `).forEach(el => {
                     if (el.getAttribute('dir') !== 'ltr') el.setAttribute('dir', 'ltr');
+                });
+                document.querySelectorAll('.md-table-host').forEach(el => {
+                    if (el.hasAttribute('dir')) el.removeAttribute('dir');
                 });
                 return;
             }
