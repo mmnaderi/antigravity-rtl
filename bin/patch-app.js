@@ -13,7 +13,11 @@ const { blue, green, red, yellow } = picocolors;
 
 const PATCH_START = '/* ANTIGRAVITY RTL PATCH */';
 const PATCH_END = '/* END ANTIGRAVITY RTL PATCH */';
-const ANCHOR = 'void win.loadURL(url);';
+const ANCHOR_CANDIDATES = [
+    'await win.loadURL(url);',
+    'void win.loadURL(url);'
+];
+const ANCHOR_REGEX = /(?:await|void)\s+win\.loadURL\(url\);/;
 const PATCH_BLOCK = /\/\* ANTIGRAVITY RTL PATCH \*\/[\s\S]*?\/\* END ANTIGRAVITY RTL PATCH \*\//;
 const LEGACY_PATCH_ERROR = 'This Antigravity install was patched by an older version of antigravity-rtl and no clean backup exists. Reinstall Antigravity, then run this command again.';
 
@@ -22,8 +26,23 @@ function readUtils(asarFile) {
     return asar.extractFile(asarFile, 'dist/utils.js').toString('utf8');
 }
 
+function findAnchor(code) {
+    for (const candidate of ANCHOR_CANDIDATES) {
+        if (code.includes(candidate)) {
+            return candidate;
+        }
+    }
+    const match = code.match(ANCHOR_REGEX);
+    return match ? match[0] : null;
+}
+
 function stripPatch(code) {
-    return PATCH_BLOCK.test(code) ? code.replace(PATCH_BLOCK, ANCHOR) : null;
+    if (!PATCH_BLOCK.test(code)) return null;
+    const match = code.match(PATCH_BLOCK)[0];
+    const originalAnchor = match.includes('await win.loadURL(url);')
+        ? 'await win.loadURL(url);'
+        : 'void win.loadURL(url);';
+    return code.replace(PATCH_BLOCK, originalAnchor);
 }
 
 function getAppCandidatePaths() {
@@ -159,12 +178,14 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
         let utilsCode = cleanUtils;
 
         const payload = fs.readFileSync(path.join(__dirname, 'payload.js'), 'utf8');
-        if (!utilsCode.includes(ANCHOR)) {
+        const anchor = findAnchor(utilsCode);
+        if (!anchor) {
             throw new Error('Injection anchor not found. The app version might be unsupported.');
         }
-        utilsCode = utilsCode.replace(ANCHOR, () => `${payload.trimEnd()}\n${PATCH_END}`);
-        // Force-enable DevTools in packaged app
-        utilsCode = utilsCode.replace(/devTools:\s*!electron_1?\.app\.isPackaged/g, 'devTools: true');
+        const tailoredPayload = payload.replace(ANCHOR_REGEX, anchor);
+        utilsCode = utilsCode.replace(anchor, () => `${tailoredPayload.trimEnd()}\n${PATCH_END}`);
+        // Force-enable DevTools in packaged app (supports both legacy !isPackaged and modern isDebugConsoleEnabled)
+        utilsCode = utilsCode.replace(/devTools:\s*(?:\(0,\s*[^)]+\)\(\)|!electron[a-zA-Z0-9_.]*)/g, 'devTools: true');
         fs.writeFileSync(utilsPath, utilsCode);
 
         fs.copyFileSync(path.join(__dirname, 'Vazirmatn-Variable.woff2'), fontDest);
