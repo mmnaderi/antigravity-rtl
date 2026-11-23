@@ -7,7 +7,7 @@ import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import * as asar from '@electron/asar';
-import { patchApp, restoreApp } from '../bin/patch-app.js';
+import { patchApp, restoreApp, findAnchor, stripPatch } from '../bin/patch-app.js';
 import { patchIde, restoreIde } from '../bin/patch-ide.js';
 
 const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin');
@@ -37,6 +37,45 @@ test('standalone app: re-patch, lost backup and restore give back the original',
 
     assert.equal(await restoreApp(asarPath, { exitOnError: false }), true);
     assert.equal(readUtils(asarPath), original);
+});
+
+test('standalone app: supports new loadHubWindowUrl anchor for Antigravity 2.x builds', async () => {
+    const root = tmp();
+    const src = path.join(root, 'src');
+    fs.mkdirSync(path.join(src, 'dist'), { recursive: true });
+    const original = 'function createWindow(url) {\n    void loadHubWindowUrl(win, url, { skipBootstrapMint });\n    return win;\n}\n';
+    fs.writeFileSync(path.join(src, 'dist', 'utils.js'), original);
+    const asarPath = path.join(root, 'app.asar');
+    await asar.createPackage(src, asarPath);
+
+    assert.equal(await patchApp(asarPath, { exitOnError: false }), true);
+    const patchedCode = readUtils(asarPath);
+    assert.ok(patchedCode.includes('/* ANTIGRAVITY RTL PATCH */'));
+    assert.ok(patchedCode.includes('void loadHubWindowUrl(win, url, { skipBootstrapMint });'));
+
+    assert.equal(await patchApp(asarPath, { exitOnError: false }), true);
+    assert.equal(readUtils(asarPath).split('/* ANTIGRAVITY RTL PATCH */').length - 1, 1);
+
+    fs.unlinkSync(asarPath + '.bak');
+    assert.equal(await patchApp(asarPath, { exitOnError: false }), true);
+    assert.equal(readUtils(asarPath + '.bak'), original);
+
+    assert.equal(await restoreApp(asarPath, { exitOnError: false }), true);
+    assert.equal(readUtils(asarPath), original);
+});
+
+test('standalone app: findAnchor and stripPatch unit checks', () => {
+    const oldCode = 'void win.loadURL(url);';
+    const newCode = 'void loadHubWindowUrl(win, url, { skipBootstrapMint });';
+    assert.equal(findAnchor(oldCode), oldCode);
+    assert.equal(findAnchor(newCode), newCode);
+    assert.equal(findAnchor('console.log("no anchor");'), null);
+
+    const oldPatched = `/* ANTIGRAVITY RTL PATCH */\nwin.on();\n    ${oldCode}\n    win.ready();\n/* END ANTIGRAVITY RTL PATCH */`;
+    assert.equal(stripPatch(oldPatched), oldCode);
+
+    const newPatched = `/* ANTIGRAVITY RTL PATCH */\nwin.on();\n    ${newCode}\n    win.ready();\n/* END ANTIGRAVITY RTL PATCH */`;
+    assert.equal(stripPatch(newPatched), newCode);
 });
 
 test('standalone app: payload runs, and unsafe config values never reach the page', async () => {
