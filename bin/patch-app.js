@@ -13,17 +13,33 @@ const { blue, green, red, yellow } = picocolors;
 
 const PATCH_START = '/* ANTIGRAVITY RTL PATCH */';
 const PATCH_END = '/* END ANTIGRAVITY RTL PATCH */';
-const ANCHOR = 'void win.loadURL(url);';
+const DEFAULT_ANCHOR = 'void win.loadURL(url);';
+const ANCHOR_PATTERNS = [
+    /void\s+loadHubWindowUrl\s*\(\s*win\s*,\s*url\s*,\s*\{\s*skipBootstrapMint\s*\}\s*\);?/,
+    /void\s+win\.loadURL\s*\(\s*url\s*\);?/
+];
 const PATCH_BLOCK = /\/\* ANTIGRAVITY RTL PATCH \*\/[\s\S]*?\/\* END ANTIGRAVITY RTL PATCH \*\//;
 const LEGACY_PATCH_ERROR = 'This Antigravity install was patched by an older version of antigravity-rtl and no clean backup exists. Reinstall Antigravity, then run this command again.';
+
+export function findAnchor(code) {
+    for (const pattern of ANCHOR_PATTERNS) {
+        const match = code.match(pattern);
+        if (match) return match[0];
+    }
+    return null;
+}
 
 function readUtils(asarFile) {
     asar.uncache(asarFile);
     return asar.extractFile(asarFile, 'dist/utils.js').toString('utf8');
 }
 
-function stripPatch(code) {
-    return PATCH_BLOCK.test(code) ? code.replace(PATCH_BLOCK, ANCHOR) : null;
+export function stripPatch(code) {
+    const match = code.match(PATCH_BLOCK);
+    if (!match) return null;
+    const block = match[0];
+    const anchor = findAnchor(block) || DEFAULT_ANCHOR;
+    return code.replace(PATCH_BLOCK, anchor);
 }
 
 function getAppCandidatePaths() {
@@ -36,13 +52,17 @@ function getAppCandidatePaths() {
     } else if (platform === 'win32') {
         if (process.env.LOCALAPPDATA) {
             candidates.push(path.join(process.env.LOCALAPPDATA, 'Programs', 'Antigravity', 'resources', 'app.asar'));
+            candidates.push(path.join(process.env.LOCALAPPDATA, 'Programs', 'antigravity', 'resources', 'app.asar'));
             candidates.push(path.join(process.env.LOCALAPPDATA, 'Antigravity', 'resources', 'app.asar'));
+            candidates.push(path.join(process.env.LOCALAPPDATA, 'antigravity', 'resources', 'app.asar'));
         }
         if (process.env.PROGRAMFILES) {
             candidates.push(path.join(process.env.PROGRAMFILES, 'Antigravity', 'resources', 'app.asar'));
+            candidates.push(path.join(process.env.PROGRAMFILES, 'antigravity', 'resources', 'app.asar'));
         }
         if (process.env['PROGRAMFILES(X86)']) {
             candidates.push(path.join(process.env['PROGRAMFILES(X86)'], 'Antigravity', 'resources', 'app.asar'));
+            candidates.push(path.join(process.env['PROGRAMFILES(X86)'], 'antigravity', 'resources', 'app.asar'));
         }
     } else {
         candidates.push('/opt/Antigravity/resources/app.asar');
@@ -158,15 +178,22 @@ export async function patchApp(asarPath, { exitOnError = true } = {}) {
         spinner.text = 'Injecting RTL features...';
         let utilsCode = cleanUtils;
 
-        const core = fs.readFileSync(path.join(__dirname, 'rtl-core.js'), 'utf8');
-        const payload = fs.readFileSync(path.join(__dirname, 'payload.js'), 'utf8')
-            .replace('__RTL_CORE__', () => JSON.stringify(core));
-        if (!utilsCode.includes(ANCHOR)) {
+        const anchor = findAnchor(utilsCode);
+        if (!anchor) {
             throw new Error('Injection anchor not found. The app version might be unsupported.');
         }
-        utilsCode = utilsCode.replace(ANCHOR, () => `${payload.trimEnd()}\n${PATCH_END}`);
+
+        const core = fs.readFileSync(path.join(__dirname, 'rtl-core.js'), 'utf8');
+        const payload = fs.readFileSync(path.join(__dirname, 'payload.js'), 'utf8')
+            .replace('__RTL_CORE__', () => JSON.stringify(core))
+            .replace(DEFAULT_ANCHOR, () => anchor);
+
+        utilsCode = utilsCode.replace(anchor, () => `${payload.trimEnd()}\n${PATCH_END}`);
         // Force-enable DevTools in packaged app
-        utilsCode = utilsCode.replace(/devTools:\s*!electron_1?\.app\.isPackaged/g, 'devTools: true');
+        utilsCode = utilsCode.replace(
+            /devTools:\s*(?:!electron_1?\.app\.isPackaged|\(0,\s*debugConsole_1\.isDebugConsoleEnabled\)\(\))/g,
+            'devTools: true'
+        );
         fs.writeFileSync(utilsPath, utilsCode);
 
         fs.copyFileSync(path.join(__dirname, 'Vazirmatn-Variable.woff2'), fontDest);
