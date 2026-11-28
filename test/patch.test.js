@@ -7,7 +7,7 @@ import vm from 'vm';
 import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import * as asar from '@electron/asar';
-import { patchApp, restoreApp } from '../bin/patch-app.js';
+import { patchApp, restoreApp, findAnchor, stripPatch } from '../bin/patch-app.js';
 import { patchIde, restoreIde } from '../bin/patch-ide.js';
 
 const BIN = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'bin');
@@ -34,6 +34,83 @@ test('standalone app: re-patch, lost backup and restore give back the original',
     fs.unlinkSync(asarPath + '.bak');
     assert.equal(await patchApp(asarPath, { exitOnError: false }), true);
     assert.equal(readUtils(asarPath + '.bak'), original);
+
+    assert.equal(await restoreApp(asarPath, { exitOnError: false }), true);
+    assert.equal(readUtils(asarPath), original);
+});
+
+test('standalone app: supports Antigravity 2.x loadHubWindowUrl anchor, re-patch and restore', async () => {
+    const root = tmp();
+    const src = path.join(root, 'src');
+    fs.mkdirSync(path.join(src, 'dist'), { recursive: true });
+    const original = 'module.exports = (win, url, skipBootstrapMint) => {\n    void loadHubWindowUrl(win, url, { skipBootstrapMint });\n    return win;\n};\n';
+    fs.writeFileSync(path.join(src, 'dist', 'utils.js'), original);
+    const asarPath = path.join(root, 'app.asar');
+    await asar.createPackage(src, asarPath);
+
+    assert.equal(await patchApp(asarPath, { exitOnError: false }), true);
+    const patched = readUtils(asarPath);
+    assert.ok(patched.includes('/* ANTIGRAVITY RTL PATCH */'));
+    assert.ok(patched.includes('void loadHubWindowUrl(win, url, { skipBootstrapMint });'));
+    assert.equal(findAnchor(original), 'void loadHubWindowUrl(win, url, { skipBootstrapMint });');
+    assert.equal(stripPatch(patched), original);
+
+    assert.equal(await patchApp(asarPath, { exitOnError: false }), true);
+    assert.equal(readUtils(asarPath).split('/* ANTIGRAVITY RTL PATCH */').length - 1, 1);
+
+    fs.unlinkSync(asarPath + '.bak');
+    assert.equal(await patchApp(asarPath, { exitOnError: false }), true);
+    assert.equal(readUtils(asarPath + '.bak'), original);
+
+    assert.equal(await restoreApp(asarPath, { exitOnError: false }), true);
+    assert.equal(readUtils(asarPath), original);
+});
+
+test('standalone app: payload uses getHubWebContents for BaseWindow and enables devTools', async () => {
+    const root = tmp();
+    const src = path.join(root, 'src');
+    fs.mkdirSync(path.join(src, 'dist'), { recursive: true });
+    const original = [
+        'const webPreferences = { devTools: (0, debugConsole_1.isDebugConsoleEnabled)() };',
+        'function loadHubWindowUrl() {}',
+        'module.exports = (win, url, getHubWebContents, skipBootstrapMint) => {',
+        '    void loadHubWindowUrl(win, url, { skipBootstrapMint });',
+        '    return webPreferences;',
+        '};',
+        ''
+    ].join('\n');
+    fs.writeFileSync(path.join(src, 'dist', 'utils.js'), original);
+    const asarPath = path.join(root, 'app.asar');
+    await asar.createPackage(src, asarPath);
+
+    assert.equal(await patchApp(asarPath, { exitOnError: false }), true);
+    const patched = readUtils(asarPath);
+    assert.ok(patched.includes('devTools: true'));
+
+    process.env.HOME = process.env.USERPROFILE = root;
+    const configPath = path.join(root, '.antigravity-rtl.json');
+    const handlers = {};
+    let pageScript;
+    const hubContents = {
+        on: (event, fn) => { handlers[event] = fn; },
+        getURL: () => 'https://127.0.0.1:4000/',
+        executeJavaScript: (code) => { pageScript = code; return Promise.resolve(); }
+    };
+    const baseWin = {};
+    const mod = { exports: {} };
+    new Function('module', 'require', '__dirname', 'debugConsole_1', patched)(
+        mod, createRequire(import.meta.url), BIN, { isDebugConsoleEnabled: () => false }
+    );
+    const prefs = mod.exports(baseWin, 'https://127.0.0.1:4000/', () => hubContents, false);
+    assert.equal(prefs.devTools, true);
+
+    handlers['dom-ready']();
+    assert.doesNotThrow(() => new vm.Script(pageScript), 'page script must be valid JavaScript');
+    assert.ok(pageScript.includes('window.__antigravityRtlCore'));
+
+    handlers['console-message']({}, 0, 'SAVE_RTL_CONFIG|{"fs":"17"}');
+    const saved = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    assert.equal(saved.fs, '17');
 
     assert.equal(await restoreApp(asarPath, { exitOnError: false }), true);
     assert.equal(readUtils(asarPath), original);
