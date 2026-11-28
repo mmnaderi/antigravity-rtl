@@ -1,5 +1,6 @@
 /* ANTIGRAVITY RTL PATCH */
-win.webContents.on('console-message', (event, ...args) => {
+const __rtlWebContents = typeof getHubWebContents === 'function' ? getHubWebContents(win) : win.webContents;
+__rtlWebContents?.on('console-message', (event, ...args) => {
         let message = '';
         if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null) {
             message = args[0].message;
@@ -23,9 +24,9 @@ win.webContents.on('console-message', (event, ...args) => {
     });
     void win.loadURL(url);
     
-    win.webContents.on('dom-ready', () => {
+    __rtlWebContents?.on('dom-ready', () => {
         // Strict Guard: only inject into local application server
-        const currentURL = win.webContents.getURL();
+        const currentURL = __rtlWebContents.getURL();
         if (!currentURL || !/^https?:\/\/127\.0\.0\.1:\d+/i.test(currentURL)) {
             return;
         }
@@ -47,7 +48,7 @@ win.webContents.on('console-message', (event, ...args) => {
             } catch (e) {}
 
             // Unified injection for RTL Toggle, CSS, and JS
-            win.webContents.executeJavaScript(__RTL_CORE__ + `(() => {
+            __rtlWebContents.executeJavaScript(__RTL_CORE__ + `(() => {
                 if (window.__ANTIGRAVITY_RTL_LOADED__) return;
                 window.__ANTIGRAVITY_RTL_LOADED__ = true;
 
